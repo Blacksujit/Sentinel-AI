@@ -16,6 +16,7 @@ import {
   buttonPress
 } from '@/components/ui/motion'
 import { toast } from 'sonner'
+import Swal from 'sweetalert2'
 
 type Settings = {
   warn_threshold: number
@@ -62,6 +63,8 @@ export default function SettingsPageModern() {
   const [hasChanges, setHasChanges] = useState(false)
   const [history, setHistory] = useState<SettingsHistoryEntry[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyPage, setHistoryPage] = useState(1)
+  const [totalHistory, setTotalHistory] = useState(0)
 
   // Load settings on mount
   useEffect(() => {
@@ -87,23 +90,108 @@ export default function SettingsPageModern() {
     const loadHistory = async () => {
       setHistoryLoading(true)
       try {
-        const response = await fetch('/api/settings/history?limit=10', { cache: 'no-store' })
+        const response = await fetch(`/api/settings/history?limit=10&page=${historyPage}`, { cache: 'no-store' })
         if (!response.ok) {
           const msg = await response.text()
           throw new Error(msg || `HTTP error! status: ${response.status}`)
         }
         const data = await response.json()
-        setHistory(Array.isArray(data) ? (data as SettingsHistoryEntry[]) : [])
+        if (Array.isArray(data)) {
+          setHistory(data as SettingsHistoryEntry[])
+          setTotalHistory(data.length)
+        } else {
+          setHistory([])
+          setTotalHistory(0)
+        }
       } catch (error) {
         console.error('Failed to load settings history:', error)
         setHistory([])
+        setTotalHistory(0)
       } finally {
         setHistoryLoading(false)
       }
     }
 
     loadHistory()
-  }, [])
+  }, [historyPage])
+
+  // Reset to defaults
+  const resetToDefaults = async () => {
+    const result = await Swal.fire({
+      title: 'Reset to Defaults?',
+      text: 'Are you sure you want to reset all settings to their default values? This will overwrite your current configuration and save to database.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, reset!',
+      cancelButtonText: 'Cancel'
+    })
+    
+    if (!result.isConfirmed) {
+      return
+    }
+    
+    try {
+      console.log('Attempting to reset settings...')
+      
+      // Try POST reset endpoint first
+      let response = await fetch('/api/settings/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      console.log('Reset response status:', response.status)
+      
+      if (!response.ok) {
+        console.log('POST reset failed, trying fallback method...')
+        // Fallback: get defaults and save them
+        const defaultResponse = await fetch('/api/settings/default')
+        if (defaultResponse.ok) {
+          const defaultSettings = await defaultResponse.json()
+          console.log('Got default settings:', defaultSettings)
+          
+          // Save the defaults
+          response = await fetch('/api/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(defaultSettings)
+          })
+          console.log('Save defaults response status:', response.status)
+        }
+      }
+      
+      if (response.ok) {
+        const defaultSettings = await response.json()
+        console.log('Reset settings received:', defaultSettings)
+        setSettings(defaultSettings)
+        setHasChanges(false) // No changes since it's already saved
+        toast.success('Settings reset to defaults')
+        
+        await Swal.fire({
+          title: 'Reset Complete!',
+          text: 'Settings have been reset to default values and saved to the database.',
+          icon: 'success',
+          timer: 3000,
+          showConfirmButton: false
+        })
+      } else {
+        const errorText = await response.text()
+        console.error('Reset failed with status:', response.status, errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+    } catch (error) {
+      console.error('Failed to reset settings:', error)
+      toast.error('Failed to reset settings')
+      
+      await Swal.fire({
+        title: 'Error!',
+        text: `Failed to reset settings: ${error.message}`,
+        icon: 'error',
+        confirmButtonText: 'OK'
+      })
+    }
+  }
 
   // Save settings
   const saveSettings = async () => {
@@ -120,13 +208,35 @@ export default function SettingsPageModern() {
         setSettings(updatedSettings)
         setHasChanges(false)
         toast.success('Settings saved successfully')
+        
+        await Swal.fire({
+          title: 'Settings Saved!',
+          text: 'Your configuration has been updated and saved to the database.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        })
       } else {
         const error = await response.text()
         toast.error(`Failed to save settings: ${error}`)
+        
+        await Swal.fire({
+          title: 'Save Failed!',
+          text: `Failed to save settings: ${error}`,
+          icon: 'error',
+          confirmButtonText: 'OK'
+        })
       }
     } catch (error) {
       console.error('Failed to save settings:', error)
       toast.error('Failed to save settings')
+      
+      await Swal.fire({
+        title: 'Error!',
+        text: 'Failed to save settings. Please check your connection and try again.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      })
     } finally {
       setSaving(false)
     }
@@ -186,7 +296,7 @@ export default function SettingsPageModern() {
             className="grid grid-cols-1 lg:grid-cols-3 gap-6"
           >
             {/* Risk Thresholds */}
-            <MotionCard variants={slideUp} className="card-premium p-6" {...hoverGlow}>
+            <MotionCard variants={slideUp} className="card-premium p-6">
               <h2 className="text-xl font-semibold text-foreground mb-4">Risk Thresholds</h2>
               <div className="space-y-6">
                 <motion.div 
@@ -268,7 +378,7 @@ export default function SettingsPageModern() {
             </MotionCard>
 
             {/* Signal Sensitivity */}
-            <MotionCard variants={slideUp} className="card-premium p-6" {...hoverGlow}>
+            <MotionCard variants={slideUp} className="card-premium p-6">
               <h2 className="text-xl font-semibold text-foreground mb-4">Signal Sensitivity</h2>
               <div className="space-y-6">
                 <motion.div 
@@ -350,7 +460,7 @@ export default function SettingsPageModern() {
             </MotionCard>
 
             {/* Enforcement Mode */}
-            <MotionCard variants={slideUp} className="card-premium p-6" {...hoverGlow}>
+            <MotionCard variants={slideUp} className="card-premium p-6">
               <h2 className="text-xl font-semibold text-foreground mb-4">Enforcement Mode</h2>
               <div className="space-y-4">
                 <motion.div 
@@ -408,9 +518,7 @@ export default function SettingsPageModern() {
                 <Button 
                   variant="outline" 
                   className="btn-premium-outline"
-                  onClick={() => {
-                    // Reset to defaults logic could go here
-                  }}
+                  onClick={resetToDefaults}
                 >
                   Reset to Defaults
                 </Button>
@@ -433,20 +541,39 @@ export default function SettingsPageModern() {
             variants={staggerContainer}
             className="pt-6"
           >
-            <MotionCard variants={slideUp} className="card-premium p-6" {...hoverGlow}>
+            <MotionCard variants={slideUp} className="card-premium p-6">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-semibold text-foreground">Settings history</h2>
                   <p className="text-xs text-muted">Versioned audit trail of settings updates</p>
                 </div>
-                {historyLoading && <span className="text-xs text-muted">Loading…</span>}
+                <div className="flex items-center gap-2">
+                  {historyLoading && <span className="text-xs text-muted">Loading…</span>}
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setHistoryPage(Math.max(1, historyPage - 1))}
+                    disabled={historyPage <= 1 || historyLoading}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-xs text-muted">Page {historyPage}</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setHistoryPage(historyPage + 1)}
+                    disabled={history.length < 10 || historyLoading}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
 
-              <div className="mt-4 space-y-2">
+              <div className="mt-4 max-h-96 overflow-y-auto space-y-2">
                 {history.length === 0 ? (
                   <div className="text-sm text-muted">No history available</div>
                 ) : (
-                  history.map((h) => (
+                  history.slice(0, 10).map((h) => (
                     <div
                       key={h.id}
                       className="rounded-xl border border-white/10 bg-black/20 p-3"

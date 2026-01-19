@@ -51,8 +51,40 @@ async def get_default_settings() -> Dict[str, Any]:
         "version": 1
     }
 
+@router.post("/settings/reset")
+async def reset_settings() -> Dict[str, Any]:
+    """Reset settings to defaults and save to database"""
+    try:
+        print("🔄 Reset endpoint called - processing reset request...")
+        
+        # Get default settings
+        default_settings = {
+            "warn_threshold": 0.3,
+            "escalate_threshold": 0.7,
+            "confidence_floor": 0.5,
+            "signal_weights": {
+                "prompt_anomaly": 0.3,
+                "jailbreak_attempt": 0.4,
+                "unsafe_output": 0.3
+            },
+            "enforcement_mode": "warn",
+            "version": 1
+        }
+        
+        print(f"📝 Default settings prepared: {default_settings}")
+        
+        # Update with defaults
+        updated_settings = settings_service.update_settings(default_settings, updated_by="user_reset")
+        print(f"✅ Settings updated in database: {updated_settings}")
+        
+        return updated_settings
+    except Exception as e:
+        print(f"❌ Reset endpoint error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.get("/settings/history")
-async def get_settings_history(limit: int = 10) -> list:
-    """Get settings change history for audit"""
-    history = settings_service.get_settings_history(limit)
+async def get_settings_history(limit: int = 10, page: int = 1) -> list:
+    """Get settings change history for audit with pagination"""
+    offset = (page - 1) * limit
+    history = settings_service.get_settings_history(limit, offset)
     return [log.to_dict() for log in history]

@@ -56,9 +56,15 @@ class SettingsRepository:
 
     @staticmethod
     def update(db: Session, patch: Dict[str, Any], updated_by: str = "system") -> SettingsModel:
+        print(f"🔧 Database update called with patch: {patch}")
+        print(f"👤 Updated by: {updated_by}")
+        
         current = SettingsRepository.get_current(db)
         if current is None:
+            print("⚠️ No current settings found, creating default...")
             current = SettingsRepository.create_default(db, updated_by=updated_by)
+        else:
+            print(f"📋 Current settings before update: {current.to_dict()}")
 
         current.warn_threshold = float(patch.get("warn_threshold", current.warn_threshold))
         current.escalate_threshold = float(patch.get("escalate_threshold", current.escalate_threshold))
@@ -66,12 +72,20 @@ class SettingsRepository:
 
         signal_weights = patch.get("signal_weights") or {}
         if isinstance(signal_weights, dict):
+            print(f"🎯 Processing signal_weights: {signal_weights}")
             if "prompt_anomaly" in signal_weights:
                 current.prompt_anomaly_weight = float(signal_weights["prompt_anomaly"])
             if "jailbreak_attempt" in signal_weights:
                 current.jailbreak_attempt_weight = float(signal_weights["jailbreak_attempt"])
             if "unsafe_output" in signal_weights:
                 current.unsafe_output_weight = float(signal_weights["unsafe_output"])
+        else:
+            if "prompt_anomaly_weight" in patch:
+                current.prompt_anomaly_weight = float(patch["prompt_anomaly_weight"])
+            if "jailbreak_attempt_weight" in patch:
+                current.jailbreak_attempt_weight = float(patch["jailbreak_attempt_weight"])
+            if "unsafe_output_weight" in patch:
+                current.unsafe_output_weight = float(patch["unsafe_output_weight"])
 
         if "enforcement_mode" in patch:
             current.enforcement_mode = str(patch["enforcement_mode"])
@@ -80,7 +94,11 @@ class SettingsRepository:
         current.updated_at = datetime.utcnow()
         current.updated_by = updated_by
 
+        print(f"💾 Settings after update: {current.to_dict()}")
+        
         SettingsRepository._write_audit_log(db, current, updated_by=updated_by)
+        print("✅ Audit log written successfully")
+        
         return current
 
     @staticmethod

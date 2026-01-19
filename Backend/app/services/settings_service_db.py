@@ -75,9 +75,14 @@ class SettingsService:
             self._load()
         return int(self._current.version)
 
-    def get_settings_history(self, limit: int = 10) -> List[SettingsVersionLog]:
+    def get_settings_history(self, limit: int = 10, offset: int = 0) -> List[SettingsVersionLog]:
+        if self._current is None:
+            self._load()
         with DatabaseService.get_session() as db:
-            return SettingsRepository.history(db, limit=limit)
-
+            return db.query(SettingsVersionLog)\
+                   .order_by(SettingsVersionLog.created_at.desc())\
+                   .offset(offset)\
+                   .limit(limit)\
+                   .all()
 
 settings_service = SettingsService()

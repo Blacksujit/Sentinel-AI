@@ -4,6 +4,60 @@
 
 @import './styles/cursor-interactions.css';
 
+/* SweetAlert2 custom styling */
+.swal2-popup {
+  border-radius: 12px !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.swal2-title {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+.swal2-html {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+.swal2-confirm {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  padding: 10px 20px !important;
+}
+
+.swal2-cancel {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  padding: 10px 20px !important;
+}
+
+/* Toast notifications z-index fix */
+[data-sonner-toast] {
+  z-index: 9999 !important;
+}
+
+/* Button hover effects */
+.btn-premium {
+  transition: all 0.2s ease !important;
+}
+
+.btn-premium:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 16px rgba(79, 139, 255, 0.3) !important;
+}
+
+.btn-premium-outline {
+  transition: all 0.2s ease !important;
+}
+
+.btn-premium-outline:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 16px rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
