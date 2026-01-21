@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AppLayoutModern } from '../components/layout/AppLayoutModern'
 import { Button, Badge } from '@/components/ui'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
+import Swal from 'sweetalert2'
 import {
   MotionCard,
   staggerContainer,
@@ -29,9 +30,71 @@ export default function AnalyzePage() {
   const [response, setResponse] = useState('')
   const [isRunning, setIsRunning] = useState(false)
   const [result, setResult] = useState<AnalyzeResponse | null>(null)
+  const [analysisStartTime, setAnalysisStartTime] = useState<number | null>(null)
+  const [elapsedTime, setElapsedTime] = useState(0)
+
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    
+    if (isRunning && analysisStartTime) {
+      interval = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - analysisStartTime) / 1000))
+      }, 100)
+    } else {
+      setElapsedTime(0)
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isRunning, analysisStartTime])
 
   const runAnalysis = async () => {
+    // Validation check
+    if (!prompt.trim() || !response.trim()) {
+      const missingFields = []
+      if (!prompt.trim()) missingFields.push('Prompt')
+      if (!response.trim()) missingFields.push('Response')
+      
+      await Swal.fire({
+        title: 'Validation Required',
+        text: `Please enter the following required fields before running analysis:\n${missingFields.join('\n• ')}`,
+        icon: 'warning',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'swal2-validation-popup'
+        },
+        timer: 3000, // Auto-dismiss after 3 seconds
+        showClass: {
+          popup: 'animate__fadeIn'
+        },
+        hideClass: {
+          popup: 'animate__fadeOut'
+        },
+        didOpen: () => {
+          // Start countdown
+          let countdown = 3;
+          const interval = setInterval(() => {
+            countdown--;
+            const el = document.getElementById('countdown');
+            if (el) el.textContent = countdown;
+            if (countdown <= 0) clearInterval(interval);
+          }, 1000);
+        },
+        willClose: () => {
+          // Clear countdown
+          const el = document.getElementById('countdown');
+          if (el) el.textContent = '';
+        }
+      })
+      return
+    }
+
     setIsRunning(true)
+    setAnalysisStartTime(Date.now())
+    setElapsedTime(0)
     setResult(null)
 
     try {
@@ -116,6 +179,64 @@ export default function AnalyzePage() {
               </Button>
             </motion.div>
           </motion.div>
+
+          {/* Timer Popup */}
+          {isRunning && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: -20 }}
+              className="fixed top-24 right-6 z-50 bg-background border border-border rounded-lg shadow-lg p-4 min-w-[200px] sm:min-w-[250px] timer-popup"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-semibold text-foreground">Analysis in Progress</div>
+                <button
+                  onClick={() => {
+                    Swal.fire({
+                      title: 'Cancel Analysis?',
+                      text: 'Are you sure you want to cancel the current analysis?',
+                      icon: 'question',
+                      showCancelButton: true,
+                      confirmButtonColor: '#d33',
+                      cancelButtonColor: '#3085d6',
+                      confirmButtonText: 'Yes, cancel',
+                      cancelButtonText: 'Continue'
+                    }).then((result) => {
+                      if (result.isConfirmed) {
+                        setIsRunning(false)
+                        setAnalysisStartTime(null)
+                        setElapsedTime(0)
+                      }
+                    })
+                  }}
+                  className="text-muted hover:text-foreground transition-colors"
+                  aria-label="Cancel analysis"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted">Elapsed Time</span>
+                  <span className="text-lg font-mono font-bold text-foreground">{elapsedTime}s</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                  <motion.div
+                    className="h-full bg-primary origin-left timer-progress"
+                    style={{ 
+                      width: isRunning ? `${Math.min((elapsedTime % 10) * 10, 100)}%` : '0%',
+                      transition: 'width 0.1s ease-out'
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="text-xs text-muted text-center">
+                {isRunning ? 'Processing your analysis...' : 'Analysis complete'}
+              </div>
+            </motion.div>
+          )}
 
           {result && (
             <MotionCard variants={slideUp} className="card-premium p-6" {...hoverGlow}>

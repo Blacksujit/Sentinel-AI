@@ -5,14 +5,8 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { SidebarModern } from './SidebarModern'
-import { PageTransition, ThemeToggle } from '@/components/ui'
+import { PageTransition } from '@/components/ui'
 
 interface AppLayoutProps {
   children: ReactNode
@@ -21,7 +15,6 @@ interface AppLayoutProps {
 export function AppLayoutModern({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const pathname = usePathname()
 
   useEffect(() => {
@@ -86,51 +79,6 @@ export function AppLayoutModern({ children }: AppLayoutProps) {
               )
             })}
           </nav>
-          
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-
-            {/* User Menu */}
-            <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 rounded-full"
-                  aria-label="Open user menu"
-                >
-                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-                    U
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem>
-                  <div className="flex items-center space-x-2">
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-semibold">
-                      U
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Admin User</p>
-                      <p className="text-xs text-muted-foreground">admin@sentinel.ai</p>
-                    </div>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Button asChild variant="ghost" className="w-full justify-start">
-                    <Link href="/settings" onClick={() => setUserMenuOpen(false)}>
-                      Settings
-                    </Link>
-                  </Button>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Button variant="ghost" className="w-full justify-start">
-                    Sign out
-                  </Button>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
 
           {/* Sidebar Toggle */}
           <Button

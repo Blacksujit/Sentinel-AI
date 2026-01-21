@@ -58,6 +58,116 @@
   border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
+/* Validation popup styling - Mobile & Desktop Optimized */
+.swal2-validation-popup {
+  border-radius: 12px !important;
+  backdrop-filter: blur(8px) !important;
+  max-width: 320px !important; /* Fixed small width for desktop */
+  width: auto !important;
+  max-height: 50vh !important; /* Much smaller height */
+  overflow-y: auto !important; /* Enable scrolling */
+}
+
+.swal2-validation-popup .swal2-popup {
+  border-radius: 12px !important;
+  max-width: 320px !important; /* Fixed small width for desktop */
+  max-height: 50vh !important; /* Much smaller height */
+  overflow-y: auto !important; /* Enable scrolling */
+  backdrop-filter: blur(8px) !important;
+}
+
+.swal2-validation-popup .swal2-title {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  color: #f59e0b !important;
+  font-size: 12px !important; /* Smaller for both mobile & desktop */
+  margin-bottom: 4px !important; /* Reduced spacing */
+}
+
+.swal2-validation-popup .swal2-html {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 10px !important; /* Much smaller text */
+  line-height: 1.3 !important;
+  white-space: pre-line !important;
+  padding: 0 8px !important; /* Reduced padding */
+  max-height: 30vh !important; /* Much smaller content height */
+  overflow-y: auto !important; /* Enable scrolling */
+}
+
+.swal2-validation-popup .swal2-confirm {
+  border-radius: 6px !important; /* Smaller radius */
+  font-weight: 500 !important;
+  padding: 6px 12px !important; /* Much smaller touch target */
+  font-size: 11px !important; /* Smaller font */
+  margin-top: 8px !important; /* Reduced spacing */
+  background-color: #3085d6 !important; /* Make visible */
+  color: white !important; /* High contrast */
+  border: none !important; /* Clean look */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; /* Subtle shadow */
+  transition: all 0.2s ease !important; /* Smooth hover */
+}
+
+.swal2-validation-popup .swal2-confirm:hover {
+  background-color: #2170b9 !important; /* Darker on hover */
+  transform: translateY(-1px) !important; /* Subtle lift */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important; /* Enhanced shadow */
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .swal2-validation-popup {
+    max-width: 75vw !important; /* Mobile responsive */
+    max-height: 60vh !important; /* Slightly larger on mobile */
+  }
+  
+  .swal2-validation-popup .swal2-popup {
+    max-width: 75vw !important; /* Mobile responsive */
+    max-height: 60vh !important; /* Slightly larger on mobile */
+  }
+  
+  .swal2-validation-popup .swal2-title {
+    font-size: 11px !important; /* Smaller on mobile */
+  }
+  
+  .swal2-validation-popup .swal2-html {
+    font-size: 9px !important; /* Even smaller on mobile */
+    padding: 0 6px !important; /* Tighter on mobile */
+  }
+  
+  .swal2-validation-popup .swal2-confirm {
+    padding: 8px 14px !important; /* Larger touch target on mobile */
+    font-size: 12px !important; /* Larger on mobile */
+  }
+}
+
+/* Animation classes for auto-dismiss */
+.animate__fadeIn {
+  animation: fadeIn 0.3s ease-in-out !important;
+}
+
+.animate__fadeOut {
+  animation: fadeOut 0.3s ease-in-out !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.9); }
+}
+
+/* Timer popup styling */
+.timer-popup {
+  backdrop-filter: blur(8px) !important;
+}
+
+.timer-progress {
+  transition: width 0.1s ease-out !important;
+}
+
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;

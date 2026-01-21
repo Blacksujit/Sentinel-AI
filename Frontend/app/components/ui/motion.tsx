@@ -173,9 +173,9 @@ export const drawerSlide: Variants = {
 }
 
 export const filterPanel: Variants = {
-  initial: { opacity: 0, height: 0 },
-  animate: { opacity: 1, height: 'auto', transition: { duration: 0.16, ease: 'easeOut' } },
-  exit: { opacity: 0, height: 0, transition: { duration: 0.16, ease: 'easeOut' } }
+  initial: { opacity: 0, height: 0, overflow: 'hidden' },
+  animate: { opacity: 1, height: 'auto', overflow: 'hidden', transition: { duration: 0.16, ease: 'easeOut' } },
+  exit: { opacity: 0, height: 0, overflow: 'hidden', transition: { duration: 0.16, ease: 'easeOut' } }
 }
 
 // Animated counter component

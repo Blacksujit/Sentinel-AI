@@ -223,8 +223,13 @@ export function LogsPageClientModern({ initialLogs, initialError }: LogsPageClie
           <AnimatePresence initial={false}>
             {filtersOpen && (
               <motion.div
+                key="filter-panel"
                 id="audit-filters-panel"
                 variants={filterPanel}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                layout
                 className="overflow-hidden"
               >
                 <div className="grid grid-cols-1 gap-4 p-4 sm:p-6 lg:grid-cols-12">
