@@ -4,33 +4,94 @@
 
 @import './styles/cursor-interactions.css';
 
-/* SweetAlert2 custom styling */
+/* SweetAlert2 custom styling - Settings Page Optimized */
 .swal2-popup {
   border-radius: 12px !important;
   backdrop-filter: blur(8px) !important;
+  max-width: 320px !important; /* Fixed small width for desktop */
+  width: auto !important;
+  max-height: 50vh !important; /* Much smaller height */
+  overflow-y: auto !important; /* Enable scrolling */
 }
 
 .swal2-title {
   font-family: 'Inter', sans-serif !important;
   font-weight: 600 !important;
+  font-size: 14px !important; /* Smaller for both mobile & desktop */
 }
 
 .swal2-html {
   font-family: 'Inter', sans-serif !important;
-  font-size: 14px !important;
-  line-height: 1.5 !important;
+  font-size: 11px !important; /* Much smaller text */
+  line-height: 1.3 !important;
+  white-space: pre-line !important;
+  padding: 0 8px !important; /* Reduced padding */
+  max-height: 30vh !important; /* Much smaller content height */
+  overflow-y: auto !important; /* Enable scrolling */
 }
 
 .swal2-confirm {
-  border-radius: 8px !important;
+  border-radius: 6px !important; /* Smaller radius */
   font-weight: 500 !important;
-  padding: 10px 20px !important;
+  padding: 8px 16px !important; /* Much smaller touch target */
+  font-size: 12px !important; /* Smaller font */
+  background-color: #3085d6 !important; /* Make visible */
+  color: white !important; /* High contrast */
+  border: none !important; /* Clean look */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; /* Subtle shadow */
+  transition: all 0.2s ease !important; /* Smooth hover */
 }
 
 .swal2-cancel {
-  border-radius: 8px !important;
+  border-radius: 6px !important; /* Smaller radius */
   font-weight: 500 !important;
-  padding: 10px 20px !important;
+  padding: 8px 16px !important; /* Much smaller touch target */
+  font-size: 12px !important; /* Smaller font */
+  background-color: #d33 !important; /* Red for cancel */
+  color: white !important; /* High contrast */
+  border: none !important; /* Clean look */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; /* Subtle shadow */
+  transition: all 0.2s ease !important; /* Smooth hover */
+}
+
+/* Remove hover effects for buttons */
+.swal2-confirm:hover {
+  background-color: #3085d6 !important; /* Keep same color */
+  transform: none !important; /* Remove lift effect */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; /* Keep same shadow */
+}
+
+.swal2-cancel:hover {
+  background-color: #d33 !important; /* Keep same color */
+  transform: none !important; /* Remove lift effect */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; /* Keep same shadow */
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .swal2-popup {
+    max-width: 75vw !important; /* Mobile responsive */
+    max-height: 60vh !important; /* Slightly larger on mobile */
+  }
+  
+  .swal2-title {
+    font-size: 12px !important; /* Smaller on mobile */
+  }
+  
+  .swal2-html {
+    font-size: 10px !important; /* Even smaller on mobile */
+    padding: 0 6px !important; /* Tighter on mobile */
+  }
+  
+  .swal2-confirm {
+    padding: 10px 18px !important; /* Larger touch target on mobile */
+    font-size: 13px !important; /* Larger on mobile */
+  }
+  
+  .swal2-cancel {
+    padding: 10px 18px !important; /* Larger touch target on mobile */
+    font-size: 13px !important; /* Larger on mobile */
+  }
 }
 
 /* Toast notifications z-index fix */

@@ -61,6 +61,8 @@ export default function SettingsPageModern() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [initialSettings, setInitialSettings] = useState<Settings | null>(null)
+  const [wasReset, setWasReset] = useState(false)
   const [history, setHistory] = useState<SettingsHistoryEntry[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyPage, setHistoryPage] = useState(1)
@@ -74,6 +76,7 @@ export default function SettingsPageModern() {
         if (response.ok) {
           const data = await response.json()
           setSettings(data)
+          setInitialSettings(data) // Store initial loaded settings
         }
       } catch (error) {
         console.error('Failed to load settings:', error)
@@ -164,13 +167,18 @@ export default function SettingsPageModern() {
       if (response.ok) {
         const defaultSettings = await response.json()
         console.log('Reset settings received:', defaultSettings)
+        
+        // Check if values actually changed from initial loaded settings
+        const valuesChanged = initialSettings ? JSON.stringify(initialSettings) !== JSON.stringify(defaultSettings) : true
         setSettings(defaultSettings)
-        setHasChanges(false) // No changes since it's already saved
+        setInitialSettings(defaultSettings) // Update initial settings
+        setHasChanges(false) // Always set to false after successful reset
+        setWasReset(true) // Mark that reset was performed
         toast.success('Settings reset to defaults')
         
         await Swal.fire({
           title: 'Reset Complete!',
-          text: 'Settings have been reset to default values and saved to the database.',
+          text: 'Settings have been reset to default values and saved to database.',
           icon: 'success',
           timer: 3000,
           showConfirmButton: false
@@ -206,7 +214,10 @@ export default function SettingsPageModern() {
       if (response.ok) {
         const updatedSettings = await response.json()
         setSettings(updatedSettings)
-        setHasChanges(false)
+        
+        // Check if values actually changed from initial loaded settings
+        const valuesChanged = initialSettings ? JSON.stringify(initialSettings) !== JSON.stringify(updatedSettings) : false
+        setHasChanges(valuesChanged)
         toast.success('Settings saved successfully')
         
         await Swal.fire({
@@ -245,18 +256,36 @@ export default function SettingsPageModern() {
   // Update settings and track changes
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }))
-    setHasChanges(true)
+    setWasReset(false) // Reset wasReset flag when user makes changes
+    
+    // Check if values actually changed from initial loaded settings
+    const valuesChanged = initialSettings ? JSON.stringify({ ...settings, [key]: value }) !== JSON.stringify(initialSettings) : true
+    setHasChanges(valuesChanged)
   }
 
   const updateSignalWeight = (signal: keyof Settings['signal_weights'], value: number) => {
-    setSettings(prev => ({
-      ...prev,
+    setSettings(prev => {
+      const updatedSettings = {
+        ...prev,
+        signal_weights: {
+          ...prev.signal_weights,
+          [signal]: value
+        }
+      }
+      return updatedSettings
+    })
+    setWasReset(false) // Reset wasReset flag when user makes changes
+    
+    // Check if values actually changed from initial loaded settings
+    const updatedSettings = {
+      ...settings,
       signal_weights: {
-        ...prev.signal_weights,
+        ...settings.signal_weights,
         [signal]: value
       }
-    }))
-    setHasChanges(true)
+    }
+    const valuesChanged = initialSettings ? JSON.stringify(updatedSettings) !== JSON.stringify(initialSettings) : true
+    setHasChanges(valuesChanged)
   }
 
   return (
@@ -519,6 +548,7 @@ export default function SettingsPageModern() {
                   variant="outline" 
                   className="btn-premium-outline"
                   onClick={resetToDefaults}
+                  disabled={saving || !hasChanges || wasReset}
                 >
                   Reset to Defaults
                 </Button>
