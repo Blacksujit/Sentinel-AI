@@ -35,7 +35,7 @@ async def log_requests(request: Request, call_next):
 
     line = f"{request.method} {request.url.path} -> {response.status_code} ({duration_ms:.2f}ms)"
     print(line, flush=True)
-    logging.getLogger("uvicorn.access").info(line)
+    logging.info(line)
     return response
 
 # Include the analysis router

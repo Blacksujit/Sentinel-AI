@@ -224,16 +224,17 @@ export default function LandingPage() {
             >
               <Link href="/logs">View risk logs</Link>
             </Button>
-            <Button 
-              asChild 
-              className="bg-gradient-to-r from-electric-blue to-electric-violet hover:from-electric-blue/90 hover:to-electric-violet/90 text-white border-0 shadow-glow"
-              {...hoverGlow}
-            >
-              <Link href="/dashboard">
-                Open console
-                <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
-              </Link>
-            </Button>
+            <motion.div {...hoverGlow}>
+              <Button 
+                asChild 
+                className="bg-gradient-to-r from-electric-blue to-electric-violet hover:from-electric-blue/90 hover:to-electric-violet/90 text-white border-0 shadow-glow"
+              >
+                <Link href="/dashboard">
+                  Open console
+                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+                </Link>
+              </Button>
+            </motion.div>
           </motion.div>
 
           {/* Mobile Menu Button */}
@@ -294,16 +295,17 @@ export default function LandingPage() {
               >
                 <Link href="/logs" onClick={() => setTimeout(() => setMobileMenuOpen(false), 300)}>View risk logs</Link>
               </Button>
-              <Button 
-                asChild 
-                className="w-full bg-gradient-to-r from-electric-blue to-electric-violet hover:from-electric-blue/90 hover:to-electric-violet/90 text-white border-0 shadow-glow"
-                {...hoverGlow}
-              >
-                <Link href="/dashboard" onClick={() => setTimeout(() => setMobileMenuOpen(false), 300)}>
-                  Open console
-                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
-                </Link>
-              </Button>
+              <motion.div {...hoverGlow}>
+                <Button 
+                  asChild 
+                  className="w-full bg-gradient-to-r from-electric-blue to-electric-violet hover:from-electric-blue/90 hover:to-electric-violet/90 text-white border-0 shadow-glow"
+                >
+                  <Link href="/dashboard" onClick={() => setTimeout(() => setMobileMenuOpen(false), 300)}>
+                    Open console
+                    <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+              </motion.div>
             </div>
           </div>
         </motion.div>
@@ -369,8 +371,8 @@ export default function LandingPage() {
                       </span>
                       <motion.div
                         initial={{ x: "-100%" }}
-                        whileHover={{ x: "100%" }}
-                        transition={{ duration: 0.5 }}
+                        animate={{ x: "100%" }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                       />
                     </Link>
@@ -653,10 +655,6 @@ export default function LandingPage() {
                 key={item.title}
                 variants={sectionFade}
                 className="group border-navy-700 hover:border-primary/50 transition-all duration-300"
-                whileHover={{ 
-                  y: -4,
-                  boxShadow: '0 20px 40px rgba(76, 126, 243, 0.2)'
-                }}
               >
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient} shadow-lg">
@@ -818,10 +816,6 @@ export default function LandingPage() {
                 key={item.title}
                 variants={sectionFade}
                 className="border-navy-700 hover:border-primary/50 transition-all duration-300 p-6"
-                whileHover={{ 
-                  y: -4,
-                  boxShadow: '0 20px 40px rgba(76, 126, 243, 0.2)'
-                }}
               >
                 <div className="flex flex-col items-center text-center space-y-4">
                   <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient} shadow-lg flex-shrink-0">
