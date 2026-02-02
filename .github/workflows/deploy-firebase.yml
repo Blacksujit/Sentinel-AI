@@ -1,0 +1,62 @@
+name: Deploy to Firebase
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: Frontend/package-lock.json
+        
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        
+    - name: Install Firebase CLI
+      run: |
+        npm install -g firebase-tools
+        
+    - name: Authenticate to Firebase
+      run: |
+        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 -d > service-account.json
+        firebase login:ci --no-localhost
+      env:
+        FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        
+    - name: Install Frontend Dependencies
+      run: |
+        cd Frontend
+        npm install
+        
+    - name: Build Frontend
+      run: |
+        cd Frontend
+        cp next.config.firebase.js next.config.js
+        npm run build
+        
+    - name: Setup Firebase Functions
+      run: |
+        cd Backend
+        mkdir -p functions
+        cp main_firebase.py functions/main.py
+        cp requirements-firebase.txt functions/requirements.txt
+        touch functions/__init__.py
+        
+    - name: Deploy to Firebase
+      run: |
+        firebase deploy --token "${{ secrets.FIREBASE_TOKEN }}"
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

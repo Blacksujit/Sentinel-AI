@@ -12,6 +12,9 @@ from sqlalchemy.orm import Session
 import json
 from datetime import datetime
 
+# Import API key authentication
+from app.middleware.auth import get_api_key_dependency
+
 # Import centralized risk configuration
 from app.config.risk_config import (
     ALLOW_MAX,
@@ -262,7 +265,11 @@ async def get_risk_log_detail(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/analyze/external", response_model=ExternalAnalyzeResponse)
-async def analyze_external_interaction(request: ExternalAnalyzeRequest, db: Session = Depends(get_db)) -> ExternalAnalyzeResponse:
+async def analyze_external_interaction(
+    request: ExternalAnalyzeRequest, 
+    db: Session = Depends(get_db),
+    api_key: str = Depends(get_api_key_dependency())
+) -> ExternalAnalyzeResponse:
     """
     External API endpoint for client applications to analyze AI interactions in real-time.
     
@@ -283,7 +290,7 @@ async def analyze_external_interaction(request: ExternalAnalyzeRequest, db: Sess
     Returns:
         Real-time analysis results with risk scores, flags, and recommendations
     """
-    print(f"🔥 EXTERNAL API CALL: Source={request.source}, User={request.user_id}, Session={request.session_id}")
+    print(f"🔥 EXTERNAL API CALL: Source={request.source}, User={request.user_id}, Session={request.session_id}, API Key={api_key[:8]}...")
     
     # Reload settings if changed
     settings_service.reload_settings()

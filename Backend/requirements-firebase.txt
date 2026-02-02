@@ -1,0 +1,43 @@
+# Firebase Functions Requirements
+# Core Firebase Functions
+firebase-functions==2.3.0
+firebase-admin==6.4.0
+
+# FastAPI and ASGI server
+fastapi==0.128.0
+uvicorn[standard]==0.25.0
+
+# Database and ORM
+sqlalchemy==2.0.45
+pydantic==2.8.0
+
+# HTTP client
+httpx==0.28.1
+
+# Environment variables
+python-dotenv==1.0.0
+
+# CORS support
+python-multipart==0.0.6
+
+# JSON handling
+orjson==3.10.7
+
+# Date/time utilities
+python-dateutil==2.9.0
+
+# Text processing
+numpy==1.26.4
+scikit-learn==1.5.0
+
+# Machine Learning (lightweight for Firebase)
+sentence-transformers==2.7.0
+
+# Logging
+structlog==24.1.0
+
+# Async support
+asyncio==3.4.3
+
+# File handling
+aiofiles==23.2.1

@@ -1,5 +1,6 @@
 import logging
 import time
+import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
@@ -8,6 +9,10 @@ from app.api.settings_routes_db import router as settings_router
 from app.storage.db import init_db
 
 app = FastAPI(title="Sentinel AI API", version="1.0.0")
+
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()  # Load from .env file
 
 # Add CORS middleware
 app.add_middleware(
