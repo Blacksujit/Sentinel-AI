@@ -72,7 +72,7 @@ export function useCursorInteractions() {
       }
 
       // Check proximity to interactive elements
-      let closestElement: InteractiveElement | null = null
+      let closestElement: { element: HTMLElement; riskLevel?: 'critical' | 'high' | 'medium' | 'low' } | null = null
       let closestDistance = Infinity
 
       interactiveElements.current.forEach(({ element, riskLevel }) => {
@@ -87,7 +87,7 @@ export function useCursorInteractions() {
         }
       })
 
-      setCurrentRiskLevel(closestElement?.riskLevel || null)
+      setCurrentRiskLevel((closestElement as any)?.riskLevel || null)
     }
 
     const handleMouseEnter = () => setIsHovering(true)

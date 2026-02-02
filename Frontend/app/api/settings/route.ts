@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     } catch {
       return NextResponse.json({ message: text }, { status: response.status })
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error.name === 'AbortError') {
       return NextResponse.json(
         { message: 'Timeout error: Unable to connect to backend' },

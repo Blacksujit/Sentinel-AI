@@ -20,8 +20,8 @@ export {
 } from './tooltip'
 export { Separator } from './separator'
 export { Slider } from './slider'
-export { Switch } from './switch'
-export { Label } from './label'
+export { Switch } from './Switch'
+export { Label } from './Label'
 export { 
   Dialog,
   DialogTrigger,

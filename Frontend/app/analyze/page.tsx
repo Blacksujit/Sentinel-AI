@@ -79,7 +79,7 @@ export default function AnalyzePage() {
           const interval = setInterval(() => {
             countdown--;
             const el = document.getElementById('countdown');
-            if (el) el.textContent = countdown;
+            if (el) el.textContent = countdown.toString();
             if (countdown <= 0) clearInterval(interval);
           }, 1000);
         },
