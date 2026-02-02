@@ -6,10 +6,11 @@ to detect potential risks and anomalies.
 """
 print("ROUTES.PY LOADED")
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 import json
+from datetime import datetime
 
 # Import centralized risk configuration
 from app.config.risk_config import (
@@ -19,7 +20,7 @@ from app.config.risk_config import (
     ESCALATE_MIN
 )
 
-from app.api.schemas import AnalyzeRequest, AnalyzeResponse, RiskLogResponse
+from app.api.schemas import AnalyzeRequest, AnalyzeResponse, RiskLogResponse, ExternalAnalyzeRequest, ExternalAnalyzeResponse
 from app.monitors.prompt_anomaly import detect_prompt_anomaly
 from app.scoring.output_risk import score_output_risk
 from app.scoring.aggregator import aggregate_risk_signals
@@ -202,6 +203,10 @@ async def get_risk_logs(limit: int = 50, db: Session = Depends(get_db)):
                 if getattr(log, 'thresholds_applied', None)
                 else None
             ),
+            source=getattr(log, 'source', None),  # Add external source
+            client_metadata=getattr(log, 'client_metadata', None),  # Add client metadata
+            user_id=getattr(log, 'user_id', None),  # Add user ID
+            session_id=getattr(log, 'session_id', None),  # Add session ID
         )
         for log in logs
     ]
@@ -249,5 +254,142 @@ async def get_risk_log_detail(id: int, db: Session = Depends(get_db)):
         decision_reason=log.decision_reason,
         settings_version=getattr(log, 'settings_version', None),
         thresholds_applied=thresholds_applied,
+        source=getattr(log, 'source', None),  # Add external source
+        client_metadata=getattr(log, 'client_metadata', None),  # Add client metadata
+        user_id=getattr(log, 'user_id', None),  # Add user ID
+        session_id=getattr(log, 'session_id', None),  # Add session ID
+    )
+
+
+@router.post("/analyze/external", response_model=ExternalAnalyzeResponse)
+async def analyze_external_interaction(request: ExternalAnalyzeRequest, db: Session = Depends(get_db)) -> ExternalAnalyzeResponse:
+    """
+    External API endpoint for client applications to analyze AI interactions in real-time.
+    
+    This endpoint allows external client applications (like customer support chatbots)
+    to send prompt/response pairs for real-time risk analysis and monitoring.
+    
+    Features:
+    - Real-time risk analysis with same engine as internal analysis
+    - Source identification for tracking which client application sent the data
+    - User and session tracking for comprehensive monitoring
+    - Client metadata support for custom application data
+    - Immediate response with risk assessment and recommended actions
+    
+    Args:
+        request: External analysis request with prompt, response, and metadata
+        db: Database session for logging
+        
+    Returns:
+        Real-time analysis results with risk scores, flags, and recommendations
+    """
+    print(f"🔥 EXTERNAL API CALL: Source={request.source}, User={request.user_id}, Session={request.session_id}")
+    
+    # Reload settings if changed
+    settings_service.reload_settings()
+    
+    # Get current settings version for logging
+    settings_version = settings_service.get_settings_version()
+    
+    # Step 1: Run prompt signal detectors (same as internal analysis)
+    prompt_signals = signal_registry.run_detectors("prompt", prompt=request.prompt)
+    
+    # Step 2: Run output signal detectors
+    output_signals = signal_registry.run_detectors("output", text=request.response)
+    
+    # Debug print to show signal propagation
+    print(f"DEBUG EXTERNAL: prompt_signals = {prompt_signals}")
+    print(f"DEBUG EXTERNAL: output_signals = {output_signals}")
+    
+    # Step 3: Normalize detector outputs into stable signal envelope
+    prompt_anomaly_result = prompt_signals.get("prompt_anomaly", {})
+    jailbreak_result = prompt_signals.get("jailbreak_rag", {})
+    output_risk_result = output_signals.get("output_risk", {})
+    
+    normalized_prompt = {
+        "present": prompt_anomaly_result.get("is_anomalous") is True
+    }
+    
+    normalized_jailbreak = {
+        "present": jailbreak_result.get("jailbreak_detected") is True
+    }
+    
+    normalized_output = {
+        "present": "unsafe_output" in output_risk_result.get("flags", []),
+        "flags": output_risk_result.get("flags", [])
+    }
+    
+    # Step 4: Use aggregator with normalized signal envelope
+    aggregated_result = aggregate_risk_signals(
+        prompt_signals=normalized_prompt,
+        jailbreak_signals=normalized_jailbreak,
+        output_signals=normalized_output
+    )
+    
+    # Step 5: Use risk reasoner to analyze aggregated results
+    risk_summary = risk_reasoner.analyze_aggregated_result(
+        final_risk_score=aggregated_result["final_score"],
+        flags=aggregated_result["flags"],
+        confidence=aggregated_result.get("confidence", 1.0)
+    )
+    
+    # Step 6: Use policy engine to make decision
+    policy_decision = policy_engine.evaluate(risk_summary)
+    
+    # Step 7: Use action executor to carry out decision
+    action_result = action_executor.execute(policy_decision)
+    
+    # Step 8: Align final_risk_score with decision if needed
+    aligned_final_score = aggregated_result["final_score"]
+    if aligned_final_score <= 0:
+        decision_scores = {
+            "allow": ALLOW_MAX,
+            "warn": (WARN_MIN + BLOCK_MIN) / 2,
+            "block": (BLOCK_MIN + ESCALATE_MIN) / 2,
+            "escalate": ESCALATE_MIN
+        }
+        aligned_final_score = decision_scores.get(policy_decision.action.value.lower(), ALLOW_MAX)
+    
+    # Step 9: Log the analysis result to database with external source information
+    analysis_id = None
+    try:
+        # Create enhanced log entry with external source information
+        logged_event = log_risk_event(
+            db=db,
+            prompt=request.prompt,
+            response=request.response,
+            final_risk_score=aligned_final_score,
+            flags=aggregated_result["flags"],
+            confidence=aggregated_result.get("confidence"),
+            decision=policy_decision.action.value,
+            decision_reason=policy_decision.explanation,
+            signals=aggregated_result["flags"],
+            settings_version=settings_version,
+            thresholds_applied=settings_service.get_thresholds(),
+            source=request.source,  # New: External source identification
+            user_id=request.user_id,  # New: User tracking
+            session_id=request.session_id,  # New: Session tracking
+            client_metadata=request.client_metadata  # New: Client metadata
+        )
+        analysis_id = logged_event.id if logged_event else None
+        
+    except Exception as e:
+        print(f"❌ Failed to log external risk event: {e}")
+        # Continue with API response - logging failures are non-blocking
+    
+    # Step 10: Return final analysis results for real-time client response
+    print(f"✅ EXTERNAL ANALYSIS COMPLETE: Score={aligned_final_score:.3f}, Decision={policy_decision.action.value}, ID={analysis_id}")
+    
+    return ExternalAnalyzeResponse(
+        final_risk_score=aligned_final_score,
+        flags=aggregated_result["flags"],
+        confidence=aggregated_result.get("confidence"),
+        decision=policy_decision.action.value,
+        action_taken=action_result.action.value,
+        decision_reason=policy_decision.explanation,
+        settings_version=settings_version,
+        thresholds_applied=settings_service.get_thresholds(),
+        analysis_id=analysis_id,
+        timestamp=datetime.utcnow()
     )
 

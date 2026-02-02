@@ -16,6 +16,10 @@ def log_risk_event(
     signals: List[str] = None,
     settings_version: Optional[int] = None,
     thresholds_applied: Optional[dict] = None,
+    source: Optional[str] = None,  # New: External source identification
+    user_id: Optional[str] = None,  # New: User tracking
+    session_id: Optional[str] = None,  # New: Session tracking
+    client_metadata: Optional[dict] = None,  # New: Client metadata
 ):
     """Log a risk analysis event to the database with full audit information."""
     try:
@@ -31,6 +35,11 @@ def log_risk_event(
             signals=json.dumps(signals or []),  # New audit field - as JSON
             settings_version=settings_version,
             thresholds_applied=json.dumps(thresholds_applied) if thresholds_applied is not None else None,
+            # New external integration fields
+            source=source,
+            user_id=user_id,
+            session_id=session_id,
+            client_metadata=client_metadata,
         )
         db.add(risk_log)
         db.commit()

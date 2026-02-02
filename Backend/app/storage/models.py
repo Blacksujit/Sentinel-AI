@@ -22,3 +22,9 @@ class RiskLog(Base):
     # Settings traceability
     settings_version = Column(Integer, nullable=True)
     thresholds_applied = Column(Text, nullable=True)  # JSON string
+    
+    # External integration fields
+    source = Column(String, nullable=True)  # Source application identifier (e.g., "customer-support-chatbot")
+    user_id = Column(String, nullable=True)  # End user identifier from client application
+    session_id = Column(String, nullable=True)  # Session identifier for tracking conversations
+    client_metadata = Column(JSON, nullable=True)  # Client-specific metadata as JSON
