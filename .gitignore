@@ -186,3 +186,289 @@ dist/
 
 # add .pytest_cache
 .pytest_cache/
+
+# ========================================
+# 🔒 PRIVATE & SENSITIVE FILES
+# ========================================
+
+# API Keys & Secrets
+*.key
+*.pem
+*.p12
+*.crt
+*.pfx
+api_keys.txt
+secrets.txt
+credentials.json
+service-account.json
+firebase-credentials.json
+vercel-credentials.json
+
+# Environment Files (Private)
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.backup
+.env.old
+.env.*
+
+# Deployment Configurations (Private)
+firebase.json
+.vercel
+vercel.json
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+
+# Database Files (Private)
+*.db
+*.sqlite
+*.sqlite3
+sentinel_ai.db
+Backend/sentinel_ai.db
+Backend/*.db
+Backend/data/
+Backend/logs/
+
+# SDK Private Files
+sentinelai-sdk/dist/
+sentinelai-sdk/build/
+sentinelai-sdk/.vercel
+sentinelai-sdk/vercel.json
+sentinelai-sdk/.env.local
+sentinelai-sdk/api_keys.txt
+sentinelai-sdk/secrets.txt
+
+# ========================================
+# 🚀 DEPLOYMENT & BUILD FILES
+# ========================================
+
+# Firebase
+Backend/functions/
+Backend/.firebase/
+Backend/firebase-debug.*
+Backend/vercel.json
+
+# Vercel
+.vercel/
+.vercel/output/
+.vercel/cache/
+vercel.json
+
+# Build Outputs (Keep local, don't push)
+Frontend/.next/
+Frontend/out/
+Frontend/build/
+Frontend/dist/
+Frontend/.vercel/
+
+# ========================================
+# 📊 ANALYTICS & LOGS
+# ========================================
+
+# Analytics Data
+analytics/
+logs/
+*.log.*
+error.log
+access.log
+debug.log
+
+# Monitoring
+monitoring/
+metrics/
+performance/
+
+# ========================================
+# 🔐 SECURITY & PRIVACY
+# ========================================
+
+# User Data (Never commit!)
+user_data/
+user_uploads/
+private_data/
+sensitive_data/
+personal_info/
+
+# Backup Files
+*.backup
+*.bak
+*.old
+*.orig
+*.rej
+
+# Temporary Certificates
+*.tmp.crt
+*.tmp.key
+temp_certs/
+
+# ========================================
+# 🛠️ DEVELOPMENT TOOLS
+# ========================================
+
+# Local Development Scripts
+deploy-local.bat
+deploy-local.sh
+test-deploy.*
+local-deploy.*
+
+# Configuration Overrides
+config.local.*
+settings.local.*
+override.*
+
+# ========================================
+# 📱 MOBILE & CROSS-PLATFORM
+# ========================================
+
+# Mobile builds
+mobile/build/
+mobile/dist/
+mobile/.expo/
+
+# Cross-platform
+electron/build/
+electron/dist/
+
+# ========================================
+# 🌐 CLOUD PROVIDER FILES
+# ========================================
+
+# AWS
+.aws/
+aws-credentials.json
+ec2-keypair.pem
+
+# Google Cloud
+gcp-credentials.json
+service-account-key.json
+
+# Azure
+azure-credentials.json
+azure-config.json
+
+# Digital Ocean
+do-credentials.json
+digitalocean.sh
+
+# ========================================
+# 📦 PACKAGE MANAGER CACHES
+# ========================================
+
+# Python
+pip-cache/
+.cache/
+.mypy_cache/
+.dmypy.json
+.pyre/
+
+# Node.js
+.npm/
+.yarn/
+.pnpm-store/
+
+# ========================================
+# 🧪 TESTING & QA
+# ========================================
+
+# Test Results
+test-results/
+coverage-reports/
+test-reports/
+benchmark-results/
+
+# E2E Testing
+playwright-report/
+test-results/
+cypress/videos/
+cypress/screenshots/
+
+# ========================================
+# 📚 DOCUMENTATION (Private)
+# ========================================
+
+# Private Documentation
+docs/private/
+docs/internal/
+docs/confidential/
+
+# Draft Documentation
+docs/draft/
+docs/wip/
+docs/todo/
+
+# ========================================
+# 🎨 DESIGN & ASSETS (Private)
+# ========================================
+
+# Private Assets
+assets/private/
+assets/proprietary/
+assets/licensed/
+
+# Design Files (Private)
+design/private/
+sketch/private/
+figma-private/
+
+# ========================================
+# 🔧 DEVELOPMENT ENVIRONMENT
+# ========================================
+
+# Local Configuration
+config.local.js
+config.local.json
+settings.local.js
+settings.local.json
+
+# Database Seeds (Private)
+seeds/private/
+fixtures/private/
+mock-data/private/
+
+# ========================================
+# 📈 PERFORMANCE & MONITORING
+# ========================================
+
+# Performance Data
+performance-data/
+benchmark-data/
+speed-test-results/
+
+# Monitoring Data
+monitoring-data/
+health-checks/
+uptime-data/
+
+# ========================================
+# 🌍 INTERNATIONALIZATION
+# ========================================
+
+# Translation Files (Private)
+i18n/private/
+translations/private/
+locale/private/
+
+# ========================================
+# 🎯 FEATURE FLAGS & EXPERIMENTS
+# ========================================
+
+# Feature Flags (Private)
+feature-flags/private/
+experiments/private/
+a-b-tests/private/
+
+# ========================================
+# 📝 NOTES & DOCUMENTATION
+# ========================================
+
+# Private Notes
+notes/private/
+ideas/private/
+thoughts/private/
+
+# Meeting Notes
+meeting-notes/private/
+standup-notes/private/
+retro-notes/private/
