@@ -1,4 +1,4 @@
-# SentinelAI Backend (DB Persistence)
+# Sentinel-AI Backend (DB Persistence)
 
 ## Overview
 This backend exposes a FastAPI service for:
