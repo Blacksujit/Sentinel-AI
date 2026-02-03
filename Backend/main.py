@@ -60,6 +60,20 @@ async def api_health_check():
     return {"status": "ok"}
 
 
+@app.get("/api/debug")
+async def debug_info():
+    """Debug endpoint to check database and environment"""
+    import os
+    from app.storage.db import SQLALCHEMY_DATABASE_URL
+    
+    return {
+        "database_url_set": bool(os.getenv("DATABASE_URL")),
+        "database_url_prefix": SQLALCHEMY_DATABASE_URL.split("://")[0] if "://" in SQLALCHEMY_DATABASE_URL else "unknown",
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        "sqlalchemy_url": SQLALCHEMY_DATABASE_URL[:50] + "..." if len(SQLALCHEMY_DATABASE_URL) > 50 else SQLALCHEMY_DATABASE_URL
+    }
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint to verify API is running."""
