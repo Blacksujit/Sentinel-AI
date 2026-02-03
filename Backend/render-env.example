@@ -3,7 +3,7 @@
 
 # Environment
 ENVIRONMENT=production
-PYTHON_VERSION=3.11
+PYTHON_VERSION=3.11.5
 
 # Database (if using Render PostgreSQL)
 DATABASE_URL=postgresql://username:password@host:5432/database_name
