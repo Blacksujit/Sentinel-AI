@@ -37,7 +37,6 @@
     "**/*-modern.tsx",
     "**/LogsPageClient.tsx",
     "**/RiskLogDetailClient.tsx",
-    "**/TopNavbar.tsx",
-    "**/components/ui/[A-Z]*.tsx"
+    "**/TopNavbar.tsx"
   ]
 }
