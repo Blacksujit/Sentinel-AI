@@ -163,7 +163,6 @@ models/
 # Logs
 Backend/logs/
 *.log
-Frontend/logs/
 
 # Temporary files
 tmp/
@@ -264,7 +263,6 @@ Frontend/dist/
 
 # Analytics Data
 analytics/
-logs/
 *.log.*
 error.log
 access.log
@@ -272,7 +270,6 @@ debug.log
 
 # Monitoring
 monitoring/
-metrics/
 performance/
 
 # ========================================
