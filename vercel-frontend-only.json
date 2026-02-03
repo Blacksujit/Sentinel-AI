@@ -4,7 +4,7 @@
   "installCommand": "cd Frontend && npm install",
   "framework": "nextjs",
   "env": {
-    "NEXT_PUBLIC_API_URL": "@backend-url",
+    "NEXT_PUBLIC_API_URL": "/api",    
     "NEXT_PUBLIC_ENVIRONMENT": "production"
   }
 }
