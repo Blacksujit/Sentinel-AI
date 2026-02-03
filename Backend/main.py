@@ -22,7 +22,7 @@ app.add_middleware(
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
-        "https://your-app-name.vercel.app",  # Replace with your Vercel frontend URL
+        "https://sentinel-ai-hazel.vercel.app",  # Your actual Vercel frontend URL
     ],  # Frontend URLs
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
