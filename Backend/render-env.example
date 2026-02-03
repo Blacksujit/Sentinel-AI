@@ -1,0 +1,19 @@
+# Render Environment Variables Example
+# Copy this to .env.render and update with your values
+
+# Environment
+ENVIRONMENT=production
+PYTHON_VERSION=3.11
+
+# Database (if using Render PostgreSQL)
+DATABASE_URL=postgresql://username:password@host:5432/database_name
+
+# API Configuration
+SENTINELAI_API_KEYS=your-api-key-here,another-key-here
+API_KEY_HEADER=X-API-Key
+
+# CORS Settings
+ALLOWED_ORIGINS=https://your-frontend.vercel.app,https://yourdomain.com
+
+# Logging
+LOG_LEVEL=INFO
