@@ -1,6 +1,7 @@
 import { AppLayoutModern } from '../components/layout/AppLayoutModern'
 import { LogsPageClientModern } from './LogsPageClientModern'
 import { headers } from 'next/headers'
+export const dynamic = 'force-dynamic'
 
 export default async function LogsPageModern() {
   // Fetch data on the server with error handling
