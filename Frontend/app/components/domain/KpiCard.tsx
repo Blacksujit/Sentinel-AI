@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
 

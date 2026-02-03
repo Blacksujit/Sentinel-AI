@@ -1,7 +1,7 @@
 // UI Foundation Components
-export { Button } from './button'
+export { Button } from './Button'
 export { Card } from './Card'
-export { Badge } from './badge'
+export { Badge } from './Badge'
 export { Input } from './input'
 export { Select } from './select'
 export { Table } from './table'
@@ -20,8 +20,8 @@ export {
 } from './tooltip'
 export { Separator } from './separator'
 export { Slider } from './slider'
-export { Switch } from './Switch'
-export { Label } from './Label'
+export { Switch } from './switch'
+export { Label } from './label'
 export { 
   Dialog,
   DialogTrigger,
