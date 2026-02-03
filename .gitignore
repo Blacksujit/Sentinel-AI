@@ -215,9 +215,7 @@ vercel-credentials.json
 
 # Deployment Configurations (Private)
 firebase.json
-.vercel
-vercel.json
-.firebase/
+.vercel/
 firebase-debug.log
 firebase-debug.*.log
 
@@ -248,20 +246,17 @@ sentinelai-sdk/secrets.txt
 Backend/functions/
 Backend/.firebase/
 Backend/firebase-debug.*
-Backend/vercel.json
 
 # Vercel
-.vercel/
 .vercel/output/
 .vercel/cache/
-vercel.json
+!vercel.json
 
 # Build Outputs (Keep local, don't push)
 Frontend/.next/
 Frontend/out/
 Frontend/build/
 Frontend/dist/
-Frontend/.vercel/
 
 # ========================================
 # 📊 ANALYTICS & LOGS
