@@ -7,8 +7,17 @@ from sqlalchemy.orm import sessionmaker
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sentinel_ai.db")
 
 # Configure engine based on database type
-if SQLALCHEMY_DATABASE_URL.startswith("postgresql"):
-    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+if SQLALCHEMY_DATABASE_URL.startswith("postgresql") or SQLALCHEMY_DATABASE_URL.startswith("postgres"):
+    # Render typically provides DATABASE_URL as postgresql://...
+    # Use psycopg (v3) driver explicitly for compatibility with newer Python versions.
+    if SQLALCHEMY_DATABASE_URL.startswith("postgresql://"):
+        sqlalchemy_url = SQLALCHEMY_DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+    elif SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+        sqlalchemy_url = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+    else:
+        sqlalchemy_url = SQLALCHEMY_DATABASE_URL
+
+    engine = create_engine(sqlalchemy_url, pool_pre_ping=True)
 else:
     # SQLite configuration
     engine = create_engine(
@@ -28,7 +37,10 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
     # Lightweight schema migrations for SQLite only
-    if not SQLALCHEMY_DATABASE_URL.startswith("postgresql"):
+    if not (
+        SQLALCHEMY_DATABASE_URL.startswith("postgresql")
+        or SQLALCHEMY_DATABASE_URL.startswith("postgres")
+    ):
         with engine.connect() as conn:
             try:
                 cols = [row[1] for row in conn.execute(text("PRAGMA table_info('risk_logs')"))]

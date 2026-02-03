@@ -54,6 +54,11 @@ app.include_router(baseline_router, prefix="/api")
 app.include_router(settings_router, prefix="/api")
 
 
+@app.get("/api/health")
+async def api_health_check():
+    return {"status": "ok"}
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint to verify API is running."""
