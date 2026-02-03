@@ -8,8 +8,12 @@ and matches known jailbreak patterns against incoming prompts to identify potent
 
 from typing import Dict, List, Optional
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+
+try:
+    from sentence_transformers import SentenceTransformer  # type: ignore
+except Exception:
+    SentenceTransformer = None
 
 from app.knowledge.jailbreak_patterns import JAILBREAK_PATTERNS
 
@@ -27,8 +31,14 @@ class JailbreakRAGDetector:
             model_name: Name of the sentence transformer model to use
             similarity_threshold: Minimum similarity score to consider a match
         """
-        self.model = SentenceTransformer(model_name)
         self.similarity_threshold = similarity_threshold
+
+        if SentenceTransformer is None:
+            self.model = None
+            self._pattern_embeddings = np.array([])
+            return
+
+        self.model = SentenceTransformer(model_name)
         
         # Pre-embed all jailbreak patterns for efficient matching
         self._pattern_embeddings = None
@@ -57,6 +67,9 @@ class JailbreakRAGDetector:
         Returns:
             Dictionary with detection results or empty dict if no match
         """
+        if self.model is None:
+            return {}
+
         if not prompt or not JAILBREAK_PATTERNS:
             return {}
         
