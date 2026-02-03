@@ -69,7 +69,7 @@ async def debug_info():
     return {
         "database_url_set": bool(os.getenv("DATABASE_URL")),
         "database_url_prefix": SQLALCHEMY_DATABASE_URL.split("://")[0] if "://" in SQLALCHEMY_DATABASE_URL else "unknown",
-        "environment": os.getenv("ENVIRONMENT", "development"),
+        "environment": os.getenv("ENVIRONMENT", "production"),  # Default to production
         "sqlalchemy_url": SQLALCHEMY_DATABASE_URL[:50] + "..." if len(SQLALCHEMY_DATABASE_URL) > 50 else SQLALCHEMY_DATABASE_URL
     }
 
