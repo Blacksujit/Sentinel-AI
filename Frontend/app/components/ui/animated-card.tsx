@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, type MotionProps } from 'framer-motion'
-import { Card } from './card'
+import { Card } from './Card'
 import { cn } from '@/lib/utils'
 import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from 'react'
 

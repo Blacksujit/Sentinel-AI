@@ -1,6 +1,6 @@
 // UI Foundation Components
 export { Button } from './button'
-export { Card } from './card'
+export { Card } from './Card'
 export { Badge } from './badge'
 export { Input } from './input'
 export { Select } from './select'

@@ -3,7 +3,7 @@
 import * as React from 'react'
 
 import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
+import { Card } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
 
 interface KpiCardProps extends React.HTMLAttributes<HTMLDivElement> {
