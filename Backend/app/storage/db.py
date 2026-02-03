@@ -1,19 +1,25 @@
+import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./sentinel_ai.db"
+# Use PostgreSQL if DATABASE_URL is provided, otherwise fallback to SQLite
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sentinel_ai.db")
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+# Configure engine based on database type
+if SQLALCHEMY_DATABASE_URL.startswith("postgresql"):
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+else:
+    # SQLite configuration
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False)
 
 Base = declarative_base()
 
 def init_db():
-
     # Import models so they register on the shared Base metadata before create_all
     from app.storage import models as _risk_log_models  # noqa: F401
     from app.storage import prompt_baselines as _prompt_baseline_models  # noqa: F401
@@ -21,19 +27,20 @@ def init_db():
 
     Base.metadata.create_all(bind=engine)
 
-    # Lightweight schema migrations for SQLite (add columns if missing)
-    with engine.connect() as conn:
-        try:
-            cols = [row[1] for row in conn.execute(text("PRAGMA table_info('risk_logs')"))]
-            if "settings_version" not in cols:
-                conn.execute(text("ALTER TABLE risk_logs ADD COLUMN settings_version INTEGER"))
-            if "thresholds_applied" not in cols:
-                conn.execute(text("ALTER TABLE risk_logs ADD COLUMN thresholds_applied TEXT"))
-            conn.commit()
-        except Exception:
-            # If risk_logs doesn't exist yet, create_all above will create it and
-            # PRAGMA/ALTER will be attempted again on next startup.
-            pass
+    # Lightweight schema migrations for SQLite only
+    if not SQLALCHEMY_DATABASE_URL.startswith("postgresql"):
+        with engine.connect() as conn:
+            try:
+                cols = [row[1] for row in conn.execute(text("PRAGMA table_info('risk_logs')"))]
+                if "settings_version" not in cols:
+                    conn.execute(text("ALTER TABLE risk_logs ADD COLUMN settings_version INTEGER"))
+                if "thresholds_applied" not in cols:
+                    conn.execute(text("ALTER TABLE risk_logs ADD COLUMN thresholds_applied TEXT"))
+                conn.commit()
+            except Exception:
+                # If risk_logs doesn't exist yet, create_all above will create it and
+                # PRAGMA/ALTER will be attempted again on next startup.
+                pass
 
     # Seed default settings row if missing
     from app.services.database_service import DatabaseService, SettingsRepository

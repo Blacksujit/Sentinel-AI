@@ -5,6 +5,7 @@ uvicorn[standard]==0.25.0
 # Database and ORM
 sqlalchemy==2.0.45
 pydantic==2.8.0
+psycopg2-binary==2.9.9
 
 # HTTP client
 httpx==0.28.1
