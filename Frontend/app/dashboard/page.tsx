@@ -5,9 +5,10 @@ import Link from 'next/link'
 import { Badge, Button, Skeleton } from '@/components/ui'
 import { motion } from 'framer-motion'
 import { ShieldAlert, AlertTriangle, Activity, CheckCircle2, TrendingUp, ArrowRight } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useRiskLogs } from '@/hooks/useRiskLogs'
 import { useCursorInteractions } from '@/hooks/useCursorInteractions'
+import { BackendWarmupBanner } from '@/components/BackendWarmupBanner'
 import { 
   LineChart,
   Line,
@@ -187,6 +188,7 @@ export default function DashboardPageModern() {
 
   return (
     <AppLayoutModern>
+      <BackendWarmupBanner />
       <div className="min-h-screen bg-gradient-navy">
         {/* Premium animated background */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">

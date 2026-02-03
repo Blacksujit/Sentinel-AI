@@ -1,0 +1,21 @@
+name: Keep Render Backend Warm
+
+on:
+  schedule:
+    # Run every 5 minutes (cron: */5 * * * *)
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  keep-warm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render backend to keep it warm
+        run: |
+          echo "Pinging Render backend to prevent cold start..."
+          response=$(curl -s -w "%{http_code}" -o /dev/null "https://sentinel-ai-dml3.onrender.com/api/health")
+          if [ "$response" -eq 200 ]; then
+            echo "✅ Backend is warm (HTTP $response)"
+          else
+            echo "⚠️ Backend responded with HTTP $response (may be starting up)"
+          fi
