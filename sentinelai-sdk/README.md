@@ -10,15 +10,14 @@ Official Python SDK for integrating applications with SentinelAI AI safety platf
 pip install sentinelai-sdk
 ```
 
-### Basic Usage
+### Quick Start with Render Backend
 
 ```python
 from sentinelai import SentinelAIClient
 
-# Initialize client
+# Initialize client with your Render backend
 client = SentinelAIClient(
-    base_url="https://your-sentinelai.com",
-    api_key="your-api-key",
+    base_url="https://sentinel-ai-dml3.onrender.com",  # Your Render backend URL
     source="my-chatbot-app"
 )
 
@@ -71,26 +70,45 @@ pip install sentinelai-sdk
 ### From Source
 
 ```bash
-git clone https://github.com/yourcompany/sentinelai-sdk.git
-cd sentinelai-sdk
+git clone https://github.com/Blacksujit/Sentinel-AI.git
+cd Sentinel-AI/sentinelai-sdk
 pip install -e .
 ```
 
 ## 🚀 Getting Started
 
-### 1. Initialize Client
+### 1. Initialize Client with Render Backend
 
 ```python
 from sentinelai import SentinelAIClient
 
+# For development (no API key required)
 client = SentinelAIClient(
-    base_url="https://your-sentinelai-instance.com",
-    api_key="your-api-key",  # Optional for development
+    base_url="https://sentinel-ai-dml3.onrender.com",
     source="my-application"
+)
+
+# For production (with API key)
+client = SentinelAIClient(
+    base_url="https://sentinel-ai-dml3.onrender.com",
+    api_key="your-production-api-key",
+    source="production-app"
 )
 ```
 
-### 2. Analyze Interactions
+### 2. API Endpoints Available
+
+The SDK automatically connects to these Render backend endpoints:
+
+| Endpoint | Purpose | SDK Method |
+|----------|---------|------------|
+| `POST /api/analyze` | Analyze prompt/response pairs | `client.analyze()` |
+| `GET /api/health` | Check backend health | `client.health_check()` |
+| `GET /api/logs` | Retrieve risk logs | `client.get_risk_logs()` |
+| `GET /api/settings` | Get current settings | `client.get_settings()` |
+| `POST /api/settings/reset` | Reset to defaults | `client.reset_settings()` |
+
+### 3. Analyze Interactions
 
 ```python
 result = client.analyze(
