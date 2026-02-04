@@ -84,7 +84,16 @@ async def generate_api_key_route(
 ):
     if not payload.name.strip():
         raise HTTPException(status_code=400, detail="name is required")
-    return create_api_key(db, name=payload.name.strip())
+    try:
+        result = create_api_key(db, name=payload.name.strip())
+        db.commit()
+        return result
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/api-keys/{key_id}/revoke", response_model=ApiKeyListItem)
@@ -94,6 +103,15 @@ async def revoke_api_key_route(
     db: Session = Depends(get_db),
 ):
     try:
-        return revoke_api_key(db, key_id=key_id)
+        result = revoke_api_key(db, key_id=key_id)
+        db.commit()
+        return result
     except ValueError as e:
+        db.rollback()
         raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
