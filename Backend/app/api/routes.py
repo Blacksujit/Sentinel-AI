@@ -290,7 +290,7 @@ async def analyze_external_interaction(
     Returns:
         Real-time analysis results with risk scores, flags, and recommendations
     """
-    print(f"🔥 EXTERNAL API CALL: Source={request.source}, User={request.user_id}, Session={request.session_id}, API Key={api_key[:8]}...")
+    print(f"🔥 EXTERNAL API CALL: Source={request.source}, User={request.user_id}, Session={request.session_id}, API Key Prefix={api_key}")
     
     # Reload settings if changed
     settings_service.reload_settings()

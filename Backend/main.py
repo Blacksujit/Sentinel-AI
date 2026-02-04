@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
 from app.api.baseline_routes import router as baseline_router
 from app.api.settings_routes_db import router as settings_router
+from app.api.api_keys_routes import router as api_keys_router
 from app.storage.db import init_db
 
 app = FastAPI(title="Sentinel AI API", version="1.0.0")
@@ -53,6 +54,9 @@ app.include_router(baseline_router, prefix="/api")
 
 # Include the settings management router
 app.include_router(settings_router, prefix="/api")
+
+# Include the API keys management router
+app.include_router(api_keys_router, prefix="/api")
 
 
 @app.get("/api/health")

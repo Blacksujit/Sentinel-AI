@@ -32,6 +32,7 @@ def init_db():
     # Import models so they register on the shared Base metadata before create_all
     from app.storage import models as _risk_log_models  # noqa: F401
     from app.storage import prompt_baselines as _prompt_baseline_models  # noqa: F401
+    from app.storage import api_key_models as _api_key_models  # noqa: F401
     from app.utils import models as _settings_models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)

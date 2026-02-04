@@ -10,7 +10,8 @@ import {
   ScanSearch,
   FileText,
   Settings,
-  BarChart3
+  BarChart3,
+  KeyRound
 } from 'lucide-react'
 
 const navigationItems = [
@@ -19,6 +20,7 @@ const navigationItems = [
   { href: '/logs', label: 'Risk Logs', icon: FileText },
   { href: '/baselines', label: 'Baselines', icon: BarChart3 },
   { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/api-keys', label: 'API Keys', icon: KeyRound },
 ]
 
 interface SidebarProps {

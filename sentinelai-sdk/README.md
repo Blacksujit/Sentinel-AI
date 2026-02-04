@@ -57,7 +57,7 @@ else:
 
 ## 📚 Documentation
 
-Full documentation available at: [SentinelAI SDK Documentation](https://docs.sentinelai.com)
+Full documentation available at: [SentinelAI SDK Documentation](https://github.com/Blacksujit/Sentinel-AI/tree/main/Docs)
 
 ## 🔧 Installation
 
@@ -183,11 +183,20 @@ print(f"Average risk score: {summary['risk_statistics']['average_risk_score']:.3
 
 ## 🔒 Security & Authentication
 
+### Getting an API Key
+
+SentinelAI API keys are generated from the SentinelAI Console:
+
+- Console: https://sentinel-ai-hazel.vercel.app
+- API Keys page: https://sentinel-ai-hazel.vercel.app/api-keys
+
+Copy the generated key **once** and store it securely (for example in a secrets manager or environment variable).
+
 ### API Key Authentication
 
 ```python
 client = SentinelAIClient(
-    base_url="https://sentinelai.company.com",
+    base_url="https://sentinel-ai-dml3.onrender.com",
     api_key="your-production-api-key",
     source="production-app"
 )
@@ -196,10 +205,18 @@ client = SentinelAIClient(
 ### Environment Variables
 
 ```bash
-export SENTINELAI_URL="https://sentinelai.company.com"
+export SENTINELAI_URL="https://sentinel-ai-dml3.onrender.com"
 export SENTINELAI_API_KEY="your-api-key"
 export SENTINELAI_SOURCE="my-application"
 ```
+
+### HTTP Header Used
+
+The SDK sends the API key using:
+
+- `Authorization: Bearer <api_key>`
+
+The backend also supports `X-API-Key: <api_key>` if you want to integrate without the SDK.
 
 ```python
 import os
@@ -258,7 +275,7 @@ print(f"High risk interactions: {high_risk_count}")
 class SupportChatbot:
     def __init__(self):
         self.client = SentinelAIClient(
-            base_url="https://sentinelai.company.com",
+            base_url="https://sentinel-ai-dml3.onrender.com",
             source="customer-support"
         )
     
@@ -287,7 +304,7 @@ class SupportChatbot:
 class ContentModerator:
     def __init__(self):
         self.client = SentinelAIClient(
-            base_url="https://sentinelai.company.com",
+            base_url="https://sentinel-ai-dml3.onrender.com",
             source="content-moderation"
         )
     
@@ -305,7 +322,7 @@ class ContentModerator:
 
 ```python
 client = SentinelAIClient(
-    base_url="https://sentinelai.company.com",
+    base_url="https://sentinel-ai-dml3.onrender.com",
     api_key="your-api-key",
     source="advanced-app",
     timeout=15,           # Request timeout
@@ -336,8 +353,8 @@ MIT License - see LICENSE file for details.
 
 ## 🆘 Support
 
-- **Documentation**: [Full Documentation](https://docs.sentinelai.com)
-- **Issues**: [GitHub Issues](https://github.com/yourcompany/sentinelai-sdk/issues)
+- **Documentation**: [Full Documentation](https://github.com/Blacksujit/Sentinel-AI/tree/main/Docs)
+- **Issues**: [GitHub Issues](https://github.com/Blacksujit/Sentinel-AI/issues)
 - **Email**: support@sentinelai.com
 - **Discord**: [Community Discord](https://discord.gg/sentinelai)
 

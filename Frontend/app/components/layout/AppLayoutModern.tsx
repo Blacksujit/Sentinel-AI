@@ -33,6 +33,7 @@ export function AppLayoutModern({ children }: AppLayoutProps) {
     { href: '/logs', label: 'Risk Logs' },
     { href: '/baselines', label: 'Baselines' },
     { href: '/settings', label: 'Settings' },
+    { href: '/api-keys', label: 'API Keys' },
   ]
 
   const breadcrumbLabel = (() => {
@@ -41,6 +42,7 @@ export function AppLayoutModern({ children }: AppLayoutProps) {
     if (pathname?.startsWith('/logs/')) return 'Risk Logs / Detail'
     if (pathname === '/baselines') return 'Baselines'
     if (pathname === '/settings') return 'Settings'
+    if (pathname === '/api-keys') return 'API Keys'
     return 'Console'
   })()
 

@@ -8,6 +8,9 @@ from starlette.requests import Request
 import os
 from typing import Optional
 
+from app.services.database_service import DatabaseService
+from app.services.api_key_service import verify_api_key_hash
+
 # Configuration
 API_KEYS = os.getenv("SENTINELAI_API_KEYS", "").split(",") if os.getenv("SENTINELAI_API_KEYS") else []
 API_KEY_HEADER = "X-API-Key"  # Custom header for API keys
@@ -70,6 +73,25 @@ def verify_api_key(request: Request) -> Optional[str]:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key"
         )
+
+    # If no env-based API_KEYS are configured, verify against DB-backed hashed keys
+    if not API_KEYS:
+        try:
+            with DatabaseService.get_session() as db:
+                key_row = verify_api_key_hash(db, raw_key=api_key)
+                if not key_row:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid API key"
+                    )
+                return key_row.prefix
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="API key verification failed"
+            )
     
     return api_key
 
