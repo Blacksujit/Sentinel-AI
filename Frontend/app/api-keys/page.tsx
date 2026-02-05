@@ -28,8 +28,22 @@ export default function ApiKeysPage() {
   const [revokingId, setRevokingId] = useState<number | null>(null)
   const [keys, setKeys] = useState<ApiKeyListItem[]>([])
   const [name, setName] = useState('')
+  const [search, setSearch] = useState('')
 
   const activeCount = useMemo(() => keys.filter((k) => k.active).length, [keys])
+
+  const filteredKeys = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return keys
+    return keys.filter((k) => {
+      const status = k.active ? 'active' : 'revoked'
+      return (
+        k.name.toLowerCase().includes(q) ||
+        k.prefix.toLowerCase().includes(q) ||
+        status.includes(q)
+      )
+    })
+  }, [keys, search])
 
   const loadKeys = async () => {
     setLoading(true)
@@ -76,11 +90,33 @@ export default function ApiKeysPage() {
         title: 'API Key Created',
         html: `Copy this key now. You won't be able to see it again.<br/><br/><code style="word-break:break-all;display:block;padding:10px;background:#0b1220;color:#fff;border-radius:8px;">${data.api_key}</code>`,
         icon: 'success',
+        buttonsStyling: false,
+        customClass: {
+          confirmButton:
+            'inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors',
+          denyButton:
+            'inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-white/10 hover:bg-white/15 text-white border border-white/15 transition-colors',
+          actions: 'gap-2',
+        },
         showDenyButton: true,
         denyButtonText: 'Copy',
         preDeny: async () => {
+          const btn = Swal.getDenyButton()
           try {
             await navigator.clipboard.writeText(data.api_key)
+            if (btn) {
+              btn.classList.remove('bg-white/10', 'hover:bg-white/15', 'border-white/15')
+              btn.classList.add('bg-emerald-600')
+              btn.innerHTML =
+                '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-flex;">✓</span><span>Copied</span></span>'
+              btn.disabled = true
+              window.setTimeout(() => {
+                btn.disabled = false
+                btn.classList.remove('bg-emerald-600')
+                btn.classList.add('bg-white/10', 'hover:bg-white/15', 'border-white/15')
+                btn.textContent = 'Copy'
+              }, 1400)
+            }
             toast.success('API key copied')
           } catch {
             toast.error('Failed to copy')
@@ -181,39 +217,80 @@ export default function ApiKeysPage() {
           </MotionCard>
 
           <MotionCard variants={slideUp} className="card-premium p-6">
-            <div className="text-sm font-medium text-foreground">Your keys</div>
-            <div className="mt-4 space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm font-medium text-foreground">Your keys</div>
+              <div className="w-full sm:w-72">
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search keys (name, prefix, status)…"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4">
               {loading ? (
                 <div className="text-sm text-muted">Loading…</div>
               ) : keys.length === 0 ? (
                 <div className="text-sm text-muted">No keys created yet.</div>
+              ) : filteredKeys.length === 0 ? (
+                <div className="text-sm text-muted">No keys match your search.</div>
               ) : (
-                keys.map((k) => (
-                  <div
-                    key={k.id}
-                    className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/20 p-4 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-foreground">{k.name}</div>
-                      <div className="text-xs text-muted">Prefix: {k.prefix}</div>
-                      <div className="text-xs text-muted">
-                        Status: {k.active ? 'Active' : 'Revoked'}
-                        {k.last_used_at ? ` • Last used: ${new Date(k.last_used_at).toLocaleString()}` : ''}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="destructive"
-                        onClick={() => revokeKey(k.id)}
-                        disabled={!k.active || revokingId === k.id}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        {revokingId === k.id ? 'Revoking…' : 'Revoke'}
-                      </Button>
-                    </div>
+                <div className="rounded-xl border border-white/10 bg-black/20">
+                  <div className="max-h-[420px] overflow-auto">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="sticky top-0 z-10 bg-black/40 backdrop-blur">
+                        <tr className="border-b border-white/10">
+                          <th className="px-4 py-3 font-medium text-foreground">Name</th>
+                          <th className="px-4 py-3 font-medium text-foreground">Prefix</th>
+                          <th className="px-4 py-3 font-medium text-foreground">Status</th>
+                          <th className="px-4 py-3 font-medium text-foreground">Last used</th>
+                          <th className="px-4 py-3 font-medium text-foreground">Created</th>
+                          <th className="px-4 py-3 font-medium text-foreground text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredKeys.map((k) => (
+                          <tr key={k.id} className="border-b border-white/10 last:border-b-0">
+                            <td className="px-4 py-3">
+                              <div className="max-w-[280px] truncate font-semibold text-foreground">
+                                {k.name}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-muted">{k.prefix}</td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={
+                                  k.active
+                                    ? 'inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-1 text-xs font-medium text-emerald-200'
+                                    : 'inline-flex items-center rounded-full bg-red-500/15 px-2 py-1 text-xs font-medium text-red-200'
+                                }
+                              >
+                                {k.active ? 'Active' : 'Revoked'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-muted">
+                              {k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-muted">
+                              {k.created_at ? new Date(k.created_at).toLocaleString() : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <Button
+                                variant="destructive"
+                                onClick={() => revokeKey(k.id)}
+                                disabled={!k.active || revokingId === k.id}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                {revokingId === k.id ? 'Revoking…' : 'Revoke'}
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))
+                </div>
               )}
             </div>
           </MotionCard>
