@@ -13,8 +13,28 @@ const nextConfig = {
 
     return [
       {
-        source: '/api/:path*',
-        destination: `${destinationBase}/:path*`,
+        source: '/api/settings/:path*',
+        destination: `${destinationBase}/settings/:path*`,
+      },
+      {
+        source: '/api/logs/:path*',
+        destination: `${destinationBase}/logs/:path*`,
+      },
+      {
+        source: '/api/baselines/:path*',
+        destination: `${destinationBase}/baselines/:path*`,
+      },
+      {
+        source: '/api/analyze/:path*',
+        destination: `${destinationBase}/analyze/:path*`,
+      },
+      {
+        source: '/api/health',
+        destination: `${destinationBase}/health`,
+      },
+      {
+        source: '/api/debug',
+        destination: `${destinationBase}/debug`,
       },
     ]
   },

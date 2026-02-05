@@ -76,7 +76,18 @@ export default function ApiKeysPage() {
         title: 'API Key Created',
         html: `Copy this key now. You won't be able to see it again.<br/><br/><code style="word-break:break-all;display:block;padding:10px;background:#0b1220;color:#fff;border-radius:8px;">${data.api_key}</code>`,
         icon: 'success',
-        confirmButtonText: 'I have copied it',
+        showDenyButton: true,
+        denyButtonText: 'Copy',
+        preDeny: async () => {
+          try {
+            await navigator.clipboard.writeText(data.api_key)
+            toast.success('API key copied')
+          } catch {
+            toast.error('Failed to copy')
+          }
+          return false
+        },
+        confirmButtonText: 'Done',
         confirmButtonColor: '#3085d6',
       })
 
@@ -196,6 +207,7 @@ export default function ApiKeysPage() {
                         variant="destructive"
                         onClick={() => revokeKey(k.id)}
                         disabled={!k.active || revokingId === k.id}
+                        className="bg-red-600 hover:bg-red-700"
                       >
                         {revokingId === k.id ? 'Revoking…' : 'Revoke'}
                       </Button>
