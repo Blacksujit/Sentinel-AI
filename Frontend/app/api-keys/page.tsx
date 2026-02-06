@@ -227,6 +227,7 @@ export default function ApiKeysPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search keys (name, prefix, status)…"
+                  className="bg-black/30 text-foreground placeholder:text-white/40 border-white/15 focus-visible:ring-2 focus-visible:ring-blue-500/40"
                 />
               </div>
             </div>
