@@ -92,10 +92,13 @@ export default function ApiKeysPage() {
         icon: 'success',
         buttonsStyling: false,
         customClass: {
+          popup: 'rounded-2xl border border-white/10 bg-[#0b1220] text-white',
+          title: 'text-white',
+          htmlContainer: 'text-white/80',
           confirmButton:
             'inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors',
           denyButton:
-            'inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-white/10 hover:bg-white/15 text-white border border-white/15 transition-colors',
+            'inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-slate-700 hover:bg-slate-600 text-white border border-white/10 transition-colors',
           actions: 'gap-2',
         },
         showDenyButton: true,
@@ -105,7 +108,7 @@ export default function ApiKeysPage() {
           try {
             await navigator.clipboard.writeText(data.api_key)
             if (btn) {
-              btn.classList.remove('bg-white/10', 'hover:bg-white/15', 'border-white/15')
+              btn.classList.remove('bg-slate-700', 'hover:bg-slate-600', 'border-white/10')
               btn.classList.add('bg-emerald-600')
               btn.innerHTML =
                 '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-flex;">✓</span><span>Copied</span></span>'
@@ -113,7 +116,7 @@ export default function ApiKeysPage() {
               window.setTimeout(() => {
                 btn.disabled = false
                 btn.classList.remove('bg-emerald-600')
-                btn.classList.add('bg-white/10', 'hover:bg-white/15', 'border-white/15')
+                btn.classList.add('bg-slate-700', 'hover:bg-slate-600', 'border-white/10')
                 btn.textContent = 'Copy'
               }, 1400)
             }
