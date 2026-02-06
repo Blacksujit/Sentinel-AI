@@ -52,7 +52,9 @@ export function AppLayoutModern({ children }: AppLayoutProps) {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter:blur(0.75px)]">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold text-foreground">SentinelAI</h1>
+            <Link href="/">
+              <h1 className="text-xl font-bold text-foreground cursor-pointer">SentinelAI</h1>
+            </Link>
             <span className="hidden sm:inline text-sm text-muted-foreground">/</span>
             <span className="hidden sm:inline text-sm font-medium text-foreground">{breadcrumbLabel}</span>
           </div>

@@ -881,8 +881,10 @@ export default function LandingPage() {
                 <Shield className="h-4 w-4 text-white" aria-hidden="true" />
               </div>
               <div>
+                <Link href="/">
                 <span className="text-sm font-semibold text-white">SentinelAI</span>
                 <span className="text-xs text-navy-400 ml-1">AI safety console</span>
+                </Link>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
@@ -917,7 +919,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-8 border-t border-navy-800 pt-6 text-center">
-            <p className="text-xs text-navy-400">&copy; 2024 SentinelAI. All rights reserved.</p>
+            <p className="text-xs text-navy-400">&copy; 2026 SentinelAI. All rights reserved.</p>
           </div>
         </div>
       </footer>
