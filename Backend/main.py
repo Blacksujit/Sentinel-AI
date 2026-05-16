@@ -20,8 +20,12 @@ from app.storage.db import init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    init_db()
+    # Startup — fail fast with a clear message if DATABASE_URL is misconfigured
+    try:
+        init_db()
+    except Exception as e:
+        logging.critical("Database initialization failed: %s", e)
+        raise
     # Log all registered routes for debugging
     print("\n=== Registered Routes ===")
     for route in app.routes:

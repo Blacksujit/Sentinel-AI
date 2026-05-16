@@ -1,21 +1,35 @@
+# OPTIONAL: Prevent Render free-tier cold starts.
+# WARNING: Frequent cron jobs exhaust GitHub Actions minutes (~288 runs/day at */5).
+# Default: manual only. Enable scheduled warm-up only if you accept the CI cost.
+
 name: Keep Render Backend Warm
 
 on:
-  schedule:
-    # Run every 5 minutes (cron: */5 * * * *)
-    - cron: '*/5 * * * *'
-  workflow_dispatch: # Allow manual trigger (optional)
+  # Manual trigger only (safe for GitHub Actions quota)
+  workflow_dispatch:
+  # Uncomment for scheduled warm-up — Render free tier sleeps after ~15 min idle.
+  # Use at most every 14 minutes if you need always-warm (costs ~3,000 min/month).
+  # schedule:
+  #   - cron: '*/14 * * * *'
+
+concurrency:
+  group: keep-render-warm
+  cancel-in-progress: true
 
 jobs:
   keep-warm:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
-      - name: Ping Render backend to keep it warm
+      - name: Ping Render health (single request, no retry loop)
+        env:
+          BACKEND_HEALTH_URL: ${{ vars.RENDER_HEALTH_URL || 'https://sentinel-ai-dml3.onrender.com/api/health' }}
         run: |
-          echo "Pinging Render backend to prevent cold start..."
-          response=$(curl -s -w "%{http_code}" -o /dev/null "https://sentinel-ai-dml3.onrender.com/api/health")
-          if [ "$response" -eq 200 ]; then
-            echo "✅ Backend is warm (HTTP $response)"
+          echo "Pinging $BACKEND_HEALTH_URL"
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$BACKEND_HEALTH_URL" || echo "000")
+          if [ "$code" = "200" ]; then
+            echo "Backend is warm (HTTP 200)"
           else
-            echo "⚠️ Backend responded with HTTP $response (may be starting up)"
+            echo "Backend returned HTTP $code (may be cold-starting or deploy failed)"
+            exit 0
           fi

@@ -1,52 +1,92 @@
-import os
 import logging
+import os
+from urllib.parse import urlparse
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 logger = logging.getLogger(__name__)
 
-# Use PostgreSQL if DATABASE_URL is provided, otherwise fallback to SQLite
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "")
+Base = declarative_base()
 
-# If DATABASE_URL is empty, use SQLite
-if not SQLALCHEMY_DATABASE_URL:
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./sentinel_ai.db"
-    logger.info(f"DATABASE_URL not set, using SQLite")
 
-# Try PostgreSQL first if configured, fallback to SQLite on failure
-engine = None
-if SQLALCHEMY_DATABASE_URL.startswith("postgresql") or SQLALCHEMY_DATABASE_URL.startswith("postgres"):
-    try:
-        # Render typically provides DATABASE_URL as postgresql://...
-        # Use psycopg (v3) driver explicitly for compatibility with newer Python versions.
-        if SQLALCHEMY_DATABASE_URL.startswith("postgresql://"):
-            sqlalchemy_url = SQLALCHEMY_DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
-        elif SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
-            sqlalchemy_url = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
-        else:
-            sqlalchemy_url = SQLALCHEMY_DATABASE_URL
+def _normalize_database_url(raw_url: str) -> str:
+    """Normalize DATABASE_URL from hosting providers (Render, Heroku, etc.)."""
+    url = (raw_url or "").strip()
+    if not url:
+        return ""
 
-        engine = create_engine(sqlalchemy_url, pool_pre_ping=True)
-        # Test connection
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        logger.info("PostgreSQL connection successful")
-    except Exception as e:
-        logger.warning(f"PostgreSQL connection failed: {e}. Falling back to SQLite.")
-        engine = None
+    # Render/Heroku sometimes use postgres:// — SQLAlchemy 2 prefers postgresql://
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
 
-if engine is None:
-    # SQLite configuration (fallback or default)
-    sqlite_url = "sqlite:///./sentinel_ai.db"
-    logger.info(f"Using SQLite database: {sqlite_url}")
-    engine = create_engine(
-        sqlite_url, connect_args={"check_same_thread": False}
-    )
+    # Use psycopg v3 driver explicitly (Python 3.13 compatible)
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
 
+    return url
+
+
+def _is_postgres_url(url: str) -> bool:
+    return url.startswith("postgresql") or url.startswith("postgres")
+
+
+def build_engine():
+    """
+    Resolve SQLAlchemy engine from DATABASE_URL.
+
+    Production: requires a valid PostgreSQL URL (no silent SQLite fallback).
+    Development: falls back to SQLite if PostgreSQL is unreachable or unset.
+    """
+    raw_url = os.getenv("DATABASE_URL", "")
+    normalized_url = _normalize_database_url(raw_url)
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+    allow_sqlite_fallback = os.getenv("ALLOW_SQLITE_FALLBACK", "true").lower() == "true"
+
+    if not normalized_url:
+        if environment == "production":
+            raise RuntimeError(
+                "DATABASE_URL is not set. On Render: link your Postgres instance "
+                "or set DATABASE_URL to the Internal Database URL from the dashboard."
+            )
+        sqlite_url = "sqlite:///./sentinel_ai.db"
+        logger.info("DATABASE_URL not set — using SQLite at %s", sqlite_url)
+        return create_engine(sqlite_url, connect_args={"check_same_thread": False})
+
+    if _is_postgres_url(normalized_url):
+        try:
+            engine = create_engine(normalized_url, pool_pre_ping=True)
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            host = urlparse(normalized_url.replace("postgresql+psycopg", "postgresql")).hostname
+            logger.info("PostgreSQL connection successful (host=%s)", host)
+            return engine
+        except Exception as exc:
+            logger.error("PostgreSQL connection failed: %s", exc)
+            if environment == "production" or not allow_sqlite_fallback:
+                raise RuntimeError(
+                    "Cannot connect to PostgreSQL. Verify DATABASE_URL on Render:\n"
+                    "  1. Open your Render Postgres → Connect → Internal Database URL\n"
+                    "  2. Paste into the Web Service environment as DATABASE_URL\n"
+                    "  3. Ensure the hostname is not a placeholder (Errno -2 = DNS failure)\n"
+                    f"Original error: {exc}"
+                ) from exc
+            logger.warning("Falling back to SQLite for local development.")
+            return create_engine(
+                "sqlite:///./sentinel_ai.db",
+                connect_args={"check_same_thread": False},
+            )
+
+    # Non-postgres URL (e.g. sqlite://)
+    return create_engine(normalized_url, connect_args={"check_same_thread": False})
+
+
+# Module-level engine — built once at import
+SQLALCHEMY_DATABASE_URL = _normalize_database_url(os.getenv("DATABASE_URL", "")) or "sqlite:///./sentinel_ai.db"
+engine = build_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False)
 
-Base = declarative_base()
 
 def get_db():
     """Get database session for dependency injection."""
@@ -56,8 +96,9 @@ def get_db():
     finally:
         db.close()
 
+
 def init_db():
-    # Import models so they register on shared Base metadata before create_all
+    """Create tables, seed data, and run lightweight migrations."""
     from app.storage import models as _risk_log_models  # noqa: F401
     from app.storage import prompt_baselines as _prompt_baseline_models  # noqa: F401
     from app.storage import api_key_models as _api_key_models  # noqa: F401
@@ -70,71 +111,51 @@ def init_db():
 
     Base.metadata.create_all(bind=engine)
 
-    # Seed RBAC data and default org
     try:
         from app.services.seed_service import seed_all
+
         with SessionLocal() as seed_db:
             seed_all(seed_db)
     except Exception as e:
-        print(f"Warning: Database seeding failed: {e}")
+        logger.warning("Database seeding failed: %s", e)
 
-    # Lightweight schema migrations for SQLite only
-    if not (
-        SQLALCHEMY_DATABASE_URL.startswith("postgresql")
-        or SQLALCHEMY_DATABASE_URL.startswith("postgres")
-    ):
-        print("[DB MIGRATION] Running SQLite migrations...")
-        
-        with engine.connect() as conn:
-            try:
-                cols = [row[1] for row in conn.execute(text("PRAGMA table_info('risk_logs')"))]
-                print(f"[DB MIGRATION] risk_logs columns: {cols}")
-                if "settings_version" not in cols:
-                    conn.execute(text("ALTER TABLE risk_logs ADD COLUMN settings_version INTEGER"))
-                    print("[DB MIGRATION] Added settings_version column")
-                if "thresholds_applied" not in cols:
-                    conn.execute(text("ALTER TABLE risk_logs ADD COLUMN thresholds_applied TEXT"))
-                    print("[DB MIGRATION] Added thresholds_applied column")
-                if "org_id" not in cols:
-                    conn.execute(text("ALTER TABLE risk_logs ADD COLUMN org_id INTEGER"))
-                    print("[DB MIGRATION] Added org_id column")
-                if "workspace_id" not in cols:
-                    conn.execute(text("ALTER TABLE risk_logs ADD COLUMN workspace_id INTEGER"))
-                    print("[DB MIGRATION] Added workspace_id column")
-                conn.commit()
-            except Exception as e:
-                print(f"[DB MIGRATION] risk_logs migration skipped: {e}")
+    dialect = engine.dialect.name
+    if dialect == "sqlite":
+        _run_sqlite_migrations()
 
-        with engine.connect() as conn:
-            try:
-                user_cols = [row[1] for row in conn.execute(text("PRAGMA table_info('users')"))]
-                print(f"[DB MIGRATION] users columns before: {user_cols}")
-                
-                if "onboarding_completed" not in user_cols:
-                    print("[DB MIGRATION] Adding onboarding_completed column...")
-                    conn.execute(text("ALTER TABLE users ADD COLUMN onboarding_completed BOOLEAN DEFAULT 0"))
-                    print("[DB MIGRATION] Added onboarding_completed column")
-                
-                if "profile_json" not in user_cols:
-                    print("[DB MIGRATION] Adding profile_json column...")
-                    conn.execute(text("ALTER TABLE users ADD COLUMN profile_json TEXT"))
-                    print("[DB MIGRATION] Added profile_json column")
-                    
-                conn.commit()
-                
-                # Verify
-                user_cols_after = [row[1] for row in conn.execute(text("PRAGMA table_info('users')"))]
-                print(f"[DB MIGRATION] users columns after: {user_cols_after}")
-                
-            except Exception as e:
-                print(f"[DB MIGRATION ERROR] users migration failed: {e}")
-                import traceback
-                traceback.print_exc()
-                raise
-
-    # Seed default settings row if missing
     from app.services.database_service import DatabaseService, SettingsRepository
 
     with DatabaseService.get_session() as db:
         if SettingsRepository.get_current(db) is None:
             SettingsRepository.create_default(db)
+
+
+def _run_sqlite_migrations():
+    """Lightweight schema migrations for SQLite only."""
+    logger.info("[DB MIGRATION] Running SQLite migrations...")
+
+    with engine.connect() as conn:
+        try:
+            cols = [row[1] for row in conn.execute(text("PRAGMA table_info('risk_logs')"))]
+            if "settings_version" not in cols:
+                conn.execute(text("ALTER TABLE risk_logs ADD COLUMN settings_version INTEGER"))
+            if "thresholds_applied" not in cols:
+                conn.execute(text("ALTER TABLE risk_logs ADD COLUMN thresholds_applied TEXT"))
+            if "org_id" not in cols:
+                conn.execute(text("ALTER TABLE risk_logs ADD COLUMN org_id INTEGER"))
+            if "workspace_id" not in cols:
+                conn.execute(text("ALTER TABLE risk_logs ADD COLUMN workspace_id INTEGER"))
+            conn.commit()
+        except Exception as e:
+            logger.warning("[DB MIGRATION] risk_logs migration skipped: %s", e)
+
+    with engine.connect() as conn:
+        try:
+            user_cols = [row[1] for row in conn.execute(text("PRAGMA table_info('users')"))]
+            if "onboarding_completed" not in user_cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN onboarding_completed BOOLEAN DEFAULT 0"))
+            if "profile_json" not in user_cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN profile_json TEXT"))
+            conn.commit()
+        except Exception as e:
+            logger.warning("[DB MIGRATION] users migration skipped: %s", e)

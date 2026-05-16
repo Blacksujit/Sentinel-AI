@@ -1,5 +1,5 @@
 import './globals.css'
-import { ClerkProvider } from '@clerk/nextjs'
+import { ClerkProviderClient } from './components/clerk-provider-client'
 import { Providers } from './providers'
 
 export default function RootLayout({
@@ -8,16 +8,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider
-      signInUrl="/auth/sign-in"
-      signUpUrl="/auth/sign-up"
-      afterSignOutUrl="/"
-    >
+    <ClerkProviderClient>
       <html lang="en" suppressHydrationWarning>
         <body className="min-h-screen bg-background text-foreground antialiased">
           <Providers>{children}</Providers>
         </body>
       </html>
-    </ClerkProvider>
+    </ClerkProviderClient>
   )
 }

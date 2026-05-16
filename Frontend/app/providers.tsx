@@ -14,15 +14,29 @@ function ClerkErrorBoundary({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
-      if (event.message.includes('cookies() expects to have requestAsyncStorage')) {
-        console.error('🔐 Clerk Authentication Error:', event.message)
-        setError('Authentication service temporarily unavailable')
+      const msg = event.message || ''
+      const isClerkLoadFailure =
+        msg.includes('failed_to_load_clerk_js') ||
+        msg.includes('Failed to load Clerk')
+
+      if (
+        msg.includes('cookies() expects to have requestAsyncStorage') ||
+        isClerkLoadFailure
+      ) {
+        console.error('🔐 Clerk Authentication Error:', msg)
+        setError(
+          isClerkLoadFailure
+            ? 'Clerk could not load (network, ad blocker, or invalid API keys). Disable extensions for localhost and verify .env.local keys.'
+            : 'Authentication service temporarily unavailable'
+        )
         setHasError(true)
-        
-        // Show user-friendly error
-        toast.error('Authentication service temporarily unavailable. Please refresh the page.', {
-          duration: 5000,
-        })
+
+        toast.error(
+          isClerkLoadFailure
+            ? 'Clerk failed to load. Check ad blockers and .env.local keys.'
+            : 'Authentication service temporarily unavailable. Please refresh the page.',
+          { duration: 8000 }
+        )
       }
     }
 
@@ -65,10 +79,14 @@ function ClerkErrorBoundary({ children }: { children: React.ReactNode }) {
             </button>
           </div>
           {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 p-3 bg-muted rounded text-xs text-left">
-              <strong>Development Info:</strong><br />
-              Check your .env.local file for:<br />
-              <code>NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...</code>
+            <div className="mt-4 p-3 bg-muted rounded text-xs text-left space-y-1">
+              <strong>Development Info:</strong>
+              <br />
+              Confirm <code>NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code> in <code>.env.local</code>
+              <br />
+              Disable ad blockers for <code>localhost</code> and <code>*.clerk.accounts.dev</code>
+              <br />
+              Restart <code>npm run dev</code> after env changes
             </div>
           )}
         </div>

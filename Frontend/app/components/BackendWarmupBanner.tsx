@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { warmupBackend } from '@/lib/backend-warmup'
+import { checkBackendHealth, warmupBackend } from '@/lib/backend-warmup'
 
 interface BackendWarmupBannerProps {
   onComplete?: () => void
@@ -14,11 +14,24 @@ export function BackendWarmupBanner({ onComplete }: BackendWarmupBannerProps) {
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
+    if (process.env.NEXT_PUBLIC_DISABLE_BACKEND_WARMUP === 'true') {
+      setVisible(false)
+      onComplete?.()
+      return
+    }
+
     const checkBackend = async () => {
       try {
+        const alreadyHealthy = await checkBackendHealth()
+        if (alreadyHealthy) {
+          setVisible(false)
+          onComplete?.()
+          return
+        }
+
         setStatus('warming')
         setMessage('Warming up backend... First load may take ~20 seconds')
-        
+
         const success = await warmupBackend((status) => {
           setMessage(status)
         })
