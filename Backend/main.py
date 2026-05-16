@@ -105,7 +105,17 @@ app.include_router(workspace_router, prefix="/api")
 
 @app.get("/api/health")
 async def api_health_check():
-    return {"status": "ok"}
+    from app.storage.db import SQLALCHEMY_DATABASE_URL, _redacted_url, get_engine
+
+    try:
+        dialect = get_engine().dialect.name
+        return {
+            "status": "ok",
+            "database": dialect,
+            "database_url": _redacted_url(SQLALCHEMY_DATABASE_URL),
+        }
+    except Exception as e:
+        return {"status": "degraded", "database_error": str(e)}
 
 
 @app.get("/api/debug")
