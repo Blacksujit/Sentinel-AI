@@ -33,13 +33,15 @@ Sentinel-AI/
 ## 🔧 Configuration Setup
 
 ### **1. Vercel Project Configuration**
+
+In the Vercel dashboard: **Root Directory** = `Frontend`, **Output Directory** = empty (do not set `Frontend/.next`).
+
 ```json
-// vercel.json
+// Frontend/vercel.json
 {
-  "buildCommand": "cd Frontend && npm run build",
-  "outputDirectory": "Frontend/.next",
-  "installCommand": "cd Frontend && npm install",
   "framework": "nextjs",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
   "regions": ["sin1", "hkg1"],
   "env": {
     "NEXT_PUBLIC_API_URL": "@backend-url",
