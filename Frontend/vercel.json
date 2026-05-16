@@ -2,9 +2,7 @@
   "framework": "nextjs",
   "installCommand": "npm install",
   "buildCommand": "npm run build",
-  "outputDirectory": ".next",
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://sentinel-ai-dml3.onrender.com/api",    
     "NEXT_PUBLIC_ENVIRONMENT": "production"
   }
 }

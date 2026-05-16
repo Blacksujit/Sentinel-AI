@@ -17,7 +17,8 @@ const nextConfig = {
     }
     return config
   },
-  output: 'standalone',
+  // standalone is for Docker/self-host only; breaks Vercel's default Next.js output
+  ...(process.env.VERCEL ? {} : { output: 'standalone' }),
   async rewrites() {
     const backendBase = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001'
     const normalizedBackendBase = backendBase.endsWith('/') ? backendBase.slice(0, -1) : backendBase
