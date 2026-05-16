@@ -139,6 +139,7 @@ class PromptAnomalyDetector:
         """
         # Known jailbreak patterns (case-insensitive)
         jailbreak_patterns = {
+            # Classic jailbreak patterns
             "ignore all previous instructions": "jailbreak_attempt",
             "ignore previous instructions": "jailbreak_attempt", 
             "bypass safety": "jailbreak_attempt",
@@ -150,7 +151,22 @@ class PromptAnomalyDetector:
             "jailbreak": "jailbreak_attempt",
             "system message": "jailbreak_attempt",
             "developer mode": "jailbreak_attempt",
-            "override instructions": "jailbreak_attempt"
+            "override instructions": "jailbreak_attempt",
+            
+            # Information extraction patterns (NEW)
+            "expose": "information_extraction",
+            "reveal": "information_extraction",
+            "firewall": "information_extraction",
+            "architecture": "information_extraction",
+            "security layer": "information_extraction",
+            "defense mechanism": "information_extraction",
+            "system design": "information_extraction",
+            "internal structure": "information_extraction",
+            
+            # Obfuscated variants (NEW)
+            " ur ": "obfuscation_detected",  # "your" obfuscated
+            "u r": "obfuscation_detected",
+            "sec urity": "obfuscation_detected",
         }
         
         prompt_lower = prompt.lower()
@@ -159,6 +175,23 @@ class PromptAnomalyDetector:
         for pattern, reason in jailbreak_patterns.items():
             if pattern in prompt_lower:
                 detected_reasons.append(reason)
+        
+        # Check for compound attack patterns (information extraction + attack words)
+        extraction_words = ["expose", "reveal", "show", "tell", "describe", "explain"]
+        security_words = ["firewall", "security", "defense", "protection", "architecture", "system"]
+        attack_words = ["break", "bypass", "hack", "defeat", "disable", "compromise", "penetrate"]
+        
+        has_extraction = any(word in prompt_lower for word in extraction_words)
+        has_security = any(word in prompt_lower for word in security_words)
+        has_attack = any(word in prompt_lower for word in attack_words)
+        
+        # If combining security info extraction with attack intent = high risk
+        if has_extraction and has_security and has_attack:
+            detected_reasons.append("compound_attack_extraction")
+        
+        # Single extraction of security info is also suspicious
+        if has_extraction and has_security:
+            detected_reasons.append("security_info_extraction")
         
         return (len(detected_reasons) > 0, detected_reasons)
 

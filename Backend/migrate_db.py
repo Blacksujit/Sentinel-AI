@@ -12,7 +12,7 @@ import sys
 import os
 
 def migrate_database():
-    """Add audit logging columns to risk_logs table."""
+    """Add audit logging columns to risk_logs table and create workspace tables."""
     
     # Database path
     db_path = "sentinel_ai.db"
@@ -41,6 +41,65 @@ def migrate_database():
         
         if "signals" not in columns:
             migrations.append("ADD COLUMN signals TEXT NOT NULL DEFAULT '[]'")
+        
+        # Add workspace tables
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='workspaces'")
+        workspaces_exists = cursor.fetchone() is not None
+        
+        if not workspaces_exists:
+            print("Creating workspaces table...")
+            cursor.execute("""
+                CREATE TABLE workspaces (
+                    id INTEGER PRIMARY KEY,
+                    org_id INTEGER NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    slug VARCHAR(255) UNIQUE NOT NULL,
+                    description TEXT,
+                    is_default BOOLEAN DEFAULT 1,
+                    created_by_user_id INTEGER,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    settings TEXT DEFAULT '{}'
+                )
+            """)
+            print("Creating workspace_roles table...")
+            cursor.execute("""
+                CREATE TABLE workspace_roles (
+                    id INTEGER PRIMARY KEY,
+                    workspace_id INTEGER NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    level INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            print("Creating workspace_members table...")
+            cursor.execute("""
+                CREATE TABLE workspace_members (
+                    workspace_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    role_id INTEGER NOT NULL,
+                    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    is_active BOOLEAN DEFAULT 1
+                )
+            """)
+            print("Creating workspace_invites table...")
+            cursor.execute("""
+                CREATE TABLE workspace_invites (
+                    id INTEGER PRIMARY KEY,
+                    workspace_id INTEGER NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    role_id INTEGER NOT NULL,
+                    invited_by_user_id INTEGER NOT NULL,
+                    token VARCHAR(64) UNIQUE NOT NULL,
+                    status VARCHAR(50) DEFAULT 'pending',
+                    expires_at DATETIME NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    accepted_at DATETIME,
+                    accepted_by_user_id INTEGER
+                )
+            """)
         
         # Execute migrations
         for migration in migrations:

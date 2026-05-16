@@ -355,8 +355,7 @@ MIT License - see LICENSE file for details.
 
 - **Documentation**: [Full Documentation](https://github.com/Blacksujit/Sentinel-AI/tree/main/Docs)
 - **Issues**: [GitHub Issues](https://github.com/Blacksujit/Sentinel-AI/issues)
-- **Email**: support@sentinelai.com
-- **Discord**: [Community Discord](https://discord.gg/sentinelai)
+ 
 
 ## 🔄 Changelog
 

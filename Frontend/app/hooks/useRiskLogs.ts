@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '@clerk/nextjs'
 import { getRiskLogs } from '../services/logs'
 
 interface RiskLogFilters {
@@ -13,11 +14,15 @@ export function useRiskLogs(
   params: { limit?: number } = { limit: 50 },
   filters: RiskLogFilters = {}
 ) {
+  const { getToken } = useAuth()
+  
   return useQuery({
     queryKey: ['riskLogs', params, filters],
     queryFn: async () => {
       try {
-        const result = await getRiskLogs(params)
+        // Get Clerk session token for authentication
+        const token = await getToken()
+        const result = await getRiskLogs(params, token)
         
         // Apply client-side filtering
         let filteredLogs = [...result]

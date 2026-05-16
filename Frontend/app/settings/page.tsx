@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/motion'
 import { toast } from 'sonner'
 import Swal from 'sweetalert2'
+import { UserGuard } from '@/components/guards/user-org-guards'
 
 type Settings = {
   warn_threshold: number
@@ -55,7 +56,7 @@ const DEFAULT_SETTINGS: Settings = {
   version: 1
 }
 
-export default function SettingsPageModern() {
+export function SettingsPageContent() {
   const { registerInteractiveElement } = useCursorInteractions()
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
   const [loading, setLoading] = useState(true)
@@ -289,8 +290,7 @@ export default function SettingsPageModern() {
   }
 
   return (
-    <AppLayoutModern>
-      <div className="min-h-screen bg-gradient-navy">
+    <div className="min-h-screen bg-gradient-navy">
         {/* Premium animated background */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:50px_50px]" />
@@ -627,7 +627,16 @@ export default function SettingsPageModern() {
             </MotionCard>
           </motion.div>
         </div>
-      </div>
-    </AppLayoutModern>
+    </div>
+  )
+}
+
+export default function SettingsPageModern() {
+  return (
+    <UserGuard>
+      <AppLayoutModern>
+        <SettingsPageContent />
+      </AppLayoutModern>
+    </UserGuard>
   )
 }

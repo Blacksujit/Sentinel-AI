@@ -464,3 +464,9 @@ thoughts/private/
 meeting-notes/private/
 standup-notes/private/
 retro-notes/private/
+
+# Local backend debug artifacts
+Backend/auth_debug.txt
+Backend/auth_loaded.log
+Backend/app/middleware/auth_loaded.log
+**/auth_debug.txt

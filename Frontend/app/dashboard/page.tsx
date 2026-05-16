@@ -8,6 +8,7 @@ import { ShieldAlert, AlertTriangle, Activity, CheckCircle2, TrendingUp, ArrowRi
 import { useMemo, useState } from 'react'
 import { useRiskLogs } from '@/hooks/useRiskLogs'
 import { useCursorInteractions } from '@/hooks/useCursorInteractions'
+import { useRequireOrg } from '@/hooks/useRequireOrg'
 import { BackendWarmupBanner } from '@/components/BackendWarmupBanner'
 import { 
   LineChart,
@@ -30,12 +31,24 @@ import {
 
 export default function DashboardPageModern() {
   const { registerInteractiveElement } = useCursorInteractions()
+  const { isChecking } = useRequireOrg() // Redirects to onboarding if no org
   const {
     data: logs = [],
     isLoading,
     isError,
     error,
   } = useRiskLogs({ limit: 200 })
+
+  // Show loading while checking org status
+  if (isChecking) {
+    return (
+      <AppLayoutModern>
+        <div className="min-h-screen bg-gradient-navy flex items-center justify-center">
+          <div className="text-muted">Checking organization...</div>
+        </div>
+      </AppLayoutModern>
+    )
+  }
 
   const { kpis, trendData, topFlags, recentLogs } = useMemo(() => {
     const safeLogs = Array.isArray(logs) ? logs : []

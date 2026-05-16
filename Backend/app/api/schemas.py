@@ -17,6 +17,7 @@ class AnalyzeResponse(BaseModel):
     decision_reason: Optional[str] = None
     settings_version: Optional[int] = None
     thresholds_applied: Optional[Any] = None
+    log_id: Optional[str] = None  # ID for feedback reporting
 
 
 class RiskLogResponse(BaseModel):
@@ -37,6 +38,8 @@ class RiskLogResponse(BaseModel):
     client_metadata: Optional[Dict[str, Any]] = None  # New field for client app metadata
     user_id: Optional[str] = None  # New field for user identification
     session_id: Optional[str] = None  # New field for session identification
+    org_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     
     class Config:
         from_attributes = True

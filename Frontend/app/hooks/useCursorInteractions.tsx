@@ -12,6 +12,10 @@ interface InteractiveElement {
   riskLevel?: 'critical' | 'high' | 'medium' | 'low'
 }
 
+function isHTMLElement(value: unknown): value is HTMLElement {
+  return typeof HTMLElement !== 'undefined' && value instanceof HTMLElement
+}
+
 export function useCursorInteractions() {
   const cursorPosition = useRef<CursorPosition>({ x: 0, y: 0 })
   const [isHovering, setIsHovering] = useState(true)
@@ -76,6 +80,7 @@ export function useCursorInteractions() {
       let closestDistance = Infinity
 
       interactiveElements.current.forEach(({ element, riskLevel }) => {
+        if (!isHTMLElement(element) || typeof (element as any).getBoundingClientRect !== 'function') return
         const rect = element.getBoundingClientRect()
         const centerX = rect.left + rect.width / 2
         const centerY = rect.top + rect.height / 2
@@ -115,18 +120,42 @@ export function useCursorInteractions() {
     }
   }, [isHovering])
 
-  const registerInteractiveElement = (element: HTMLElement, riskLevel?: 'critical' | 'high' | 'medium' | 'low') => {
-    interactiveElements.current.push({ element, riskLevel })
-    
-    return () => {
-      const index = interactiveElements.current.findIndex(({ element: el }) => el === element)
-      if (index > -1) {
-        interactiveElements.current.splice(index, 1)
+  const registerInteractiveElement = (
+    elementOrRiskLevel: HTMLElement | null | undefined | ('critical' | 'high' | 'medium' | 'low'),
+    maybeRiskLevel?: 'critical' | 'high' | 'medium' | 'low'
+  ) => {
+    // Usage A: registerInteractiveElement(element, riskLevel?)
+    if (isHTMLElement(elementOrRiskLevel)) {
+      const element = elementOrRiskLevel
+      const riskLevel = maybeRiskLevel
+      interactiveElements.current.push({ element, riskLevel })
+
+      return () => {
+        const index = interactiveElements.current.findIndex(({ element: el }) => el === element)
+        if (index > -1) {
+          interactiveElements.current.splice(index, 1)
+        }
       }
+    }
+
+    // Usage B: registerInteractiveElement(riskLevel?) -> returns ref callback
+    const riskLevel = (typeof elementOrRiskLevel === 'string' ? elementOrRiskLevel : maybeRiskLevel) as
+      | 'critical'
+      | 'high'
+      | 'medium'
+      | 'low'
+      | undefined
+
+    return (el: HTMLElement | null) => {
+      if (!isHTMLElement(el)) return
+      // avoid duplicates
+      const exists = interactiveElements.current.some(({ element }) => element === el)
+      if (!exists) interactiveElements.current.push({ element: el, riskLevel })
     }
   }
 
   const updateCursorPosition = (element: HTMLElement) => {
+    if (!isHTMLElement(element) || typeof (element as any).getBoundingClientRect !== 'function') return
     const rect = element.getBoundingClientRect()
     const centerX = rect.left + rect.width / 2
     const centerY = rect.top + rect.height / 2

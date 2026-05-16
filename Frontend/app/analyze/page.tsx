@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { AppLayoutModern } from '../components/layout/AppLayoutModern'
 import { Button, Badge } from '@/components/ui'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import Swal from 'sweetalert2'
+import { apiPost } from '@/lib/api-client'
+import { FeedbackButton } from '@/components/FeedbackButton'
 import {
   MotionCard,
   staggerContainer,
@@ -23,6 +26,7 @@ type AnalyzeResponse = {
   decision_reason?: string
   settings_version?: number
   thresholds_applied?: any
+  log_id?: string
 }
 
 export default function AnalyzePage() {
@@ -32,6 +36,8 @@ export default function AnalyzePage() {
   const [result, setResult] = useState<AnalyzeResponse | null>(null)
   const [analysisStartTime, setAnalysisStartTime] = useState<number | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
+
+  const { getToken } = useAuth()
 
   // Timer effect
   useEffect(() => {
@@ -98,19 +104,10 @@ export default function AnalyzePage() {
     setResult(null)
 
     try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, response }),
-      })
-
-      if (!res.ok) {
-        const msg = await res.text()
-        throw new Error(msg || `HTTP error! status: ${res.status}`)
-      }
-
-      const data = (await res.json()) as AnalyzeResponse
-      setResult(data)
+      // Get Clerk token for authentication
+      const token = await getToken()
+      const data = await apiPost('/analyze', { prompt, response }, token)
+      setResult(data as AnalyzeResponse)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to analyze'
       toast.error(msg)
@@ -264,7 +261,17 @@ export default function AnalyzePage() {
                 </div>
 
                 <div className="lg:col-span-4 space-y-2">
-                  <div className="text-xs font-medium text-muted">Thresholds applied</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-medium text-muted">Thresholds applied</div>
+                    {result && (
+                      <FeedbackButton
+                        logId={result.log_id}
+                        prompt={prompt}
+                        response={response}
+                        detectionScore={result.final_risk_score}
+                      />
+                    )}
+                  </div>
                   <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-xs font-mono text-foreground/90 whitespace-pre-wrap">
                     {result.thresholds_applied ? JSON.stringify(result.thresholds_applied, null, 2) : '—'}
                   </div>

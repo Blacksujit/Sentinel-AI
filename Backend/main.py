@@ -3,13 +3,38 @@ import time
 import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import router
+from contextlib import asynccontextmanager
+from app.api.routes import router as api_router
 from app.api.baseline_routes import router as baseline_router
 from app.api.settings_routes_db import router as settings_router
+from app.api.settings_routes import router as settings_ui_router
 from app.api.api_keys_routes import router as api_keys_router
+from app.api.org_api_keys_routes import router as org_api_keys_router
+from app.api.orgs_routes import router as orgs_router
+from app.api.members_routes import router as members_router
+from app.api.usage_routes import router as usage_router
+from app.api.user_routes import router as user_router
+from app.api.learning_routes import router as learning_router
+from app.api.workspace_routes import router as workspace_router
 from app.storage.db import init_db
 
-app = FastAPI(title="Sentinel AI API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    init_db()
+    # Log all registered routes for debugging
+    print("\n=== Registered Routes ===")
+    for route in app.routes:
+        if hasattr(route, 'methods') and hasattr(route, 'path'):
+            print(f"  {', '.join(route.methods)} {route.path}")
+    print("=========================\n")
+    
+    yield
+    
+    # Shutdown (if needed)
+    pass
+
+app = FastAPI(title="Sentinel AI API", version="1.0.0", lifespan=lifespan)
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -31,14 +56,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-async def startup_event():
-    init_db()
-
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.perf_counter()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as e:
+        logging.exception(f"Unhandled error: {e}")
+        # Re-raise to let FastAPI handle it
+        raise
     duration_ms = (time.perf_counter() - start) * 1000
 
     line = f"{request.method} {request.url.path} -> {response.status_code} ({duration_ms:.2f}ms)"
@@ -47,7 +73,7 @@ async def log_requests(request: Request, call_next):
     return response
 
 # Include the analysis router
-app.include_router(router, prefix="/api")
+app.include_router(api_router, prefix="/api")
 
 # Include the baseline management router
 app.include_router(baseline_router, prefix="/api")
@@ -55,9 +81,23 @@ app.include_router(baseline_router, prefix="/api")
 # Include the settings management router
 app.include_router(settings_router, prefix="/api")
 
-# Include the API keys management router
+# Include API keys management router
 app.include_router(api_keys_router, prefix="/api")
 
+# Include multi-tenant routers
+app.include_router(orgs_router, prefix="/api")
+app.include_router(org_api_keys_router, prefix="/api")
+app.include_router(members_router, prefix="/api")
+app.include_router(usage_router, prefix="/api")
+
+# Include user routes
+app.include_router(user_router, prefix="/api")
+
+# Include learning loop routes
+app.include_router(learning_router, prefix="/api")
+
+# Include workspace routes
+app.include_router(workspace_router, prefix="/api")
 
 @app.get("/api/health")
 async def api_health_check():

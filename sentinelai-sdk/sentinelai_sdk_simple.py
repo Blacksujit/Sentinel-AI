@@ -11,7 +11,7 @@ from datetime import datetime
 
 __version__ = "1.0.0"
 __author__ = "SentinelAI Team"
-__email__ = "support@sentinelai.com"
+__email__ = "nirmalsujit981@gmail.com"
 
 
 class SentinelAIError(Exception):

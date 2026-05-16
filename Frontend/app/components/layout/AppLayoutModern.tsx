@@ -4,9 +4,13 @@ import { ReactNode, useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { SidebarModern } from './SidebarModern'
 import { PageTransition } from '@/components/ui'
+import { OrgSwitcher } from '@/components/org/OrgSwitcher'
+import { signOut } from '@/actions'
+import { LogOut, User, Settings, ChevronDown } from 'lucide-react'
+import { useUser } from '@clerk/nextjs'
 
 interface AppLayoutProps {
   children: ReactNode
@@ -29,20 +33,18 @@ export function AppLayoutModern({ children }: AppLayoutProps) {
   }, [])
 
   const topNavItems = [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/logs', label: 'Risk Logs' },
-    { href: '/baselines', label: 'Baselines' },
-    { href: '/settings', label: 'Settings' },
-    { href: '/api-keys', label: 'API Keys' },
+    { href: '/user/dashboard', label: 'Dashboard' },
+    { href: '/user/playground', label: 'Playground' },
+    { href: '/logs', label: 'Logs' },
+    { href: '/user/profile', label: 'Profile' },
   ]
 
   const breadcrumbLabel = (() => {
-    if (pathname === '/dashboard') return 'Dashboard'
-    if (pathname === '/logs') return 'Risk Logs'
-    if (pathname?.startsWith('/logs/')) return 'Risk Logs / Detail'
-    if (pathname === '/baselines') return 'Baselines'
-    if (pathname === '/settings') return 'Settings'
-    if (pathname === '/api-keys') return 'API Keys'
+    if (pathname === '/user/dashboard') return 'Dashboard'
+    if (pathname === '/user/playground') return 'Playground'
+    if (pathname === '/logs') return 'Logs'
+    if (pathname?.startsWith('/logs/')) return 'Logs / Detail'
+    if (pathname === '/user/profile') return 'Profile'
     return 'Console'
   })()
 
@@ -61,9 +63,9 @@ export function AppLayoutModern({ children }: AppLayoutProps) {
 
           <nav className="hidden md:flex items-center gap-1" aria-label="Top navigation">
             {topNavItems.map((item) => {
-              const isActive = item.href === '/dashboard'
+              const isActive = item.href === '/user/dashboard'
                 ? pathname === item.href
-                : pathname === item.href || pathname.startsWith(item.href + '/')
+                : pathname && (pathname === item.href || pathname.startsWith(item.href + '/'))
 
               return (
                 <Button
@@ -84,20 +86,10 @@ export function AppLayoutModern({ children }: AppLayoutProps) {
             })}
           </nav>
 
-          {/* Sidebar Toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden"
-            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-            aria-expanded={sidebarOpen}
-            aria-controls="app-sidebar"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </Button>
+          <div className="flex items-center gap-4">
+            {pathname?.startsWith('/org/') && <OrgSwitcher />}
+            <UserMenu />
+          </div>
         </div>
       </header>
 
@@ -137,6 +129,134 @@ export function AppLayoutModern({ children }: AppLayoutProps) {
           </PageTransition>
         </main>
       </div>
+    </div>
+  )
+}
+
+function UserMenu() {
+  const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const { user, isLoaded } = useUser()
+  const router = useRouter()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Prevent hydration mismatch
+  if (!mounted || !isLoaded) {
+    return (
+      <div className="h-8 w-8 rounded-full bg-primary/10 animate-pulse" />
+    )
+  }
+
+  // Get user's display name from Clerk data
+  const displayName = user?.firstName && user?.lastName 
+    ? `${user.firstName} ${user.lastName}`
+    : user?.username 
+    ? user.username 
+    : user?.primaryEmailAddress?.emailAddress?.split('@')[0] 
+    || 'User'
+  
+  const email = user?.primaryEmailAddress?.emailAddress || ''
+  const imageUrl = user?.imageUrl || ''
+  
+  // Get initials for avatar fallback
+  const initials = displayName 
+    ? displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'U'
+
+  const handleProfileClick = () => {
+    setIsOpen(false)
+    router.push('/user/profile')
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted transition"
+      >
+        <div className="flex flex-col items-end mr-1">
+          <p className="text-sm font-medium text-foreground leading-tight hidden sm:block">
+            {displayName}
+          </p>
+          <p className="text-xs text-muted-foreground leading-tight hidden lg:block">
+            {email}
+          </p>
+        </div>
+        
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={displayName}
+            className="h-8 w-8 rounded-full object-cover border border-border"
+          />
+        ) : (
+          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-electric-blue to-electric-violet text-white flex items-center justify-center font-medium text-sm">
+            {initials}
+          </div>
+        )}
+        
+        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+      </button>
+
+      {isOpen && (
+        <>
+          {/* Backdrop to close menu */}
+          <div 
+            className="fixed inset-0 z-[50]"
+            onClick={() => setIsOpen(false)}
+          />
+          <div 
+            className="absolute right-0 top-full mt-2 w-64 bg-background border rounded-xl shadow-2xl z-[60] py-2"
+          >
+            {/* User info header */}
+            <div className="px-4 py-3 border-b border-border">
+              <div className="flex items-center gap-3">
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={displayName}
+                    className="h-10 w-10 rounded-full object-cover border border-border"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-electric-blue to-electric-violet text-white flex items-center justify-center font-medium">
+                    {initials}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{email}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu items */}
+            <div className="py-1">
+              <button
+                onClick={handleProfileClick}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition text-left text-foreground"
+              >
+                <Settings className="h-4 w-4 text-muted-foreground" />
+                Manage Profile
+              </button>
+            </div>
+
+            <div className="border-t border-border py-1 mt-1">
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition text-left text-red-600"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -26,14 +26,22 @@ export interface RiskLogListResponse {
 }
 
 // API functions for risk logs
-export async function getRiskLogs(params?: { limit?: number }): Promise<RiskLog[]> {
+export async function getRiskLogs(params?: { limit?: number }, token?: string | null): Promise<RiskLog[]> {
   // Calls GET /api/logs
-  const response = await apiClient.get('/api/logs', { params })
+  const headers: Record<string, string> = {}
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  const response = await apiClient.get('/api/logs', { params, headers })
   return response.data // Backend returns direct array
 }
 
-export async function getRiskLogById(id: string | number): Promise<RiskLog> {
+export async function getRiskLogById(id: string | number, token?: string | null): Promise<RiskLog> {
   // Calls GET /api/logs/{id}
-  const response = await apiClient.get(`/api/logs/${id}`)
+  const headers: Record<string, string> = {}
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  const response = await apiClient.get(`/api/logs/${id}`, { headers })
   return response.data
 }

@@ -1,32 +1,14 @@
+'use client'
+
 import { AppLayoutModern } from '../components/layout/AppLayoutModern'
 import { LogsPageClientModern } from './LogsPageClientModern'
-import { headers } from 'next/headers'
-export const dynamic = 'force-dynamic'
+import { useRiskLogs } from '@/hooks/useRiskLogs'
+import { Skeleton } from '@/components/ui'
 
-export default async function LogsPageModern() {
-  // Fetch data on the server with error handling
-  let logs: any[] = []
-  let error: string | null = null
-  
-  try {
-    const h = headers()
-    const proto = h.get('x-forwarded-proto') || 'http'
-    const host = h.get('x-forwarded-host') || h.get('host')
-    const origin = host ? `${proto}://${host}` : 'http://localhost:3000'
+export default function LogsPageModern() {
+  const { data: logs = [], isLoading, isError, error } = useRiskLogs({ limit: 50 })
 
-    const response = await fetch(`${origin}/api/logs?limit=50`, { cache: 'no-store' })
-
-    if (!response.ok) {
-      const msg = await response.text()
-      throw new Error(msg || `HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
-    logs = Array.isArray(result) ? result : []
-  } catch (err) {
-    console.error('Error fetching logs on server:', err)
-    error = err instanceof Error ? err.message : 'Failed to fetch risk logs'
-  }
+  const errorMessage = isError ? (error instanceof Error ? error.message : 'Failed to fetch risk logs') : null
 
   return (
     <AppLayoutModern>
@@ -44,7 +26,15 @@ export default async function LogsPageModern() {
             </div>
           </div>
 
-          <LogsPageClientModern initialLogs={logs} initialError={error} />
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-12 w-full bg-white/10" />
+              <Skeleton className="h-12 w-full bg-white/10" />
+              <Skeleton className="h-12 w-full bg-white/10" />
+            </div>
+          ) : (
+            <LogsPageClientModern initialLogs={logs} initialError={errorMessage} />
+          )}
         </div>
       </div>
     </AppLayoutModern>

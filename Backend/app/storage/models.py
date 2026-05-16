@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, JSON, ForeignKey
 from sqlalchemy.sql import func
 from .db import Base
 
@@ -28,3 +28,7 @@ class RiskLog(Base):
     user_id = Column(String, nullable=True)  # End user identifier from client application
     session_id = Column(String, nullable=True)  # Session identifier for tracking conversations
     client_metadata = Column(JSON, nullable=True)  # Client-specific metadata as JSON
+
+    # Multi-tenant scoping
+    org_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True, index=True)

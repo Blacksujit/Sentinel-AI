@@ -1,10 +1,25 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001',
+    // Remove fallback Clerk keys - they should be properly configured
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
   },
+  // Environment validation
+  webpack: (config, { dev, isServer }) => {
+    // Add environment validation for production
+    if (!dev && !isServer) {
+      const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+      if (!clerkKey) {
+        console.warn('⚠️  WARNING: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY not configured for production')
+      }
+    }
+    return config
+  },
+  output: 'standalone',
   async rewrites() {
-    const backendBase = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+    const backendBase = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001'
     const normalizedBackendBase = backendBase.endsWith('/') ? backendBase.slice(0, -1) : backendBase
 
     const destinationBase = normalizedBackendBase.endsWith('/api')
@@ -12,6 +27,18 @@ const nextConfig = {
       : `${normalizedBackendBase}/api`
 
     return [
+      {
+        source: '/api/me',
+        destination: `${destinationBase}/me`,
+      },
+      {
+        source: '/api/orgs/:path*',
+        destination: `${destinationBase}/orgs/:path*`,
+      },
+      {
+        source: '/api/user/:path*',
+        destination: `${destinationBase}/user/:path*`,
+      },
       {
         source: '/api/settings/:path*',
         destination: `${destinationBase}/settings/:path*`,
@@ -27,6 +54,26 @@ const nextConfig = {
       {
         source: '/api/analyze/:path*',
         destination: `${destinationBase}/analyze/:path*`,
+      },
+      {
+        source: '/api/api-keys/:path*',
+        destination: `${destinationBase}/api-keys/:path*`,
+      },
+      {
+        source: '/api/usage/:path*',
+        destination: `${destinationBase}/usage/:path*`,
+      },
+      {
+        source: '/api/learning/:path*',
+        destination: `${destinationBase}/learning/:path*`,
+      },
+      {
+        source: '/api/workspaces/:path*',
+        destination: `${destinationBase}/workspaces/:path*`,
+      },
+      {
+        source: '/api/invites/:path*',
+        destination: `${destinationBase}/invites/:path*`,
       },
       {
         source: '/api/health',

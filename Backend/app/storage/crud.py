@@ -20,6 +20,8 @@ def log_risk_event(
     user_id: Optional[str] = None,  # New: User tracking
     session_id: Optional[str] = None,  # New: Session tracking
     client_metadata: Optional[dict] = None,  # New: Client metadata
+    org_id: Optional[int] = None,
+    workspace_id: Optional[int] = None,
 ):
     """Log a risk analysis event to the database with full audit information."""
     try:
@@ -40,6 +42,8 @@ def log_risk_event(
             user_id=user_id,
             session_id=session_id,
             client_metadata=client_metadata,
+            org_id=org_id,
+            workspace_id=workspace_id,
         )
         db.add(risk_log)
         db.commit()

@@ -7,20 +7,16 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { 
   LayoutDashboard,
-  ScanSearch,
+  Play,
   FileText,
-  Settings,
-  BarChart3,
-  KeyRound
+  User
 } from 'lucide-react'
 
 const navigationItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/analyze', label: 'Analyze', icon: ScanSearch },
-  { href: '/logs', label: 'Risk Logs', icon: FileText },
-  { href: '/baselines', label: 'Baselines', icon: BarChart3 },
-  { href: '/settings', label: 'Settings', icon: Settings },
-  { href: '/api-keys', label: 'API Keys', icon: KeyRound },
+  { href: '/user/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/user/playground', label: 'Playground', icon: Play },
+  { href: '/logs', label: 'Logs', icon: FileText },
+  { href: '/user/profile', label: 'Profile', icon: User },
 ]
 
 interface SidebarProps {
@@ -53,9 +49,9 @@ export function SidebarModern({ isOpen = true, onClose }: SidebarProps) {
       <nav className="flex-1 p-4" aria-label="Primary navigation">
         <ul className="space-y-2">
           {navigationItems.map((item) => {
-            const isActive = item.href === '/dashboard'
+            const isActive = item.href === '/user/dashboard'
               ? pathname === item.href
-              : pathname === item.href || pathname.startsWith(item.href + '/')
+              : pathname && (pathname === item.href || pathname.startsWith(item.href + '/'))
             const Icon = item.icon
             
             return (
