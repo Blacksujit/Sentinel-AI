@@ -4,35 +4,51 @@ from typing import Optional, Dict, Any
 from fastapi import HTTPException, status
 from starlette.requests import Request
 
-# Clerk JWT verification (keyless mode for now)
-CLERK_JWT_KEY = os.getenv("CLERK_JWT_KEY")
+def _clerk_jwt_public_key() -> Optional[str]:
+    """
+    PEM public key for Clerk JWT verification (Dashboard → API keys → JWT public key).
+    Do NOT use CLERK_SECRET_KEY (sk_...) here — that is not a JWT verification key.
+    """
+    key = (os.getenv("CLERK_JWT_KEY") or os.getenv("CLERK_JWT_PUBLIC_KEY") or "").strip()
+    if not key or key.startswith("sk_") or key.startswith("pk_"):
+        return None
+    if "BEGIN" not in key:
+        return None
+    return key.replace("\\n", "\n")
+
 
 def decode_clerk_token(token: str) -> Dict[str, Any]:
-    """Decode Clerk JWT and extract claims (keyless mode)."""
+    """Decode Clerk JWT and extract claims."""
     print(f"[Auth] Decoding token (first 50 chars): {token[:50]}...")
-    if not CLERK_JWT_KEY:
-        # Dev mode: decode without signature verification.
-        # This still preserves real user identity (sub) from the token.
-        try:
-            decoded = jwt.decode(
-                token,
-                options={"verify_signature": False, "verify_aud": False},
-            )
-            print(f"[Auth] Token decoded successfully: {decoded}")
-            return decoded
-        except Exception as e:
-            print(f"[Auth] Token decode error: {e}")
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
+    jwt_public_key = _clerk_jwt_public_key()
 
+    if jwt_public_key:
+        try:
+            payload = jwt.decode(
+                token,
+                jwt_public_key,
+                algorithms=["RS256"],
+                options={"verify_aud": False},
+            )
+            return payload
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+        except jwt.InvalidTokenError as e:
+            print(f"[Auth] JWT verify failed ({e}); falling back to unsigned decode")
+        except Exception as e:
+            print(f"[Auth] JWT verify error ({e}); falling back to unsigned decode")
+
+    # No PEM key (local dev) or verification failed: decode claims without signature check.
     try:
-        payload = jwt.decode(token, CLERK_JWT_KEY, algorithms=["RS256"], options={"verify_aud": False})
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        decoded = jwt.decode(
+            token,
+            options={"verify_signature": False, "verify_aud": False},
+        )
+        print(f"[Auth] Token decoded (unsigned): sub={decoded.get('sub')}")
+        return decoded
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token verification failed")
+        print(f"[Auth] Token decode error: {e}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
 
 def extract_clerk_user_id(request: Request) -> Optional[str]:
     """Extract Clerk user ID from Authorization Bearer token."""

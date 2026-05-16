@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://127.0.0.1:8001'
+import { backendApiUrl } from '@/lib/backend-url'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +9,7 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('authorization')
     const clerkToken = request.headers.get('x-clerk-auth-token')
     
-    const response = await fetch(`${BACKEND_URL}/api/logs?limit=${limit}`, {
+    const response = await fetch(`${backendApiUrl('/logs')}?limit=${limit}`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',

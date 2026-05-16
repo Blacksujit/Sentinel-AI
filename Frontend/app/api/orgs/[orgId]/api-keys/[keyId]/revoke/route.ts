@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+import { backendApiUrl } from '@/lib/backend-url'
 
 export async function POST(
   request: NextRequest,
@@ -12,7 +11,7 @@ export async function POST(
     const orgHeader = /^\d+$/.test(params.orgId) ? params.orgId : null
 
     const response = await fetch(
-      `${BACKEND_URL}/api/orgs/${params.orgId}/api-keys/${params.keyId}/revoke`,
+      backendApiUrl(`/orgs/${params.orgId}/api-keys/${params.keyId}/revoke`),
       {
         method: 'POST',
         headers: {

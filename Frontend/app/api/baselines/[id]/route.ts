@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server'
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://127.0.0.1:8001'
+import { backendApiUrl } from '@/lib/backend-url'
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const { id } = params
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 8000)
-    const response = await fetch(`${BACKEND_URL}/api/baselines/${id}`, {
+    const response = await fetch(`${backendApiUrl(`/baselines/${id}`)}`, {
       cache: 'no-store',
       signal: controller.signal,
     })
@@ -43,7 +42,7 @@ export async function PATCH(
     const body = await _request.json()
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 8000)
-    const response = await fetch(`${BACKEND_URL}/api/baselines/${id}`, {
+    const response = await fetch(`${backendApiUrl(`/baselines/${id}`)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -81,7 +80,7 @@ export async function DELETE(
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 8000)
-    const response = await fetch(`${BACKEND_URL}/api/baselines/${id}`, {
+    const response = await fetch(`${backendApiUrl(`/baselines/${id}`)}`, {
       method: 'DELETE',
       signal: controller.signal,
     })

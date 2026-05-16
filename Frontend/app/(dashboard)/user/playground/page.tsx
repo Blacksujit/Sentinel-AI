@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { AppLayoutModern } from '@/components/layout/AppLayoutModern'
 import { Button, Badge } from '@/components/ui'
 import { motion } from 'framer-motion'
@@ -35,6 +36,7 @@ export default function UserPlaygroundPage() {
 }
 
 function UserPlaygroundContent() {
+  const { getToken } = useAuth()
   const [prompt, setPrompt] = useState('')
   const [response, setResponse] = useState('')
   const [isRunning, setIsRunning] = useState(false)
@@ -90,9 +92,13 @@ function UserPlaygroundContent() {
     setResult(null)
 
     try {
+      const token = await getToken()
       const res = await fetch('/api/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ prompt, response }),
       })
 

@@ -2,8 +2,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-
 interface Workspace {
   id: string;
   name: string;
@@ -47,7 +45,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const response = await fetch(`${BACKEND_BASE_URL}/api/workspaces`, {
+      const response = await fetch('/api/workspaces', {
         headers: { Authorization: `Bearer ${token}` },
       });
 

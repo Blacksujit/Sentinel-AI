@@ -1,11 +1,4 @@
-// Direct backend API client - bypasses Next.js proxy issues
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
-
-// API base is just the backend URL - paths include /api prefix
-const API_BASE = BACKEND_URL.replace(/\/api\/?$/, '')
-
-console.log('[API Client] Backend URL:', BACKEND_URL)
-console.log('[API Client] API Base:', API_BASE)
+import { backendApiUrl } from '@/lib/backend-url'
 
 function normalizeApiPath(path: string) {
   const p = path.startsWith('/') ? path : `/${path}`
@@ -13,8 +6,17 @@ function normalizeApiPath(path: string) {
   return `/api${p}`
 }
 
+/** Browser: same-origin proxy (/api/*). Server: direct Render URL. */
+function resolveApiUrl(path: string): string {
+  const normalized = normalizeApiPath(path)
+  if (typeof window !== 'undefined') {
+    return normalized
+  }
+  return backendApiUrl(normalized)
+}
+
 export async function apiGet(path: string, token?: string | null) {
-  const url = `${API_BASE}${normalizeApiPath(path)}`
+  const url = resolveApiUrl(path)
   console.log('[API Client] GET', url)
   
   const res = await fetch(url, {
@@ -35,7 +37,7 @@ export async function apiGet(path: string, token?: string | null) {
 }
 
 export async function apiPost(path: string, body: unknown, token?: string | null) {
-  const url = `${API_BASE}${normalizeApiPath(path)}`
+  const url = resolveApiUrl(path)
   console.log('[API Client] POST', url, body)
   
   const res = await fetch(url, {
@@ -58,7 +60,7 @@ export async function apiPost(path: string, body: unknown, token?: string | null
 }
 
 export async function apiDelete(path: string, token?: string | null) {
-  const url = `${API_BASE}${normalizeApiPath(path)}`
+  const url = resolveApiUrl(path)
   console.log('[API Client] DELETE', url)
   
   const res = await fetch(url, {
@@ -80,7 +82,7 @@ export async function apiDelete(path: string, token?: string | null) {
 }
 
 export async function apiPatch(path: string, body: unknown, token?: string | null) {
-  const url = `${API_BASE}${normalizeApiPath(path)}`
+  const url = resolveApiUrl(path)
   console.log('[API Client] PATCH', url, body)
   
   const res = await fetch(url, {

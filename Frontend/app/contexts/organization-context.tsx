@@ -3,8 +3,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-
 interface Organization {
   id: string;
   name: string;
@@ -56,7 +54,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       const token = await getToken();
       if (!token) return;
 
-      const response = await fetch(`${BACKEND_BASE_URL}/api/me`, {
+      const response = await fetch('/api/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -82,7 +80,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         }
 
         // Get workspaces
-        const response2 = await fetch(`${BACKEND_BASE_URL}/api/workspaces`, {
+        const response2 = await fetch('/api/workspaces', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -132,7 +130,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
     try {
       const token = await getToken();
-      const response = await fetch(`${BACKEND_BASE_URL}/api/workspaces`, {
+      const response = await fetch('/api/workspaces', {
         headers: { Authorization: `Bearer ${token}` },
       });
 

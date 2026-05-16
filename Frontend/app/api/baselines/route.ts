@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server'
-
-const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://127.0.0.1:8001'
+import { backendApiUrl } from '@/lib/backend-url'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const includeInactive = searchParams.get('include_inactive')
 
   try {
-    const url = new URL('/api/baselines/', BACKEND_BASE_URL)
+    const url = new URL(backendApiUrl('/baselines/'))
     if (includeInactive) url.searchParams.set('include_inactive', includeInactive)
 
     const controller = new AbortController()
@@ -35,7 +33,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 8000)
-    const response = await fetch(`${BACKEND_BASE_URL}/api/baselines/`, {
+    const response = await fetch(backendApiUrl('/baselines/'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
