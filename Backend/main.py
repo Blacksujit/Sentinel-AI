@@ -16,6 +16,7 @@ from app.api.usage_routes import router as usage_router
 from app.api.user_routes import router as user_router
 from app.api.learning_routes import router as learning_router
 from app.api.workspace_routes import router as workspace_router
+from app.api.workspace_intel_routes import router as workspace_intel_router
 from app.storage.db import init_db
 
 @asynccontextmanager
@@ -103,6 +104,9 @@ app.include_router(learning_router, prefix="/api")
 # Include workspace routes
 app.include_router(workspace_router, prefix="/api")
 
+# Include workspace intelligence routes
+app.include_router(workspace_intel_router, prefix="/api")
+
 @app.get("/api/health")
 async def api_health_check():
     from app.storage.db import SQLALCHEMY_DATABASE_URL, _redacted_url, get_engine
@@ -130,6 +134,53 @@ async def debug_info():
         "environment": os.getenv("ENVIRONMENT", "production"),  # Default to production
         "sqlalchemy_url": SQLALCHEMY_DATABASE_URL[:50] + "..." if len(SQLALCHEMY_DATABASE_URL) > 50 else SQLALCHEMY_DATABASE_URL
     }
+
+
+@app.post("/api/debug/send-test-email")
+async def send_test_email(request: Request):
+    """Protected test endpoint to send a test email using configured delivery."""
+    # Protect with a simple token for local/staging use. Set DEBUG_ADMIN_TOKEN in env.
+    from fastapi import HTTPException
+    import os
+
+    try:
+        body = await request.json()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    if not body:
+        raise HTTPException(status_code=400, detail="Request body is required")
+
+    to = body.get("to")
+    subject = body.get("subject", "SentinelAI test email")
+    plain = body.get("plain", "This is a test email from SentinelAI.")
+    html = body.get("html")
+
+    if not to:
+        raise HTTPException(status_code=400, detail="Missing required field: to")
+
+    token = None
+    auth = request.headers.get("Authorization")
+    if auth and auth.startswith("Bearer "):
+        token = auth.split(" ", 1)[1]
+    header_token = request.headers.get("X-Debug-Token")
+    if header_token:
+        token = header_token
+
+    expected = os.getenv("DEBUG_ADMIN_TOKEN")
+    if not expected:
+        if os.getenv("ENVIRONMENT", "development") == "development":
+            expected = "debug-token-example"
+        else:
+            raise HTTPException(status_code=500, detail="DEBUG_ADMIN_TOKEN is not configured")
+
+    if token != expected:
+        raise HTTPException(status_code=403, detail="Forbidden: invalid debug token")
+
+    # Use EmailService to send
+    from app.services.email_service import EmailService
+    ok = EmailService.send_plain_email(to_email=to, subject=subject, plain_body=plain, html_body=html)
+    return {"sent": ok, "to": to}
 
 
 @app.get("/health")

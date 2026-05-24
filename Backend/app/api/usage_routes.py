@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.auth.dependencies import require_authenticated_user, get_db
 from app.tenancy.org_context import resolve_org_from_request, require_org_membership
-from app.rbac.enforce import require_permission
+from app.rbac.enforce import require_permission_from_path
 from app.services.usage_service import UsageService
 
 router = APIRouter()
@@ -11,7 +11,7 @@ router = APIRouter()
 @router.get("/orgs/{org_id}/usage")
 async def get_usage(
     org_id: int,
-    _: None = Depends(require_permission("usage.view")),
+    _: None = require_permission_from_path("usage.view"),
     db: Session = Depends(get_db),
     days: int = Query(30, ge=1, le=365),
 ):

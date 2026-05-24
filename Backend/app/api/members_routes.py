@@ -1,14 +1,16 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
 from app.auth.dependencies import require_authenticated_user, get_db
 from app.tenancy.org_context import require_org_membership
-from app.rbac.enforce import require_permission
+from app.rbac.enforce import require_permission, require_permission_from_path
 from app.rbac.permissions import user_permissions_for_org
 from app.services.audit_service import AuditService
+from app.services.email_service import EmailService
 from app.storage.org_models import OrgMembership, Organization
 from app.storage.user_models import User
 from app.storage.rbac_models import RbacRole
@@ -37,6 +39,7 @@ class MemberInviteResponse(BaseModel):
     invited_by: Optional[str]
     created_at: datetime
     expires_at: datetime
+    email_sent: bool = False
 
 class MemberResponse(BaseModel):
     user_id: int
@@ -44,6 +47,14 @@ class MemberResponse(BaseModel):
     name: Optional[str]
     role: str
     joined_at: datetime
+
+class AcceptInviteResponse(BaseModel):
+    user_id: int
+    email: str
+    name: Optional[str]
+    role: str
+    joined_at: datetime
+    org_id: int
 
 class RoleUpdateRequest(BaseModel):
     role: str
@@ -126,7 +137,7 @@ async def list_members(
 @router.get("/orgs/{org_id}/invites", response_model=List[MemberInviteResponse])
 async def list_pending_invites(
     org_id: int,
-    _: None = Depends(require_permission("member.invite")),
+    _: None = require_permission_from_path("member.invite"),
     db: Session = Depends(get_db),
 ):
     """List pending invitations for an organization."""
@@ -164,6 +175,11 @@ async def invite_member(
     print(f"🔧 Invite endpoint called: org_id={org_id}, email={payload.email}, role={payload.role}, user_id={user.id}")
     
     try:
+        org = db.query(Organization).filter(Organization.id == org_id).first()
+        if not org:
+            print(f"❌ Organization {org_id} not found")
+            raise HTTPException(status_code=404, detail="Organization not found")
+
         # Verify user is member of this org
         membership = db.query(OrgMembership).filter(
             OrgMembership.user_id == user.id,
@@ -182,11 +198,16 @@ async def invite_member(
             print(f"❌ User {user.id} role {user_role_name} cannot invite members")
             raise HTTPException(status_code=403, detail="Only admins can invite members")
 
-        # Get role to assign
-        role = db.query(RbacRole).filter(
-            RbacRole.name == payload.role.upper(),
-            RbacRole.org_id == org_id
-        ).first()
+        # Get role to assign (prefer org-specific roles, fallback to system-wide roles)
+        role = (
+            db.query(RbacRole)
+            .filter(
+                RbacRole.name == payload.role.upper(),
+                or_(RbacRole.org_id == org_id, RbacRole.org_id.is_(None)),
+            )
+            .order_by(RbacRole.org_id.desc())
+            .first()
+        )
         
         if not role:
             print(f"❌ Role {payload.role} not found for org {org_id}")
@@ -231,6 +252,14 @@ async def invite_member(
         db.add(invite)
         db.flush()
 
+        email_sent = EmailService.send_invite_email(
+            to_email=invite.email,
+            token=invite.token,
+            org_name=org.name,
+            role_name=role.name,
+            expires_in_days=7,
+        )
+
         # Audit log
         AuditService.log(
             db,
@@ -240,10 +269,10 @@ async def invite_member(
             action="member.invite",
             target_type="invite",
             target_id=invite.id,
-            event_metadata={"email": payload.email, "role": role.name}
+            event_metadata={"email": payload.email, "role": role.name, "email_sent": email_sent}
         )
         db.commit()
-        print(f"✅ Invite created successfully: id={invite.id}")
+        print(f"✅ Invite created successfully: id={invite.id}, email_sent={email_sent}")
 
         return MemberInviteResponse(
             id=invite.id,
@@ -253,6 +282,7 @@ async def invite_member(
             invited_by=user.name or user.email,
             created_at=invite.created_at,
             expires_at=invite.expires_at,
+            email_sent=email_sent,
         )
         
     except HTTPException:
@@ -264,7 +294,7 @@ async def invite_member(
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@router.post("/invites/{token}/accept", response_model=MemberResponse)
+@router.post("/invites/{token}/accept", response_model=AcceptInviteResponse)
 async def accept_invite(
     token: str,
     user: User = Depends(require_authenticated_user),
@@ -327,12 +357,13 @@ async def accept_invite(
     db.commit()
 
     role = db.query(RbacRole).filter(RbacRole.id == invite.role_id).first()
-    return MemberResponse(
+    return AcceptInviteResponse(
         user_id=user.id,
         email=user.email,
         name=user.name,
         role=role.name if role else "unknown",
         joined_at=membership.joined_at,
+        org_id=invite.org_id,
     )
 
 

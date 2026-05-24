@@ -2,10 +2,27 @@
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
+import re
 from sqlalchemy.orm import Session
 from app.storage.workspace_models import Workspace, WorkspaceMember, WorkspaceRole, WorkspaceInvite
 from app.storage.user_models import User
 from app.storage.org_models import Organization
+
+
+def _slugify(value: str) -> str:
+    value = (value or "").strip().lower()
+    value = re.sub(r"[^a-z0-9]+", "-", value)
+    value = re.sub(r"-+", "-", value).strip("-")
+    return value or "workspace"
+
+
+def _ensure_unique_workspace_slug(db: Session, base_slug: str) -> str:
+    slug = _slugify(base_slug)
+    i = 2
+    while db.query(Workspace).filter(Workspace.slug == slug).first() is not None:
+        slug = f"{_slugify(base_slug)}-{i}"
+        i += 1
+    return slug
 
 
 class WorkspaceService:
@@ -29,10 +46,11 @@ class WorkspaceService:
     @staticmethod
     def create_workspace(db: Session, org_id: int, name: str, created_by_user_id: int) -> Workspace:
         """Create a new workspace for an organization."""
+        slug = _ensure_unique_workspace_slug(db, name)
         workspace = Workspace(
             org_id=org_id,
             name=name,
-            slug=name.lower().replace(' ', '-'),
+            slug=slug,
             created_by_user_id=created_by_user_id
         )
         db.add(workspace)

@@ -72,7 +72,7 @@ export default function StartPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <Link href="/auth/sign-up?intent=org">
+            <Link href="/setup/organization">
               <Card 
                 className={`card-premium p-8 cursor-pointer transition-all duration-300 hover:border-emerald-500/50 h-full ${
                   intent === 'org' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : ''

@@ -58,7 +58,8 @@ export default function PostAuthPage() {
         return
       }
 
-      router.replace('/user/dashboard')
+      // No org memberships - send user to organization onboarding
+      router.replace('/org-onboarding')
     }
 
     run()

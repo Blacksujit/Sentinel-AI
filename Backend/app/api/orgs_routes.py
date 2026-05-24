@@ -9,9 +9,10 @@ from sqlalchemy.exc import IntegrityError
 
 from app.auth.dependencies import require_authenticated_user, get_db
 from app.tenancy.org_context import resolve_org_from_request, require_org_membership
-from app.rbac.enforce import require_permission
+from app.rbac.enforce import require_permission, require_permission_from_path
 from app.services.audit_service import AuditService
 from app.services.usage_service import UsageService
+from app.services.workspace_service import WorkspaceService
 from app.storage.org_models import Organization, OrgMembership
 from app.storage.user_models import User
 from app.storage.rbac_models import RbacRole
@@ -140,6 +141,35 @@ async def create_org(
             role_id=owner_role.id,
         )
     )
+    
+    # Create a default workspace for the organization
+    from app.storage.workspace_models import WorkspaceRole
+    default_workspace = WorkspaceService.create_workspace(
+        db=db,
+        org_id=org.id,
+        name="Default Workspace",
+        created_by_user_id=user.id
+    )
+    default_workspace.is_default = True
+    
+    # Create default roles for the workspace
+    WorkspaceService.create_default_workspace_roles(db, default_workspace.id)
+    
+    # Get the OWNER role for the workspace
+    workspace_owner_role = db.query(WorkspaceRole).filter(
+        WorkspaceRole.workspace_id == default_workspace.id,
+        WorkspaceRole.name == "OWNER"
+    ).first()
+    
+    if workspace_owner_role:
+        # Add the creator as a workspace member with OWNER role
+        WorkspaceService.add_workspace_member(
+            db=db,
+            workspace_id=default_workspace.id,
+            user_id=user.id,
+            role_id=workspace_owner_role.id
+        )
+    
     AuditService.log(
         db,
         org_id=org.id,
@@ -236,7 +266,7 @@ async def get_org_risk_logs(
 @router.get("/orgs/{org_id}", response_model=OrgResponse)
 async def get_org(
     org_id: int,
-    _: None = Depends(require_permission("org.manage")),  # placeholder permission
+    _: None = require_permission_from_path("org.manage"),
     db: Session = Depends(get_db),
 ):
     org = db.query(Organization).filter(Organization.id == org_id).first()

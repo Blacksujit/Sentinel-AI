@@ -21,6 +21,39 @@ Health:
 curl http://localhost:8000/health
 ```
 
+## Local Development with MailHog
+The backend supports local email testing through MailHog. Start the container stack from `Backend/`:
+
+```bash
+docker compose up -d --build
+```
+
+Then visit the MailHog UI at:
+
+```bash
+http://localhost:8025
+```
+
+Send a protected test email through the new backend debug endpoint:
+
+```bash
+curl -X POST http://localhost:8000/api/debug/send-test-email \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer debug-token-example" \
+  -d '{"to":"test@example.com","subject":"Smoke Test","plain":"This is a smoke test email from SentinelAI."}'
+```
+
+If you are running the backend directly in local development, make sure `DEBUG_ADMIN_TOKEN` is set in your environment or `.env` file. In development, the backend will also accept the example token `debug-token-example` when `DEBUG_ADMIN_TOKEN` is not configured.
+
+On Windows PowerShell, use this equivalent command:
+
+```powershell
+$body = @{ to = 'test@example.com'; subject = 'Smoke Test'; plain = 'This is a smoke test email from SentinelAI.' } | ConvertTo-Json
+Invoke-RestMethod -Uri 'http://localhost:8000/api/debug/send-test-email' -Method POST -Headers @{ Authorization = 'Bearer debug-token-example'; 'Content-Type' = 'application/json' } -Body $body
+```
+
+If MailHog is running, you can then inspect the message in the UI.
+
 ## Settings API (DB-backed)
 ### Get current settings
 ```bash

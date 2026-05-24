@@ -7,8 +7,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Load Clerk optionally for public/onboarding routes to support onboarding-first flow
   return (
-    <ClerkProviderClient>
+    <ClerkProviderClient optional>
       <html lang="en" suppressHydrationWarning>
         <body className="min-h-screen bg-background text-foreground antialiased">
           <Providers>{children}</Providers>

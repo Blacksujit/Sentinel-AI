@@ -26,7 +26,7 @@ export default function OrgApiKeysPage() {
 
 function ApiKeysContent() {
   const params = useParams();
-  const orgId = params.orgId as string;
+  const orgId = params?.orgId ?? "";
   const { user } = useUser();
   const { activeOrganization } = useOrganization();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);

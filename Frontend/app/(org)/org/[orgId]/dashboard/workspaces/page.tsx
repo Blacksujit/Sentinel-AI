@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { apiPost } from '@/lib/api-client';
 import { useAuth } from '@clerk/nextjs';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useWorkspace, useWorkspaces, useActiveWorkspace } from '@/contexts/workspace-context';
 import { useOrganization } from '@/contexts/organization-context';
 
@@ -16,6 +16,7 @@ export default function WorkspacesPage() {
   const { workspaces, isLoading } = useWorkspaces();
   const activeWorkspace = useActiveWorkspace();
   const { getToken } = useAuth();
+  const router = useRouter();
   const params = useParams();
   const orgId = typeof params?.orgId === 'string' ? params.orgId : Array.isArray(params?.orgId) ? params.orgId[0] : undefined;
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -91,7 +92,7 @@ export default function WorkspacesPage() {
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ scale: 1.02 }}
             className="cursor-pointer"
-            onClick={() => window.location.href = `/org/${workspace.org_id}/dashboard/workspaces/${workspace.id}`}
+            onClick={() => router.push(`/org/${orgId}/dashboard/workspaces/${workspace.id}`)}
           >
             <Card className="card-premium border-white/10 hover:border-indigo-500/40 hover:bg-white/5 transition-all duration-200">
               <CardHeader>

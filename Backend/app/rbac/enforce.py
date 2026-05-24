@@ -4,11 +4,11 @@ from sqlalchemy.orm import Session
 from app.tenancy.org_context import resolve_org_from_request, require_org_membership
 from app.rbac.permissions import user_permissions_for_org
 
-def require_permission(permission_key: str):
+def require_permission(permission_key: str, fallback_org_id: int | None = None):
     """FastAPI dependency factory: require a specific permission."""
     def dependency(request: Request, db: Session = Depends(get_db)):
         # Resolve org and membership
-        org = resolve_org_from_request(request, db)
+        org = resolve_org_from_request(request, db, fallback_org_id=fallback_org_id)
         clerk_user_id = getattr(request.state, "clerk_user_id", None)
         if not clerk_user_id:
             raise HTTPException(
@@ -35,6 +35,22 @@ def require_permission(permission_key: str):
         request.state.membership = membership
         return {"org": org, "user": user, "membership": membership, "permissions": perms}
     return dependency
+
+def require_permission_from_path(permission_key: str):
+    """Dependency that extracts org_id from path parameter and checks permission."""
+    def dependency(request: Request, db: Session = Depends(get_db)):
+        # Extract org_id from path parameters
+        path_params = request.path_params
+        org_id = path_params.get("org_id")
+        if org_id:
+            try:
+                org_id = int(org_id)
+            except (ValueError, TypeError):
+                raise ValueError("Invalid org_id in path")
+        # Use the org_id as fallback for permission check
+        perm_dep = require_permission(permission_key, fallback_org_id=org_id)
+        return perm_dep(request, db)
+    return Depends(dependency)
 
 # Helper to get DB session (reuse existing pattern)
 from app.storage.db import SessionLocal

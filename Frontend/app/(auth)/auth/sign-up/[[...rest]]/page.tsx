@@ -6,8 +6,11 @@ import { useSearchParams } from 'next/navigation'
 export default function SignUpPage() {
   const searchParams = useSearchParams()
   const intent = searchParams?.get('intent') || 'user'
+  const onboardingState = searchParams?.get('onboarding_state')
 
-  const afterSignUpUrl = intent === 'org' ? '/org-onboarding' : '/user/onboarding'
+  const afterSignUpUrl = intent === 'org'
+    ? `/org-onboarding${onboardingState ? `?onboarding_state=${onboardingState}` : ''}`
+    : '/user/onboarding'
 
   return (
     <div className="min-h-screen bg-gradient-navy flex items-center justify-center p-4">

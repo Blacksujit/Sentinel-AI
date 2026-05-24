@@ -9,8 +9,14 @@ services:
       - PYTHON_VERSION=3.11
       - ENVIRONMENT=development
       - DATABASE_URL=postgresql://sentinelai_user:password@sentinelai-db:5432/sentinelai
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - FROM_EMAIL=noreply@local.test
+      - FRONTEND_BASE_URL=http://localhost:3000
+      - DEBUG_ADMIN_TOKEN=debug-token-example
     depends_on:
       - sentinelai-db
+      - mailhog
     volumes:
       - .:/app
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
@@ -25,6 +31,15 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    environment:
+      - MH_SMTP_BIND_ADDR=0.0.0.0:1025
+      - MH_HTTP_BIND_ADDR=0.0.0.0:8025
 
 volumes:
   postgres_data:

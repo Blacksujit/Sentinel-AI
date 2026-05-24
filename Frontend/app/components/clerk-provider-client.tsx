@@ -34,8 +34,18 @@ function ClerkConfigError() {
   )
 }
 
-export function ClerkProviderClient({ children }: { children: ReactNode }) {
+export function ClerkProviderClient({
+  children,
+  optional = false,
+}: {
+  children: ReactNode
+  optional?: boolean
+}) {
   if (!publishableKey) {
+    if (optional) {
+      return <>{children}</>
+    }
+
     return (
       <html lang="en">
         <body className="min-h-screen flex items-center justify-center bg-background p-6">

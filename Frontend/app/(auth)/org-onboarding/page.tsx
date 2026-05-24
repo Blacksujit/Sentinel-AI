@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth, useUser } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { Building2, ArrowRight, CheckCircle2 } from 'lucide-react'
@@ -16,12 +16,30 @@ export default function OrgOnboardingPage() {
   const { getToken, isLoaded, isSignedIn } = useAuth()
   const { user } = useUser()
   const router = useRouter()
+  const searchParams = useSearchParams()
   
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [orgName, setOrgName] = useState('')
   const [companyEmail, setCompanyEmail] = useState('')
   const [createdOrg, setCreatedOrg] = useState<any>(null)
+  const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(false)
+
+  const [onboardingData, setOnboardingData] = useState<Record<string, any> | null>(null)
+
+  // Restore onboarding state from pre-auth setup wizard
+  useEffect(() => {
+    const onboardingStateEncoded = searchParams?.get('onboarding_state')
+    if (onboardingStateEncoded) {
+      try {
+        const state = JSON.parse(decodeURIComponent(atob(onboardingStateEncoded)))
+        setOnboardingData(state)
+        if (state.orgName) setOrgName(state.orgName)
+      } catch (e) {
+        console.debug('Failed to decode onboarding_state:', e)
+      }
+    }
+  }, [searchParams])
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -47,16 +65,30 @@ export default function OrgOnboardingPage() {
     setIsSubmitting(true)
     try {
       const token = await getToken()
+      const orgPayload: Record<string, any> = {
+        name: orgName,
+        email: companyEmail,
+      }
+      if (onboardingData) {
+        orgPayload.onboarding_data = onboardingData
+        orgPayload.industry = onboardingData.industry
+        orgPayload.company_size = onboardingData.companySize
+        orgPayload.ai_models = onboardingData.aiModels
+        orgPayload.use_cases = onboardingData.useCases
+        orgPayload.compliance_frameworks = onboardingData.complianceFrameworks
+        orgPayload.security_requirements = onboardingData.securityRequirements
+        orgPayload.data_retention = onboardingData.dataRetention
+        orgPayload.team_size = onboardingData.teamSize
+        orgPayload.integrations = onboardingData.integrations
+        orgPayload.selected_plan = onboardingData.selectedPlan
+      }
       const res = await fetch('/api/orgs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          name: orgName,
-          email: companyEmail,
-        }),
+        body: JSON.stringify(orgPayload),
       })
 
       if (!res.ok) {
@@ -76,6 +108,45 @@ export default function OrgOnboardingPage() {
       setIsSubmitting(false)
     }
   }
+
+  // When an org is created, poll for workspaces then redirect to dashboard
+  useEffect(() => {
+    let mounted = true
+    if (!createdOrg?.id) return
+
+    setIsLoadingWorkspace(true)
+    const poll = async () => {
+      const maxAttempts = 5
+      const delay = 500 // ms
+      for (let i = 0; i < maxAttempts && mounted; i++) {
+        try {
+          const res = await fetch(`/api/workspaces?org_id=${createdOrg.id}`)
+          if (res.ok) {
+            const data = await res.json()
+            if (Array.isArray(data) && data.length > 0) {
+              // Found workspace(s); navigate to org dashboard
+              if (mounted) router.push(`/org/${createdOrg.id}/dashboard`)
+              return
+            }
+          }
+        } catch (e) {
+          // ignore and retry
+          console.debug('Workspace poll attempt', i + 1, ':', e)
+        }
+        await new Promise((r) => setTimeout(r, delay))
+      }
+      // If still not found after polling, navigate anyway (dashboard will handle empty state)
+      if (mounted) {
+        setIsLoadingWorkspace(false)
+        toast.info('Ready to proceed to dashboard')
+      }
+    }
+
+    poll()
+    return () => {
+      mounted = false
+    }
+  }, [createdOrg, router])
 
   const handleGoToDashboard = () => {
     if (createdOrg?.id) {
@@ -210,14 +281,31 @@ export default function OrgOnboardingPage() {
                     </div>
                   </div>
 
+                  {isLoadingWorkspace && (
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-left text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="animate-spin">⏳</span>
+                        <span className="text-muted">Preparing workspace...</span>
+                      </div>
+                    </div>
+                  )}
+
                   <Button
                     onClick={handleGoToDashboard}
+                    disabled={isLoadingWorkspace}
                     className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
                   >
-                    <span className="flex items-center gap-2">
-                      Go to Dashboard
-                      <ArrowRight className="w-4 h-4" />
-                    </span>
+                    {isLoadingWorkspace ? (
+                      <span className="flex items-center gap-2">
+                        <span className="animate-spin">⏳</span>
+                        Setting up workspace...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        Go to Dashboard
+                        <ArrowRight className="w-4 h-4" />
+                      </span>
+                    )}
                   </Button>
                 </CardContent>
               </Card>

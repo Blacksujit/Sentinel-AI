@@ -11,9 +11,14 @@ function isClerkConfigured(): boolean {
 const PUBLIC_ROUTES = [
   '/',
   '/start(.*)',
+  '/setup(.*)',
   '/docs(.*)',
   '/auth/sign-in(.*)',
   '/auth/sign-up(.*)',
+  '/org-onboarding(.*)',
+  '/user/onboarding(.*)',
+  '/post-auth(.*)',
+  '/org-selector(.*)',
   '/api/sign-out(.*)',
 ]
 
