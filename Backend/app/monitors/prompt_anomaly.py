@@ -6,11 +6,14 @@ and text analysis instead of heavy ML models to avoid disk space issues.
 It provides basic anomaly detection based on text patterns and length.
 """
 
+import logging
 from typing import List, Dict, Any
 import re
 import math
 
 from app.storage.baseline_crud import list_active_baselines
+
+logger = logging.getLogger(__name__)
 
 
 class PromptAnomalyDetector:
@@ -214,13 +217,12 @@ class PromptAnomalyDetector:
             try:
                 db_baselines = list_active_baselines(self.db_session)
                 baselines = [baseline.text for baseline in db_baselines]
-                print(f"DEBUG: Loaded {len(baselines)} baselines from database")
+                logger.debug("Loaded %s baselines from database", len(baselines))
             except Exception as e:
-                print(f"DEBUG: Failed to load baselines: {e}")
-        
-        # If no baselines exist, return safe defaults
+                logger.debug("Failed to load baselines: %s", e)
+
         if not baselines:
-            print("DEBUG: No baselines found, returning safe defaults")
+            logger.debug("No baselines found, returning safe defaults")
             similarity_score = 1.0
             is_anomalous = jailbreak_detected
         else:
@@ -230,7 +232,7 @@ class PromptAnomalyDetector:
                 similarity = self._text_similarity(prompt, baseline)
                 max_similarity = max(max_similarity, similarity)
             
-            print(f"DEBUG: Max similarity score: {max_similarity:.3f}")
+            logger.debug("Max similarity score: %.3f", max_similarity)
             
             # Apply threshold logic
             if max_similarity >= 0.75:

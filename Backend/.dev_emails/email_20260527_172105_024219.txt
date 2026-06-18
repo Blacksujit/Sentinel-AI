@@ -1,0 +1,38 @@
+From: ('127.0.0.1', 60169)
+Received: 2026-05-27 17:21:05.027108
+
+Content-Type: multipart/alternative; boundary="===============1887125512168138149=="
+MIME-Version: 1.0
+Subject: You're invited to join nvidia on SentinelAI
+From: noreply@sentinelai.com
+To: casakom461@ameady.com
+
+--===============1887125512168138149==
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+You're invited to join nvidia on SentinelAI as a DEVELOPER. Accept the invite by visiting http://localhost:3000/invite/qh9Qz5Nhmn9X6OB3uUbjB0WWDyJriFKG. This link expires in 7 days.
+--===============1887125512168138149==
+Content-Type: text/html; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+
+        <html>
+          <body style="font-family: Arial, sans-serif; background-color: #f4f5f7; padding: 20px;">
+            <div style="max-width: 580px; margin: auto; background-color: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);">
+              <h2 style="color: #111827;">You're invited to join nvidia</h2>
+              <p style="color: #374151;">A teammate invited you to join nvidia on SentinelAI as a <strong>DEVELOPER</strong>.</p>
+              <p style="color: #374151;">Click the button below to accept the invite. The link will expire in 7 days.</p>
+              <p style="text-align: center; margin: 32px 0;">
+                <a href="http://localhost:3000/invite/qh9Qz5Nhmn9X6OB3uUbjB0WWDyJriFKG" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 8px;">Accept Invite</a>
+              </p>
+              <p style="color: #6b7280; font-size: 13px;">If the button does not work, copy and paste this URL into your browser:</p>
+              <p style="color: #2563eb; word-break: break-all;">http://localhost:3000/invite/qh9Qz5Nhmn9X6OB3uUbjB0WWDyJriFKG</p>
+              <p style="color: #9ca3af; font-size: 13px; margin-top: 16px;">If you did not expect this invite, you can safely ignore this email.</p>
+            </div>
+          </body>
+        </html>
+        
+--===============1887125512168138149==--

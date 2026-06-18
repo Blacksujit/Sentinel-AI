@@ -83,7 +83,7 @@ export function InviteDialog({
       await apiPost(
         `/api/orgs/${orgId}/members/invite`,
         { email: email.trim(), role: selectedRole },
-        token
+        token ?? undefined
       )
 
       toast.success(`Invitation sent to ${email}`)

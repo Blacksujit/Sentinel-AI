@@ -1,45 +1,150 @@
-version: '3.8'
+version: "3.8"
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
-  sentinelai-backend:
-    build: .
+  sentinelai-api:
+    build:
+      context: .
+      args:
+        APP_VERSION: "${APP_VERSION:-1.0.0}"
+        BUILD_DATE: "${BUILD_DATE:-}"
+        COMMIT_SHA: "${COMMIT_SHA:-}"
+    image: sentinelai-api:${APP_VERSION:-latest}
+    container_name: sentinelai-api
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     environment:
-      - PYTHON_VERSION=3.11
-      - ENVIRONMENT=development
-      - DATABASE_URL=postgresql://sentinelai_user:password@sentinelai-db:5432/sentinelai
-      - SMTP_HOST=mailhog
-      - SMTP_PORT=1025
-      - FROM_EMAIL=noreply@local.test
-      - FRONTEND_BASE_URL=http://localhost:3000
-      - DEBUG_ADMIN_TOKEN=debug-token-example
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://sentinelai_user:password@sentinelai-db:5432/sentinelai}
+      - ALLOW_SQLITE_FALLBACK=${ALLOW_SQLITE_FALLBACK:-false}
+      - SMTP_HOST=${SMTP_HOST:-mailpit}
+      - SMTP_PORT=${SMTP_PORT:-1025}
+      - FROM_EMAIL=${FROM_EMAIL:-noreply@sentinelai.com}
+      - FRONTEND_BASE_URL=${FRONTEND_BASE_URL:-http://localhost:3000}
+      - DEBUG_ADMIN_TOKEN=${DEBUG_ADMIN_TOKEN:-}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      - SERVICE_NAME=sentinelai-api
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - UVICORN_WORKERS=${UVICORN_WORKERS:-2}
+      - SENTINELAI_API_KEYS=${SENTINELAI_API_KEYS:-}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY:-}
     depends_on:
-      - sentinelai-db
-      - mailhog
-    volumes:
-      - .:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      sentinelai-db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging: *default-logging
+    networks:
+      - sentinelai-network
 
   sentinelai-db:
-    image: postgres:15
+    image: postgres:15-alpine
+    container_name: sentinelai-db
+    restart: unless-stopped
     environment:
-      - POSTGRES_DB=sentinelai
-      - POSTGRES_USER=sentinelai_user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=${POSTGRES_DB:-sentinelai}
+      - POSTGRES_USER=${POSTGRES_USER:-sentinelai_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+    ports:
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sentinelai_user} -d ${POSTGRES_DB:-sentinelai}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging: *default-logging
+    networks:
+      - sentinelai-network
 
-  mailhog:
-    image: mailhog/mailhog:latest
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: sentinelai-mailpit
+    restart: unless-stopped
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
     environment:
-      - MH_SMTP_BIND_ADDR=0.0.0.0:1025
-      - MH_HTTP_BIND_ADDR=0.0.0.0:8025
+      - MP_SMTP_BIND_ADDR=0.0.0.0:1025
+      - MP_UI_BIND_ADDR=0.0.0.0:8025
+    logging: *default-logging
+    networks:
+      - sentinelai-network
+
+  sentinelai-nginx:
+    image: nginx:1.25-alpine
+    container_name: sentinelai-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - sentinelai-api
+    logging: *default-logging
+    networks:
+      - sentinelai-network
+
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    container_name: sentinelai-prometheus
+    restart: unless-stopped
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}"
+    logging: *default-logging
+    networks:
+      - sentinelai-network
+
+  grafana:
+    image: grafana/grafana:10.4.1
+    container_name: sentinelai-grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    logging: *default-logging
+    networks:
+      - sentinelai-network
 
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  sentinelai-network:
+    driver: bridge

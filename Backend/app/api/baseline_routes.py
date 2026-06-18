@@ -12,6 +12,7 @@ from app.storage.baseline_crud import (
     update_baseline_text,
 )
 from app.storage.db import SessionLocal
+from app.auth.dependencies import require_authenticated_user
 from pydantic import BaseModel
 
 # Pydantic schemas
@@ -42,12 +43,12 @@ def get_db():
         db.close()
 
 @router.post("/", response_model=BaselineResponse)
-async def add_baseline(baseline: BaselineCreate, db: Session = Depends(get_db)):
+async def add_baseline(baseline: BaselineCreate, db: Session = Depends(get_db), user=Depends(require_authenticated_user)):
     """Add a new prompt baseline."""
     return create_baseline(db, baseline.text)
 
 @router.get("/", response_model=List[BaselineResponse])
-async def list_baselines_route(include_inactive: bool = False, db: Session = Depends(get_db)):
+async def list_baselines_route(include_inactive: bool = False, db: Session = Depends(get_db), user=Depends(require_authenticated_user)):
     """List prompt baselines.
 
     By default returns active baselines only. Use include_inactive=true to return all.
@@ -55,14 +56,14 @@ async def list_baselines_route(include_inactive: bool = False, db: Session = Dep
     return list_baselines(db) if include_inactive else list_active_baselines(db)
 
 @router.get("/{id}", response_model=BaselineResponse)
-async def get_baseline(id: int, db: Session = Depends(get_db)):
+async def get_baseline(id: int, db: Session = Depends(get_db), user=Depends(require_authenticated_user)):
     baseline = get_baseline_by_id(db, id)
     if not baseline:
         raise HTTPException(status_code=404, detail="Baseline not found")
     return baseline
 
 @router.patch("/{id}", response_model=BaselineResponse)
-async def update_baseline(id: int, update: BaselineUpdate, db: Session = Depends(get_db)):
+async def update_baseline(id: int, update: BaselineUpdate, db: Session = Depends(get_db), user=Depends(require_authenticated_user)):
     """Update a baseline (active and/or text)."""
     baseline = get_baseline_by_id(db, id)
     if not baseline:
@@ -79,7 +80,7 @@ async def update_baseline(id: int, update: BaselineUpdate, db: Session = Depends
     return baseline
 
 @router.delete("/{id}")
-async def delete_baseline_route(id: int, db: Session = Depends(get_db)):
+async def delete_baseline_route(id: int, db: Session = Depends(get_db), user=Depends(require_authenticated_user)):
     deleted = delete_baseline(db, id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Baseline not found")

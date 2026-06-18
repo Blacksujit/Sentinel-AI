@@ -1,0 +1,54 @@
+groups:
+  - name: sentinelai_alerts
+    interval: 30s
+
+    rules:
+      - alert: HighErrorRate
+        expr: rate(sentinelai_http_errors_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          team: sentinelai
+        annotations:
+          summary: "High HTTP error rate ({{ $value | humanizePercentage }} over 5m)"
+          description: "Error rate is above 5% threshold for the last 5 minutes."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(sentinelai_http_request_duration_seconds_bucket[5m])) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          team: sentinelai
+        annotations:
+          summary: "High request latency (p95 > 2s over 5m)"
+          description: "95th percentile latency is above 2 seconds."
+
+      - alert: ServiceDown
+        expr: up{job="sentinelai-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: sentinelai
+        annotations:
+          summary: "SentinelAI API is down"
+          description: "The API endpoint has been unreachable for over 1 minute."
+
+      - alert: HighRiskVolume
+        expr: rate(sentinelai_risk_analysis_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: sentinelai
+        annotations:
+          summary: "High risk analysis volume ({{ $value | humanize }} req/s over 5m)"
+          description: "Risk analysis requests exceed 100 req/s."
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: sentinelai_db_connection_active / sentinelai_db_connection_pool_size > 0.8
+        for: 5m
+        labels:
+          severity: critical
+          team: sentinelai
+        annotations:
+          summary: "Database connection pool near exhaustion ({{ $value | humanizePercentage }})"
+          description: "Over 80% of database connections are in use."

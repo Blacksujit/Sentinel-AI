@@ -1,9 +1,17 @@
+"""
+Insert an API key into the sentinel_ai.db database.
+Usage: python insert_api_key.py <raw_key> [org_id]
+   or: python insert_api_key.py  (reads from SENTINELAI_INSERT_KEY env var, org_id defaults to 1)
+"""
+
 import sqlite3
 from datetime import datetime
 import hashlib
+import os
 import sys
 
-def insert_api_key():
+
+def insert_api_key(raw_key: str, org_id: int = 1):
     conn = sqlite3.connect('sentinel_ai.db')
     c = conn.cursor()
 
@@ -24,8 +32,6 @@ def insert_api_key():
     for row in existing:
         print(f'  ID {row[0]}: org_id={row[2]}')
 
-    # Insert the key
-    raw_key = 'sk_sentinel_1I0sD34kbspbiteumwM2OMbKO2wc3KpkQ03IoU'
     key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
 
     # Check if key already exists
@@ -33,10 +39,10 @@ def insert_api_key():
     row = c.fetchone()
     if row:
         print(f'Key already exists: ID={row[0]}, org_id={row[1]}')
-        if row[1] != 27:
-            c.execute('UPDATE api_keys SET org_id = ? WHERE id = ?', (27, row[0]))
+        if row[1] != org_id:
+            c.execute('UPDATE api_keys SET org_id = ? WHERE id = ?', (org_id, row[0]))
             conn.commit()
-            print(f'Updated org_id to 27')
+            print(f'Updated org_id to {org_id}')
     else:
         # Insert new key
         permissions = '{"analyze": true}'
@@ -46,9 +52,9 @@ def insert_api_key():
         c.execute('''
             INSERT INTO api_keys (org_id, name, key_hash, prefix, permissions, created_at, last_used_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (27, 'External Test Key', key_hash, prefix, permissions, now, None))
+        ''', (org_id, 'External Test Key', key_hash, prefix, permissions, now, None))
         conn.commit()
-        print(f'Inserted API key with ID: {c.lastrowid}, org_id: 27')
+        print(f'Inserted API key with ID: {c.lastrowid}, org_id: {org_id}')
 
     # Verify
     c.execute('SELECT id, org_id, name, prefix FROM api_keys WHERE key_hash = ?', (key_hash,))
@@ -58,5 +64,19 @@ def insert_api_key():
 
     conn.close()
 
+
 if __name__ == '__main__':
-    insert_api_key()
+    raw_key = os.getenv("SENTINELAI_INSERT_KEY", "")
+    org_id = 1
+    if len(sys.argv) >= 2:
+        raw_key = sys.argv[1]
+    if len(sys.argv) >= 3:
+        org_id = int(sys.argv[2])
+
+    if not raw_key:
+        print("ERROR: No API key provided.")
+        print("Usage: python insert_api_key.py <raw_key> [org_id]")
+        print("   or: set SENTINELAI_INSERT_KEY environment variable")
+        sys.exit(1)
+
+    insert_api_key(raw_key, org_id)

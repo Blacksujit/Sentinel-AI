@@ -36,7 +36,7 @@ export function PendingInvites({
   const handleCancel = async (inviteId: number, email: string) => {
     try {
       const token = await getToken()
-      await apiDelete(`/api/orgs/${orgId}/invites/${inviteId}`, token)
+      await apiDelete(`/api/orgs/${orgId}/invites/${inviteId}`, token ?? undefined)
       toast.success(`Invitation to ${email} cancelled`)
       onInviteCancelled()
     } catch (error: any) {

@@ -7,10 +7,12 @@ export default function SignUpPage() {
   const searchParams = useSearchParams()
   const intent = searchParams?.get('intent') || 'user'
   const onboardingState = searchParams?.get('onboarding_state')
+  const redirectUrl = searchParams?.get('redirect_url')
 
-  const afterSignUpUrl = intent === 'org'
+  // If a redirect_url is provided (e.g. from invite flow), use it as the post-signup destination
+  const afterSignUpUrl = redirectUrl || (intent === 'org'
     ? `/org-onboarding${onboardingState ? `?onboarding_state=${onboardingState}` : ''}`
-    : '/user/onboarding'
+    : '/user/onboarding')
 
   return (
     <div className="min-h-screen bg-gradient-navy flex items-center justify-center p-4">

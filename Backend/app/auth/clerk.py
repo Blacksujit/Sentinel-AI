@@ -4,6 +4,10 @@ from typing import Optional, Dict, Any
 from fastapi import HTTPException, status
 from starlette.requests import Request
 
+def _is_development() -> bool:
+    return os.getenv("ENVIRONMENT", "production") == "development"
+
+
 def _clerk_jwt_public_key() -> Optional[str]:
     """
     PEM public key for Clerk JWT verification (Dashboard → API keys → JWT public key).
@@ -18,8 +22,12 @@ def _clerk_jwt_public_key() -> Optional[str]:
 
 
 def decode_clerk_token(token: str) -> Dict[str, Any]:
-    """Decode Clerk JWT and extract claims."""
-    print(f"[Auth] Decoding token (first 50 chars): {token[:50]}...")
+    """Decode Clerk JWT and extract claims.
+    
+    In production, signature verification is REQUIRED. If no PEM key is
+    configured or verification fails, the request is rejected.
+    In development, unsigned decode is allowed for local convenience.
+    """
     jwt_public_key = _clerk_jwt_public_key()
 
     if jwt_public_key:
@@ -34,20 +42,31 @@ def decode_clerk_token(token: str) -> Dict[str, Any]:
         except jwt.ExpiredSignatureError:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
         except jwt.InvalidTokenError as e:
-            print(f"[Auth] JWT verify failed ({e}); falling back to unsigned decode")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid token signature: {e}",
+            )
         except Exception as e:
-            print(f"[Auth] JWT verify error ({e}); falling back to unsigned decode")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Token verification failed: {e}",
+            )
 
-    # No PEM key (local dev) or verification failed: decode claims without signature check.
+    # No PEM key configured
+    if not _is_development():
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="JWT verification key not configured. Set CLERK_JWT_KEY or CLERK_JWT_PUBLIC_KEY.",
+        )
+
+    # Development only: decode unsigned for local convenience
     try:
         decoded = jwt.decode(
             token,
             options={"verify_signature": False, "verify_aud": False},
         )
-        print(f"[Auth] Token decoded (unsigned): sub={decoded.get('sub')}")
         return decoded
     except Exception as e:
-        print(f"[Auth] Token decode error: {e}")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
 
 def extract_clerk_user_id(request: Request) -> Optional[str]:
@@ -62,18 +81,13 @@ def extract_clerk_user_id(request: Request) -> Optional[str]:
 
 def extract_clerk_claims(request: Request) -> Optional[Dict[str, Any]]:
     """Extract Clerk claims from Authorization Bearer token or x-clerk-auth-token header."""
-    # Try standard Authorization header first
     auth_header = request.headers.get("authorization")
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1]
-        print(f"[Auth] Using Authorization header token")
         return decode_clerk_token(token)
-    
-    # Try x-clerk-auth-token header (from Next.js proxy)
+
     clerk_token = request.headers.get("x-clerk-auth-token")
     if clerk_token:
-        print(f"[Auth] Using x-clerk-auth-token header")
         return decode_clerk_token(clerk_token)
-    
-    print(f"[Auth] No auth token found in headers")
+
     return None

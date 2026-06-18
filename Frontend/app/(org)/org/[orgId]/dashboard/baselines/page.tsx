@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { Button, Card, Badge, Input, Label, Switch, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { motion } from 'framer-motion'
 import { Pencil, Plus, Shield, Trash2 } from 'lucide-react'
 import { MotionCard, staggerContainer, slideUp, hoverScaleLift, hoverGlow, buttonPress } from '@/components/ui/motion'
 import { useCursorInteractions } from '@/hooks/useCursorInteractions'
+import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api-client'
 
 type Baseline = {
   id: number
@@ -18,6 +20,7 @@ export default function BaselinesPage() {
   const [baselines, setBaselines] = useState<Baseline[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { getToken } = useAuth()
   const { registerInteractiveElement } = useCursorInteractions()
 
   const [modalOpen, setModalOpen] = useState(false)
@@ -32,13 +35,9 @@ export default function BaselinesPage() {
       setIsLoading(true)
       setError(null)
       try {
-        const response = await fetch('/api/baselines?include_inactive=true', { cache: 'no-store' })
-        if (!response.ok) {
-          const msg = await response.text()
-          throw new Error(msg || `HTTP error! status: ${response.status}`)
-        }
-        const data = await response.json()
-        setBaselines(Array.isArray(data) ? (data as Baseline[]) : [])
+        const token = await getToken()
+        const data = await apiGet<Baseline[]>('/api/baselines?include_inactive=true', token ?? undefined)
+        setBaselines(Array.isArray(data) ? data : [])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load baselines')
         setBaselines([])
@@ -48,7 +47,7 @@ export default function BaselinesPage() {
     }
 
     load()
-  }, [])
+  }, [getToken])
 
   const stats = useMemo(() => {
     const activeCount = baselines.filter((b) => b.active).length
@@ -82,45 +81,18 @@ export default function BaselinesPage() {
     if (trimmedPrompt.length === 0) return
 
     try {
+      const token = await getToken()
       if (editingId === null) {
-        const createResponse = await fetch('/api/baselines', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: trimmedPrompt }),
-        })
-        if (!createResponse.ok) {
-          const msg = await createResponse.text()
-          throw new Error(msg || `HTTP error! status: ${createResponse.status}`)
-        }
-
-        const created = (await createResponse.json()) as Baseline
+        const created = await apiPost<Baseline>('/api/baselines', { text: trimmedPrompt }, token ?? undefined)
 
         if (formActive === false) {
-          const patchRes = await fetch(`/api/baselines/${created.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ active: false }),
-          })
-          if (!patchRes.ok) {
-            const msg = await patchRes.text()
-            throw new Error(msg || `HTTP error! status: ${patchRes.status}`)
-          }
-          const updated = (await patchRes.json()) as Baseline
+          const updated = await apiPatch<Baseline>(`/api/baselines/${created.id}`, { active: false }, token ?? undefined)
           setBaselines((prev) => [updated, ...prev])
         } else {
           setBaselines((prev) => [created, ...prev])
         }
       } else {
-        const updateResponse = await fetch(`/api/baselines/${editingId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: trimmedPrompt, active: formActive }),
-        })
-        if (!updateResponse.ok) {
-          const msg = await updateResponse.text()
-          throw new Error(msg || `HTTP error! status: ${updateResponse.status}`)
-        }
-        const updated = (await updateResponse.json()) as Baseline
+        const updated = await apiPatch<Baseline>(`/api/baselines/${editingId}`, { text: trimmedPrompt, active: formActive }, token ?? undefined)
         setBaselines((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
       }
 
@@ -135,15 +107,8 @@ export default function BaselinesPage() {
     setBaselines((prev) => prev.map((b) => (b.id === id ? { ...b, active } : b)))
 
     try {
-      const response = await fetch(`/api/baselines/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active }),
-      })
-      if (!response.ok) {
-        const msg = await response.text()
-        throw new Error(msg || `HTTP error! status: ${response.status}`)
-      }
+      const token = await getToken()
+      await apiPatch(`/api/baselines/${id}`, { active }, token ?? undefined)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update baseline')
     }
@@ -154,11 +119,8 @@ export default function BaselinesPage() {
     const prev = baselines
     setBaselines((p) => p.filter((b) => b.id !== id))
     try {
-      const response = await fetch(`/api/baselines/${id}`, { method: 'DELETE' })
-      if (!response.ok) {
-        const msg = await response.text()
-        throw new Error(msg || `HTTP error! status: ${response.status}`)
-      }
+      const token = await getToken()
+      await apiDelete(`/api/baselines/${id}`, token ?? undefined)
     } catch (err) {
       setBaselines(prev)
       setError(err instanceof Error ? err.message : 'Failed to delete baseline')

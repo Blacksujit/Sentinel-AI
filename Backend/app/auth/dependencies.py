@@ -14,11 +14,8 @@ def get_db():
 
 def require_authenticated_user(request: Request, db: Session = Depends(get_db)):
     """FastAPI dependency: ensure Clerk user exists in SentinelAI."""
-    print(f"[Auth] Request headers: {dict(request.headers)}")
     claims = extract_clerk_claims(request)
-    print(f"[Auth] Extracted claims: {claims}")
     if not claims or not claims.get("sub"):
-        print("[Auth] ERROR: No claims or no sub found")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required"

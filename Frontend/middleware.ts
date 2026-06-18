@@ -20,6 +20,7 @@ const PUBLIC_ROUTES = [
   '/post-auth(.*)',
   '/org-selector(.*)',
   '/api/sign-out(.*)',
+  '/invite(.*)',
 ]
 
 type ClerkMiddlewareFn = (req: NextRequest) => Response | Promise<Response>

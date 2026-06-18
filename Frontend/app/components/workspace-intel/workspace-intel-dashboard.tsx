@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { motion } from 'framer-motion'
 import {
   Activity, AlertTriangle, Brain, GitPullRequest,
-  Clock, Plus, MessageSquare, Zap,
+  Clock, Plus, MessageSquare, Zap, Users,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -26,6 +27,8 @@ import {
   useCreateDeployment,
 } from '@/hooks/workspace-intel/use-intelligence'
 import { useWorkspaceWebSocket } from '@/hooks/workspace-intel/use-websocket'
+import { apiGet } from '@/lib/api-client'
+import { WorkspaceMembersSection } from '@/components/workspace-members/workspace-members-section'
 
 interface WorkspaceIntelDashboardProps {
   workspaceId: string
@@ -37,9 +40,40 @@ export function WorkspaceIntelDashboard({
   workspaceName,
 }: WorkspaceIntelDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview')
+  const { getToken, isSignedIn } = useAuth()
+  const [currentUserId, setCurrentUserId] = useState<number>(0)
+  const [currentUserRole, setCurrentUserRole] = useState<string>('VIEWER')
 
   // Real-time WebSocket connection
   useWorkspaceWebSocket(workspaceId)
+
+  // Discover current user's role + id within this workspace
+  useEffect(() => {
+    let mounted = true
+    async function loadMyMembership() {
+      if (!isSignedIn) return
+      try {
+        const token = await getToken()
+        const members = (await apiGet(
+          `/api/workspaces/${workspaceId}/members`,
+          token
+        )) as Array<{ user_id: number; role: string; email: string }>
+        if (!mounted || !Array.isArray(members)) return
+        // Try to match by stored clerk user id via /api/me fallback below
+        const me = (await apiGet('/api/me', token)) as { id?: number; user_id?: number; memberships?: Array<{ org_id: number; role: string }> }
+        const myUserId: number | undefined = me?.id ?? me?.user_id
+        if (myUserId != null) setCurrentUserId(myUserId)
+        const mine = members.find((m) => m.user_id === myUserId)
+        if (mine) setCurrentUserRole(mine.role)
+      } catch (e) {
+        // Soft-fail: keep defaults
+      }
+    }
+    loadMyMembership()
+    return () => {
+      mounted = false
+    }
+  }, [workspaceId, getToken, isSignedIn])
 
   // Data fetching
   const { data: summary, isLoading: summaryLoading } = useIntelligenceSummary(workspaceId)
@@ -133,6 +167,10 @@ export function WorkspaceIntelDashboard({
           <TabsTrigger value="memory">
             <Brain className="w-4 h-4 mr-1.5" />
             AI Memory
+          </TabsTrigger>
+          <TabsTrigger value="members">
+            <Users className="w-4 h-4 mr-1.5" />
+            Members
           </TabsTrigger>
         </TabsList>
 
@@ -253,6 +291,15 @@ export function WorkspaceIntelDashboard({
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Members Tab */}
+        <TabsContent value="members" className="space-y-4 mt-6">
+          <WorkspaceMembersSection
+            workspaceId={workspaceId}
+            currentUserId={currentUserId}
+            currentUserRole={currentUserRole}
+          />
         </TabsContent>
       </Tabs>
     </div>

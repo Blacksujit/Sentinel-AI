@@ -1,105 +1,77 @@
-import { backendApiUrl } from '@/lib/backend-url'
+export class ApiError extends Error {
+  status: number;
 
-function normalizeApiPath(path: string) {
-  const p = path.startsWith('/') ? path : `/${path}`
-  if (p === '/api' || p.startsWith('/api/')) return p
-  return `/api${p}`
-}
-
-/** Browser: same-origin proxy (/api/*). Server: direct Render URL. */
-function resolveApiUrl(path: string): string {
-  const normalized = normalizeApiPath(path)
-  if (typeof window !== 'undefined') {
-    return normalized
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
   }
-  return backendApiUrl(normalized)
 }
 
-export async function apiGet(path: string, token?: string | null) {
-  const url = resolveApiUrl(path)
-  console.log('[API Client] GET', url)
-  
-  const res = await fetch(url, {
+async function handleResponse(response: Response) {
+  const text = await response.text();
+  let data: unknown;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text;
+  }
+
+  if (!response.ok) {
+    const message =
+      data && typeof data === "object" && "detail" in data
+        ? String((data as Record<string, unknown>).detail)
+        : data && typeof data === "object" && "message" in data
+          ? String((data as Record<string, unknown>).message)
+          : `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return data;
+}
+
+export async function apiGet<T = unknown>(path: string, token?: string): Promise<T> {
+  const response = await fetch(path, {
+    method: "GET",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-  })
-  
-  console.log('[API Client] GET Response:', res.status, url)
-  
-  if (!res.ok) {
-    const errorText = await res.text()
-    console.error('[API Client] GET Error:', res.status, errorText)
-    throw new Error(errorText)
-  }
-  return res.json()
+  });
+  return handleResponse(response) as Promise<T>;
 }
 
-export async function apiPost(path: string, body: unknown, token?: string | null) {
-  const url = resolveApiUrl(path)
-  console.log('[API Client] POST', url, body)
-  
-  const res = await fetch(url, {
-    method: 'POST',
+export async function apiPost<T = unknown>(path: string, body: unknown, token?: string): Promise<T> {
+  const response = await fetch(path, {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify(body),
-  })
-  
-  console.log('[API Client] POST Response:', res.status, url)
-  
-  if (!res.ok) {
-    const errorText = await res.text()
-    console.error('[API Client] POST Error:', res.status, errorText)
-    throw new Error(errorText)
-  }
-  return res.json()
-}
-
-export async function apiDelete(path: string, token?: string | null) {
-  const url = resolveApiUrl(path)
-  console.log('[API Client] DELETE', url)
-  
-  const res = await fetch(url, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  })
-  
-  console.log('[API Client] DELETE Response:', res.status, url)
-  
-  if (!res.ok) {
-    const errorText = await res.text()
-    console.error('[API Client] DELETE Error:', res.status, errorText)
-    throw new Error(errorText)
-  }
-  return res.json()
-}
-
-export async function apiPatch(path: string, body: unknown, token?: string | null) {
-  const url = resolveApiUrl(path)
-  console.log('[API Client] PATCH', url, body)
-  
-  const res = await fetch(url, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(body),
-  })
-  
-  console.log('[API Client] PATCH Response:', res.status, url)
-  
-  if (!res.ok) {
-    const errorText = await res.text()
-    console.error('[API Client] PATCH Error:', res.status, errorText)
-    throw new Error(errorText)
-  }
-  return res.json()
+  });
+  return handleResponse(response) as Promise<T>;
+}
+
+export async function apiPatch<T = unknown>(path: string, body: unknown, token?: string): Promise<T> {
+  const response = await fetch(path, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+  return handleResponse(response) as Promise<T>;
+}
+
+export async function apiDelete<T = unknown>(path: string, token?: string): Promise<T> {
+  const response = await fetch(path, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  return handleResponse(response) as Promise<T>;
 }

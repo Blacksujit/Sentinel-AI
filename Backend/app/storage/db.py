@@ -192,6 +192,8 @@ def init_db():
     from app.storage import org_models as _org_models  # noqa: F401
     from app.storage import rbac_models as _rbac_models  # noqa: F401
     from app.storage import usage_models as _usage_models  # noqa: F401
+    from app.storage import invite_models as _invite_models  # noqa: F401
+    from app.storage import workspace_models as _workspace_models  # noqa: F401
     from app.learning import models as _learning_models  # noqa: F401
 
     eng = get_engine()

@@ -1,18 +1,21 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { backendApiUrl } from '@/lib/backend-url'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const includeInactive = searchParams.get('include_inactive')
+  const authHeader = request.headers.get('authorization')
 
   try {
     const url = new URL(backendApiUrl('/baselines/'))
     if (includeInactive) url.searchParams.set('include_inactive', includeInactive)
 
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 8000)
-    const response = await fetch(url.toString(), { cache: 'no-store', signal: controller.signal })
-    clearTimeout(timeout)
+    const response = await fetch(url.toString(), {
+      headers: {
+        ...(authHeader ? { Authorization: authHeader } : {}),
+      },
+      cache: 'no-store',
+    })
     const text = await response.text()
     try {
       const json = text ? JSON.parse(text) : null
@@ -28,18 +31,18 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization')
     const body = await request.json()
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 8000)
     const response = await fetch(backendApiUrl('/baselines/'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authHeader ? { Authorization: authHeader } : {}),
+      },
       body: JSON.stringify(body),
-      signal: controller.signal,
     })
-    clearTimeout(timeout)
 
     const text = await response.text()
     try {

@@ -21,7 +21,7 @@ export default function InviteAcceptPage({ params }: { params: { token: string }
     }
 
     if (!isSignedIn) {
-      router.replace(`/auth/sign-in?redirect_url=/invite/${params.token}`);
+      router.replace(`/auth/sign-up?redirect_url=/invite/${params.token}`);
       return;
     }
 
@@ -29,7 +29,7 @@ export default function InviteAcceptPage({ params }: { params: { token: string }
       setIsProcessing(true);
       try {
         const token = await getToken();
-        const response = await apiPost(`/invites/${params.token}/accept`, {}, token);
+        const response = await apiPost<{ org_id: number }>(`/api/invites/${params.token}/accept`, {}, token ?? undefined);
         setMessage("Invite accepted successfully. Redirecting to your organization...");
         setTimeout(() => {
           router.replace(`/orgs/${response.org_id}`);

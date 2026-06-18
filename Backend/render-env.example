@@ -12,22 +12,17 @@ DATABASE_URL=postgresql://username:password@host:5432/database_name
 SENTINELAI_API_KEYS=your-api-key-here,another-key-here
 API_KEY_HEADER=X-API-Key
 
-# Postal email delivery (preferred for MVP)
-POSTAL_SERVER_URL=https://postal.yourdomain.com
-POSTAL_API_KEY=your-postal-api-key
-POSTAL_SERVER_NAME=your-postal-server-name
-
-# SMTP fallback if Postal is unavailable
+# SMTP email delivery — works with Mailpit (dev), SendGrid, Mailgun, Resend, etc.
+# For local dev: docker-compose up mailpit (SMTP on port 1025, UI at http://localhost:8025)
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=your-smtp-user
 SMTP_PASSWORD=your-smtp-password
 FROM_EMAIL=noreply@sentinelai.com
 
-# Local development email capture using MailHog
-# When running Backend/docker-compose.yml, MailHog is available at http://localhost:8025
-# and SMTP is reachable at mailhog:1025 from the container.
-# Use the same FROM_EMAIL above for local invites.
+# Frontend URL used to build invite links
+FRONTEND_BASE_URL=https://your-frontend-domain.com
+
 # DEBUG_ADMIN_TOKEN is required for the protected test email endpoint.
 DEBUG_ADMIN_TOKEN=debug-token-example
 

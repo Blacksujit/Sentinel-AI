@@ -1,13 +1,36 @@
-import logging
-import time
+"""SentinelAI API — Production entrypoint with observability, health checks, and structured logging."""
+
 import os
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
+import time
+import json
+import logging
 from contextlib import asynccontextmanager
+from typing import Callable, Awaitable
+
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from dotenv import load_dotenv
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, REGISTRY
+
+load_dotenv()
+
+from app.core.logging_config import setup_logging, get_logger, JSONLogFormatter
+from app.core.metrics import (
+    track_request_metrics,
+    metrics_endpoint as prometheus_metrics_endpoint,
+    CPU_USAGE,
+    MEMORY_USAGE,
+    ACTIVE_CONNECTIONS,
+    DB_CONNECTION_POOL_SIZE,
+    DB_CONNECTION_ACTIVE,
+)
+from app.core.health import health_check, readiness_check, liveness_check, get_debug_info
+from app.core.circuit_breaker import CircuitBreakerRegistry
 from app.api.routes import router as api_router
 from app.api.baseline_routes import router as baseline_router
 from app.api.settings_routes_db import router as settings_router
-from app.api.settings_routes import router as settings_ui_router
 from app.api.api_keys_routes import router as api_keys_router
 from app.api.org_api_keys_routes import router as org_api_keys_router
 from app.api.orgs_routes import router as orgs_router
@@ -18,34 +41,86 @@ from app.api.learning_routes import router as learning_router
 from app.api.workspace_routes import router as workspace_router
 from app.api.workspace_intel_routes import router as workspace_intel_router
 from app.storage.db import init_db
+from app.middleware.request_id import RequestIDMiddleware
+
+logger = get_logger(__name__)
+
+SERVICE_NAME = os.getenv("SERVICE_NAME", "sentinelai-api")
+LOG_FORMAT = os.getenv("LOG_FORMAT", "json")
+
+setup_logging()
+
+
+class MetricsMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]):
+        if request.url.path in ("/metrics", "/health", "/readiness", "/liveness"):
+            return await call_next(request)
+
+        start = time.perf_counter()
+        response = await call_next(request)
+        duration = time.perf_counter() - start
+        track_request_metrics(
+            method=request.method,
+            endpoint=request.url.path,
+            status_code=response.status_code,
+            duration=duration,
+        )
+        return response
+
+
+class StructuredLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        request_id = getattr(request.state, "request_id", "unknown")
+        start = time.perf_counter()
+        response = await call_next(request)
+        duration_ms = (time.perf_counter() - start) * 1000
+
+        log_data = {
+            "request_id": request_id,
+            "method": request.method,
+            "path": request.url.path,
+            "status": response.status_code,
+            "duration_ms": round(duration_ms, 2),
+        }
+        if response.status_code >= 500:
+            logger.error(json.dumps(log_data), event_type="http_request")
+        elif response.status_code >= 400:
+            logger.warning(json.dumps(log_data), event_type="http_request")
+        else:
+            logger.info(json.dumps(log_data), event_type="http_request")
+
+        return response
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup — fail fast with a clear message if DATABASE_URL is misconfigured
     try:
         init_db()
     except Exception as e:
         logging.critical("Database initialization failed: %s", e)
         raise
-    # Log all registered routes for debugging
-    print("\n=== Registered Routes ===")
+
     for route in app.routes:
-        if hasattr(route, 'methods') and hasattr(route, 'path'):
-            print(f"  {', '.join(route.methods)} {route.path}")
-    print("=========================\n")
-    
+        if hasattr(route, "methods") and hasattr(route, "path"):
+            logger.debug("Route registered: %s %s", ", ".join(route.methods), route.path)
+
+    logger.info("SentinelAI API started", extra={"event_type": "startup", "service": SERVICE_NAME})
     yield
-    
-    # Shutdown (if needed)
-    pass
+    logger.info("SentinelAI API shutting down", extra={"event_type": "shutdown"})
 
-app = FastAPI(title="Sentinel AI API", version="1.0.0", lifespan=lifespan)
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()  # Load from .env file
+app = FastAPI(
+    title="SentinelAI API",
+    version=os.getenv("APP_VERSION", "1.0.0"),
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+)
 
-# Add CORS middleware
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(StructuredLoggingMiddleware)
+app.add_middleware(MetricsMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -53,95 +128,80 @@ app.add_middleware(
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
-        "https://sentinel-ai-hazel.vercel.app",  # Your Vercel frontend URL
-        "*"  # Temporarily allow all origins for debugging
-    ],  # Frontend URLs
+        "https://sentinel-ai-hazel.vercel.app",
+    ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
 )
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    start = time.perf_counter()
-    try:
-        response = await call_next(request)
-    except Exception as e:
-        logging.exception(f"Unhandled error: {e}")
-        # Re-raise to let FastAPI handle it
-        raise
-    duration_ms = (time.perf_counter() - start) * 1000
 
-    line = f"{request.method} {request.url.path} -> {response.status_code} ({duration_ms:.2f}ms)"
-    print(line, flush=True)
-    logging.info(line)
+@app.middleware("http")
+async def system_metrics_collector(request: Request, call_next):
+    try:
+        import psutil
+        CPU_USAGE.set(psutil.cpu_percent(interval=0.1))
+        MEMORY_USAGE.set(psutil.virtual_memory().used)
+    except Exception:
+        pass
+    response = await call_next(request)
     return response
 
-# Include the analysis router
+
 app.include_router(api_router, prefix="/api")
-
-# Include the baseline management router
 app.include_router(baseline_router, prefix="/api")
-
-# Include the settings management router
 app.include_router(settings_router, prefix="/api")
-
-# Include API keys management router
 app.include_router(api_keys_router, prefix="/api")
-
-# Include multi-tenant routers
 app.include_router(orgs_router, prefix="/api")
 app.include_router(org_api_keys_router, prefix="/api")
 app.include_router(members_router, prefix="/api")
 app.include_router(usage_router, prefix="/api")
-
-# Include user routes
 app.include_router(user_router, prefix="/api")
-
-# Include learning loop routes
 app.include_router(learning_router, prefix="/api")
-
-# Include workspace routes
 app.include_router(workspace_router, prefix="/api")
-
-# Include workspace intelligence routes
 app.include_router(workspace_intel_router, prefix="/api")
 
-@app.get("/api/health")
+
+# ── Health & Observability Endpoints ──────────────────────────────
+
+@app.get("/health", tags=["Observability"])
+async def get_health():
+    return await health_check()
+
+
+@app.get("/readiness", tags=["Observability"])
+async def get_readiness():
+    return await readiness_check()
+
+
+@app.get("/liveness", tags=["Observability"])
+async def get_liveness():
+    return await liveness_check()
+
+
+@app.get("/metrics", tags=["Observability"])
+async def get_metrics(request: Request):
+    return await prometheus_metrics_endpoint(request)
+
+
+@app.get("/api/health", tags=["Observability"])
 async def api_health_check():
-    from app.storage.db import SQLALCHEMY_DATABASE_URL, _redacted_url, get_engine
-
-    try:
-        dialect = get_engine().dialect.name
-        return {
-            "status": "ok",
-            "database": dialect,
-            "database_url": _redacted_url(SQLALCHEMY_DATABASE_URL),
-        }
-    except Exception as e:
-        return {"status": "degraded", "database_error": str(e)}
+    return await health_check()
 
 
-@app.get("/api/debug")
+@app.get("/api/debug", tags=["Observability"])
 async def debug_info():
-    """Debug endpoint to check database and environment"""
-    import os
-    from app.storage.db import SQLALCHEMY_DATABASE_URL
-    
-    return {
-        "database_url_set": bool(os.getenv("DATABASE_URL")),
-        "database_url_prefix": SQLALCHEMY_DATABASE_URL.split("://")[0] if "://" in SQLALCHEMY_DATABASE_URL else "unknown",
-        "environment": os.getenv("ENVIRONMENT", "production"),  # Default to production
-        "sqlalchemy_url": SQLALCHEMY_DATABASE_URL[:50] + "..." if len(SQLALCHEMY_DATABASE_URL) > 50 else SQLALCHEMY_DATABASE_URL
-    }
+    return get_debug_info()
 
 
-@app.post("/api/debug/send-test-email")
+@app.get("/api/circuit-breakers", tags=["Observability"])
+async def circuit_breaker_states():
+    return {"circuit_breakers": CircuitBreakerRegistry.all_states()}
+
+
+@app.post("/api/debug/send-test-email", tags=["Debug"])
 async def send_test_email(request: Request):
-    """Protected test endpoint to send a test email using configured delivery."""
-    # Protect with a simple token for local/staging use. Set DEBUG_ADMIN_TOKEN in env.
     from fastapi import HTTPException
-    import os
 
     try:
         body = await request.json()
@@ -177,18 +237,19 @@ async def send_test_email(request: Request):
     if token != expected:
         raise HTTPException(status_code=403, detail="Forbidden: invalid debug token")
 
-    # Use EmailService to send
     from app.services.email_service import EmailService
-    ok = EmailService.send_plain_email(to_email=to, subject=subject, plain_body=plain, html_body=html)
+    ok = await EmailService.send_plain_email(to_email=to, subject=subject, plain_body=plain, html_body=html)
     return {"sent": ok, "to": to}
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint to verify API is running."""
-    return {"status": "ok"}
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000,  log_level="info")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "8000")),
+        log_level=os.getenv("LOG_LEVEL", "info").lower(),
+        workers=int(os.getenv("UVICORN_WORKERS", "1")),
+        proxy_headers=True,
+        forwarded_allow_ips="*",
+    )

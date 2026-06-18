@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.services.settings_service_db import settings_service
 from app.storage.db import SessionLocal
+from app.auth.dependencies import require_authenticated_user
 
 router = APIRouter()
 
@@ -22,12 +23,12 @@ def get_db():
         db.close()
 
 @router.get("/settings")
-async def get_settings() -> Dict[str, Any]:
+async def get_settings(user=Depends(require_authenticated_user)) -> Dict[str, Any]:
     """Get current settings from database"""
     return settings_service.get_settings()
 
 @router.put("/settings")
-async def update_settings(settings_data: Dict[str, Any]) -> Dict[str, Any]:
+async def update_settings(settings_data: Dict[str, Any], user=Depends(require_authenticated_user)) -> Dict[str, Any]:
     """Update settings in database with validation"""
     try:
         updated_settings = settings_service.update_settings(settings_data)
@@ -36,7 +37,7 @@ async def update_settings(settings_data: Dict[str, Any]) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/settings/default")
-async def get_default_settings() -> Dict[str, Any]:
+async def get_default_settings(user=Depends(require_authenticated_user)) -> Dict[str, Any]:
     """Get default settings for reference"""
     return {
         "warn_threshold": 0.3,
@@ -52,12 +53,9 @@ async def get_default_settings() -> Dict[str, Any]:
     }
 
 @router.post("/settings/reset")
-async def reset_settings() -> Dict[str, Any]:
+async def reset_settings(user=Depends(require_authenticated_user)) -> Dict[str, Any]:
     """Reset settings to defaults and save to database"""
     try:
-        print("🔄 Reset endpoint called - processing reset request...")
-        
-        # Get default settings
         default_settings = {
             "warn_threshold": 0.3,
             "escalate_threshold": 0.7,
@@ -70,20 +68,13 @@ async def reset_settings() -> Dict[str, Any]:
             "enforcement_mode": "warn",
             "version": 1
         }
-        
-        print(f"📝 Default settings prepared: {default_settings}")
-        
-        # Update with defaults
         updated_settings = settings_service.update_settings(default_settings, updated_by="user_reset")
-        print(f"✅ Settings updated in database: {updated_settings}")
-        
         return updated_settings
     except Exception as e:
-        print(f"❌ Reset endpoint error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/settings/history")
-async def get_settings_history(limit: int = 10, page: int = 1) -> list:
+async def get_settings_history(limit: int = 10, page: int = 1, user=Depends(require_authenticated_user)) -> list:
     """Get settings change history for audit with pagination"""
     offset = (page - 1) * limit
     history = settings_service.get_settings_history(limit, offset)

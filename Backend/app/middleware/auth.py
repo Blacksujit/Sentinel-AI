@@ -49,19 +49,12 @@ def verify_api_key(request: Request) -> Optional[Dict]:
     """
     Verify API key for external API access and return org-scoped context.
 
-    Returns dict with org_id/api_key_id/prefix if valid, None if no key (dev),
+    Returns dict with org_id/api_key_id/prefix if valid,
     or raises HTTPException if key is invalid.
     """
-    env = os.getenv("ENVIRONMENT")
-
-    if env == "development" and not API_KEYS:
-        return {"org_id": None, "api_key_id": None, "prefix": "dev-mode"}
-
     api_key = get_api_key_from_request(request)
 
     if not api_key:
-        if env == "development":
-            return {"org_id": None, "api_key_id": None, "prefix": "dev-mode"}
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="API key required. Provide API key in Authorization header, X-API-Key header, or api_key query parameter.",

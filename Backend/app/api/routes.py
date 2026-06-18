@@ -4,13 +4,14 @@ FastAPI Routes for Sentinel AI Analysis
 This module defines the API routes for analyzing AI prompts and responses
 to detect potential risks and anomalies.
 """
-print("ROUTES.PY LOADED")
-
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 import json
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 # Import API key authentication
 from app.middleware.auth import get_api_key_dependency
@@ -98,9 +99,7 @@ async def analyze_interaction(
     # Step 2: Run output signal detectors
     output_signals = signal_registry.run_detectors("output", text=request.response)
     
-    # Debug print to show signal propagation
-    print(f"DEBUG: prompt_signals = {prompt_signals}")
-    print(f"DEBUG: output_signals = {output_signals}")
+    logger.debug("prompt_signals=%s output_signals=%s", prompt_signals, output_signals)
     
     # Step 3: Normalize detector outputs into stable signal envelope
     # Create normalized structure before calling aggregate_risk_signals
@@ -128,8 +127,7 @@ async def analyze_interaction(
         output_signals=normalized_output
     )
     
-    # Debug print to show merged flags
-    print(f"DEBUG: merged flags = {aggregated_result['flags']}")
+    logger.debug("merged flags = %s", aggregated_result.get("flags"))
     
     # Step 4: Use risk reasoner to analyze aggregated results
     risk_summary = risk_reasoner.analyze_aggregated_result(
@@ -180,7 +178,7 @@ async def analyze_interaction(
         )
     except Exception as e:
         # Logging failure should not affect API response
-        print(f"Failed to log risk event: {e}")
+        logger.error("Failed to log risk event: %s", e)
         # Continue with API response - logging failures are non-blocking
     
     # Step 8.5: Log to detection logs for learning loop
@@ -200,7 +198,7 @@ async def analyze_interaction(
             model_version="1.0"
         )
     except Exception as e:
-        print(f"Failed to log detection for learning: {e}")
+        logger.error("Failed to log detection for learning: %s", e)
     
     # Step 8.6: Check for compliance issues in the response
     # This helps detect if the prompt was a jailbreak that slipped through
@@ -212,7 +210,7 @@ async def analyze_interaction(
         )
         
         if compliance_result.is_complying and compliance_result.level.value in ['medium', 'high']:
-            print(f"⚠️ COMPLIANCE ISSUE DETECTED: {compliance_result.explanation}")
+            logger.warning("Compliance issue detected: %s", compliance_result.explanation)
             # Auto-report this as potential missed detection
             try:
                 feedback_svc = FeedbackService(db)
@@ -221,7 +219,7 @@ async def analyze_interaction(
                     user_id="system_auto_detect"
                 )
             except Exception as e:
-                print(f"Failed to auto-report compliance issue: {e}")
+                logger.error("Failed to auto-report compliance issue: %s", e)
     
     # Step 9: Return final analysis results with decision and action
     return AnalyzeResponse(
@@ -361,8 +359,10 @@ async def analyze_external_interaction(
     Returns:
         Real-time analysis results with risk scores, flags, and recommendations
     """
-    print(f"🔥 EXTERNAL API CALL: Source={request.source}, User={request.user_id}, Session={request.session_id}, API Key Prefix={api_key_ctx['prefix']}")
-    print(f"🔑 API KEY CONTEXT: org_id={api_key_ctx.get('org_id')}, api_key_id={api_key_ctx.get('api_key_id')}, prefix={api_key_ctx.get('prefix')}")
+    logger.info("External API call: source=%s user=%s session=%s key_prefix=%s",
+                 request.source, request.user_id, request.session_id, api_key_ctx.get("prefix"))
+    logger.debug("API key context: org_id=%s api_key_id=%s",
+                 api_key_ctx.get("org_id"), api_key_ctx.get("api_key_id"))
     
     # Reload settings if changed
     settings_service.reload_settings()
@@ -376,9 +376,7 @@ async def analyze_external_interaction(
     # Step 2: Run output signal detectors
     output_signals = signal_registry.run_detectors("output", text=request.response)
     
-    # Debug print to show signal propagation
-    print(f"DEBUG EXTERNAL: prompt_signals = {prompt_signals}")
-    print(f"DEBUG EXTERNAL: output_signals = {output_signals}")
+    logger.debug("External prompt_signals=%s output_signals=%s", prompt_signals, output_signals)
     
     # Step 3: Normalize detector outputs into stable signal envelope
     prompt_anomaly_result = prompt_signals.get("prompt_anomaly", {})
@@ -481,11 +479,12 @@ async def analyze_external_interaction(
         )
         
     except Exception as e:
-        print(f" Failed to log external risk event: {e}")
+        logger.error("Failed to log external risk event: %s", e)
         # Continue with API response - logging failures are non-blocking
     
     # Step 10: Return final analysis results for real-time client response
-    print(f" EXTERNAL ANALYSIS COMPLETE: Score={aligned_final_score:.3f}, Decision={policy_decision.action.value}, ID={analysis_id}")
+    logger.info("External analysis complete: score=%.3f decision=%s id=%s",
+                aligned_final_score, policy_decision.action.value, analysis_id)
     
     return ExternalAnalyzeResponse(
         final_risk_score=aligned_final_score,

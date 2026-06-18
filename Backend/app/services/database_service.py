@@ -6,11 +6,14 @@ Baselines already use `app.storage.prompt_baselines.PromptBaseline` + `app.stora
 
 from __future__ import annotations
 
+import logging
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.storage.db import SessionLocal
 from app.utils.models import SettingsModel, SettingsVersionLog
@@ -56,15 +59,15 @@ class SettingsRepository:
 
     @staticmethod
     def update(db: Session, patch: Dict[str, Any], updated_by: str = "system") -> SettingsModel:
-        print(f"🔧 Database update called with patch: {patch}")
-        print(f"👤 Updated by: {updated_by}")
-        
+        logger.debug("Database update called with patch: %s", patch)
+        logger.debug("Updated by: %s", updated_by)
+
         current = SettingsRepository.get_current(db)
         if current is None:
-            print("⚠️ No current settings found, creating default...")
+            logger.info("No current settings found, creating default...")
             current = SettingsRepository.create_default(db, updated_by=updated_by)
         else:
-            print(f"📋 Current settings before update: {current.to_dict()}")
+            logger.debug("Current settings before update: %s", current.to_dict())
 
         current.warn_threshold = float(patch.get("warn_threshold", current.warn_threshold))
         current.escalate_threshold = float(patch.get("escalate_threshold", current.escalate_threshold))
@@ -72,7 +75,7 @@ class SettingsRepository:
 
         signal_weights = patch.get("signal_weights") or {}
         if isinstance(signal_weights, dict):
-            print(f"🎯 Processing signal_weights: {signal_weights}")
+            logger.debug("Processing signal_weights: %s", signal_weights)
             if "prompt_anomaly" in signal_weights:
                 current.prompt_anomaly_weight = float(signal_weights["prompt_anomaly"])
             if "jailbreak_attempt" in signal_weights:
@@ -94,10 +97,10 @@ class SettingsRepository:
         current.updated_at = datetime.utcnow()
         current.updated_by = updated_by
 
-        print(f"💾 Settings after update: {current.to_dict()}")
-        
+        logger.debug("Settings after update: %s", current.to_dict())
+
         SettingsRepository._write_audit_log(db, current, updated_by=updated_by)
-        print("✅ Audit log written successfully")
+        logger.debug("Audit log written successfully")
         
         return current
 
