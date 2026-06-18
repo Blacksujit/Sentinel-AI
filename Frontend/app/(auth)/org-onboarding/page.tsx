@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useAuth, useUser } from '@clerk/nextjs'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 
-export default function OrgOnboardingPage() {
+function OrgOnboardingPageContent() {
   const { getToken, isLoaded, isSignedIn } = useAuth()
   const { user } = useUser()
   const router = useRouter()
@@ -314,5 +314,13 @@ export default function OrgOnboardingPage() {
         </motion.div>
       </div>
     </div>
+  )
+}
+
+export default function OrgOnboardingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-navy flex items-center justify-center"><div className="animate-pulse text-muted">Loading...</div></div>}>
+      <OrgOnboardingPageContent />
+    </Suspense>
   )
 }
