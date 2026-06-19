@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { AppLayoutModern } from '../components/layout/AppLayoutModern'
 import { Button, Switch, Separator, Input, Label } from '@/components/ui'
 import { Slider } from '@/components/ui/slider'
@@ -58,6 +59,7 @@ const DEFAULT_SETTINGS: Settings = {
 
 export function SettingsPageContent() {
   const { registerInteractiveElement } = useCursorInteractions()
+  const { getToken } = useAuth()
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -73,7 +75,10 @@ export function SettingsPageContent() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const response = await fetch('/api/settings')
+        const token = await getToken()
+        const response = await fetch('/api/settings', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
         if (response.ok) {
           const data = await response.json()
           setSettings(data)
@@ -94,7 +99,11 @@ export function SettingsPageContent() {
     const loadHistory = async () => {
       setHistoryLoading(true)
       try {
-        const response = await fetch(`/api/settings/history?limit=10&page=${historyPage}`, { cache: 'no-store' })
+        const token = await getToken()
+        const response = await fetch(`/api/settings/history?limit=10&page=${historyPage}`, {
+          cache: 'no-store',
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
         if (!response.ok) {
           const msg = await response.text()
           throw new Error(msg || `HTTP error! status: ${response.status}`)
@@ -139,10 +148,13 @@ export function SettingsPageContent() {
     try {
       console.log('Attempting to reset settings...')
       
+      const token = await getToken()
+      const authHeaders = token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : { 'Content-Type': 'application/json' }
+      
       // Try POST reset endpoint first
       let response = await fetch('/api/settings/reset', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: authHeaders
       })
       
       console.log('Reset response status:', response.status)
@@ -150,7 +162,9 @@ export function SettingsPageContent() {
       if (!response.ok) {
         console.log('POST reset failed, trying fallback method...')
         // Fallback: get defaults and save them
-        const defaultResponse = await fetch('/api/settings/default')
+        const defaultResponse = await fetch('/api/settings/default', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
         if (defaultResponse.ok) {
           const defaultSettings = await defaultResponse.json()
           console.log('Got default settings:', defaultSettings)
@@ -158,7 +172,7 @@ export function SettingsPageContent() {
           // Save the defaults
           response = await fetch('/api/settings', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders,
             body: JSON.stringify(defaultSettings)
           })
           console.log('Save defaults response status:', response.status)
@@ -206,9 +220,13 @@ export function SettingsPageContent() {
   const saveSettings = async () => {
     setSaving(true)
     try {
+      const token = await getToken()
       const response = await fetch('/api/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(settings)
       })
       
