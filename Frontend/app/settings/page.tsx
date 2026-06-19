@@ -75,14 +75,15 @@ export function SettingsPageContent() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const token = await getToken()
+        let token = null
+        try { token = await getToken() } catch (e) { console.warn('getToken failed:', e) }
         const response = await fetch('/api/settings', {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
         if (response.ok) {
           const data = await response.json()
           setSettings(data)
-          setInitialSettings(data) // Store initial loaded settings
+          setInitialSettings(data)
         }
       } catch (error) {
         console.error('Failed to load settings:', error)
@@ -99,7 +100,8 @@ export function SettingsPageContent() {
     const loadHistory = async () => {
       setHistoryLoading(true)
       try {
-        const token = await getToken()
+        let token = null
+        try { token = await getToken() } catch (e) { console.warn('getToken failed:', e) }
         const response = await fetch(`/api/settings/history?limit=10&page=${historyPage}`, {
           cache: 'no-store',
           headers: token ? { Authorization: `Bearer ${token}` } : {}
@@ -148,7 +150,8 @@ export function SettingsPageContent() {
     try {
       console.log('Attempting to reset settings...')
       
-      const token = await getToken()
+      let token = null
+      try { token = await getToken() } catch (e) { console.warn('getToken failed:', e) }
       const authHeaders = token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : { 'Content-Type': 'application/json' }
       
       // Try POST reset endpoint first
@@ -220,7 +223,8 @@ export function SettingsPageContent() {
   const saveSettings = async () => {
     setSaving(true)
     try {
-      const token = await getToken()
+      let token = null
+      try { token = await getToken() } catch (e) { console.warn('getToken failed:', e) }
       const response = await fetch('/api/settings', {
         method: 'PUT',
         headers: {
@@ -257,13 +261,14 @@ export function SettingsPageContent() {
           confirmButtonText: 'OK'
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save settings:', error)
-      toast.error('Failed to save settings')
+      const errorMsg = error?.message || error?.toString() || 'Unknown error'
+      toast.error(`Failed to save settings: ${errorMsg}`)
       
       await Swal.fire({
         title: 'Error!',
-        text: 'Failed to save settings. Please check your connection and try again.',
+        text: `Failed to save settings: ${errorMsg}`,
         icon: 'error',
         confirmButtonText: 'OK'
       })
