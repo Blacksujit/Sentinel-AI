@@ -20,6 +20,17 @@ services:
           property: connectionString
       - key: PYTHON_VERSION
         value: "3.12.8"
+      - key: CLERK_JWT_PUBLIC_KEY
+        value: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmdubYDjREA5RtJd5hW1q
+          M+EqQhcxcmbbX70CQxGGK6HqF9LGxgDf64ZEJFCVBMXM72u2lbjpT94y0HSmLegd
+          ODDupY810nIJrWtuXQIO+eVA2xKajBCW3iptBB40DLwzIFstCu+t9zeOsVRZffca
+          afVnuygZsilH+tIV0wPElpHMxh4GajgwBbt8g1M0zZV2+eJz3ajjOrUNpI5WnJ7F
+          yqq1/d3rLHrNOe0161f+3ig82/g1ayf+/lxJe62OAIujntx28CurnL2+yI5xl/RM
+          oWQB65VObeTjyef0ehUOdHo/cNNegcCElOMtfw2H776/OEdpIaVXSHhY7BUezipZ
+          gwIDAQAB
+          -----END PUBLIC KEY-----
 
 databases:
   - name: sentinel-ai-db
