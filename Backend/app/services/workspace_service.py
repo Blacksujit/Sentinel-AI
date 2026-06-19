@@ -194,10 +194,15 @@ class WorkspaceService:
             if user_email.lower() != invite.email.lower():
                 raise ValueError("This invitation was sent to a different email address")
 
-        # Already a member?
+        # Already a member? Gracefully accept and return existing membership.
         existing = WorkspaceService.get_workspace_member(db, invite.workspace_id, user_id)
         if existing:
-            raise ValueError("You are already a member of this workspace")
+            invite.status = 'accepted'
+            invite.accepted_at = datetime.utcnow()
+            invite.accepted_by_user_id = user_id
+            db.flush()
+            db.commit()
+            return existing
 
         # Create membership
         member = WorkspaceMember(
