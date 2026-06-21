@@ -474,3 +474,7 @@ Backend/app/middleware/auth_loaded.log
 # Ephemeral SQLite (use Render Postgres in production)
 Backend/sentinel_ai.db
 Backend/sentinel_ai.db-journal
+
+# AI Assistant Tools
+.opencode/
+claude-skills/
