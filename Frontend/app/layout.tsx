@@ -2,6 +2,8 @@ import './globals.css'
 import { ClerkProviderClient } from './components/clerk-provider-client'
 import { Providers } from './providers'
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google'
+import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Analytics } from '@vercel/analytics/next'
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -36,6 +38,8 @@ export default function RootLayout({
       >
         <body className="min-h-screen bg-[color:var(--paper)] text-[color:var(--ink)] antialiased">
           <Providers>{children}</Providers>
+          <SpeedInsights />
+          <Analytics />
         </body>
       </html>
     </ClerkProviderClient>
