@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { AppLayoutModern } from '@/components/layout/AppLayoutModern'
+import { AppLayout } from '@/components/layout/AppLayout'
 import { Button, Badge } from '@/components/ui'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -118,13 +118,9 @@ function UserPlaygroundContent() {
   }
 
   return (
-    <AppLayoutModern>
-      <div className="min-h-screen bg-gradient-navy">
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:50px_50px]" />
-        </div>
-
-        <div className="relative z-10 space-y-8 p-6">
+    <AppLayout>
+      <div className="min-h-screen bg-background">
+        <div className="space-y-8 p-6">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -134,7 +130,7 @@ function UserPlaygroundContent() {
             <motion.h1 variants={slideUp} className="text-3xl font-bold tracking-tight text-foreground">
               Playground
             </motion.h1>
-            <motion.p variants={slideUp} className="text-muted">
+            <motion.p variants={slideUp} className="text-muted-foreground">
               Test prompts and responses against SentinelAI risk analysis - no production data logged.
             </motion.p>
           </motion.div>
@@ -206,7 +202,7 @@ function UserPlaygroundContent() {
                       }
                     })
                   }}
-                  className="text-muted hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
                   aria-label="Cancel analysis"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,7 +212,7 @@ function UserPlaygroundContent() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted">Elapsed Time</span>
+                  <span className="text-xs text-muted-foreground">Elapsed Time</span>
                   <span className="text-lg font-mono font-bold text-foreground">{elapsedTime}s</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
@@ -229,7 +225,7 @@ function UserPlaygroundContent() {
                   />
                 </div>
               </div>
-              <div className="text-xs text-muted text-center">
+              <div className="text-xs text-muted-foreground text-center">
                 {isRunning ? 'Processing your analysis...' : 'Analysis complete'}
               </div>
             </motion.div>
@@ -246,23 +242,23 @@ function UserPlaygroundContent() {
                       <Badge className="badge-premium">settings v{result.settings_version}</Badge>
                     )}
                   </div>
-                  <div className="text-sm text-muted">{result.decision_reason || '—'}</div>
+                  <div className="text-sm text-muted-foreground">{result.decision_reason || '—'}</div>
                   <div className="flex flex-wrap gap-1">
                     {(Array.isArray(result.flags) ? result.flags : []).length ? (
                       result.flags.map((f, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs border-white/20 text-muted">
+                        <Badge key={idx} variant="outline" className="text-xs border-border text-muted-foreground">
                           {f}
                         </Badge>
                       ))
                     ) : (
-                      <span className="text-sm text-muted">No flags</span>
+                      <span className="text-sm text-muted-foreground">No flags</span>
                     )}
                   </div>
                 </div>
 
                 <div className="lg:col-span-4 space-y-2">
-                  <div className="text-xs font-medium text-muted">Thresholds applied</div>
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-xs font-mono text-foreground/90 whitespace-pre-wrap">
+                  <div className="text-xs font-medium text-muted-foreground">Thresholds applied</div>
+                  <div className="rounded-xl border border-border bg-card p-3 text-xs font-mono text-foreground/90 whitespace-pre-wrap">
                     {result.thresholds_applied ? JSON.stringify(result.thresholds_applied, null, 2) : '—'}
                   </div>
                 </div>
@@ -271,6 +267,6 @@ function UserPlaygroundContent() {
           )}
         </div>
       </div>
-    </AppLayoutModern>
+    </AppLayout>
   )
 }

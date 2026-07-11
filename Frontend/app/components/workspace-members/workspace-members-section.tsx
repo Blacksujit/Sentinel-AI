@@ -101,7 +101,7 @@ export function WorkspaceMembersSection({
       showCancelButton: true,
       confirmButtonText: 'Change Role',
       cancelButtonText: 'Cancel',
-      confirmButtonColor: '#6366f1',
+      confirmButtonColor: '#A83426',
     })
 
     if (!result.isConfirmed) return
@@ -186,17 +186,17 @@ export function WorkspaceMembersSection({
       >
         <div>
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <Users className="w-6 h-6 text-indigo-400" />
+            <Users className="w-6 h-6 text-primary" />
             Workspace Members
           </h2>
-          <p className="text-muted mt-1">
+          <p className="text-muted-foreground mt-1">
             Manage who has access to this workspace
           </p>
         </div>
         {canInvite && (
           <Button
             onClick={() => setShowInviteDialog(true)}
-            className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+            className="bg-primary hover:opacity-90"
           >
             <UserPlus className="w-4 h-4 mr-2" />
             Invite Member
@@ -220,10 +220,10 @@ export function WorkspaceMembersSection({
             return (
               <div
                 key={role}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border"
               >
                 <RoleBadge role={role} />
-                <span className="text-sm text-muted">{count}</span>
+                <span className="text-sm text-muted-foreground">{count}</span>
               </div>
             )
           })}
@@ -259,23 +259,23 @@ export function WorkspaceMembersSection({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <Card className="card-premium border-white/10">
+        <Card className="card-premium border-border">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-400" />
+                <Users className="w-5 h-5 text-primary" />
                 Team Members
-                <span className="text-sm font-normal text-muted ml-2">
+                <span className="text-sm font-normal text-muted-foreground ml-2">
                   ({members.length})
                 </span>
               </CardTitle>
               <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search members..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/10 focus:border-indigo-500/50"
+                  className="pl-10 bg-card border-border focus:border-indigo-500/50"
                 />
               </div>
             </div>
@@ -284,27 +284,27 @@ export function WorkspaceMembersSection({
             {isLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 bg-white/5 rounded-lg animate-pulse" />
+                  <div key={i} className="h-16 bg-card rounded-lg animate-pulse" />
                 ))}
               </div>
             ) : sortedMembers.length === 0 ? (
               <div className="text-center py-12">
                 {searchQuery ? (
                   <>
-                    <p className="text-muted">No members match your search</p>
+                    <p className="text-muted-foreground">No members match your search</p>
                     <Button variant="ghost" onClick={() => setSearchQuery('')} className="mt-2">
                       Clear search
                     </Button>
                   </>
                 ) : (
                   <>
-                    <Users className="w-12 h-12 text-muted mx-auto mb-3" />
-                    <p className="text-muted">No members found</p>
+                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">No members found</p>
                     {canInvite && (
                       <Button
                         variant="outline"
                         onClick={() => setShowInviteDialog(true)}
-                        className="mt-4 border-white/10"
+                        className="mt-4 border-border"
                       >
                         <UserPlus className="w-4 h-4 mr-2" />
                         Invite your first member

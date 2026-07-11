@@ -5,7 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { motion } from 'framer-motion'
 import {
   Activity, AlertTriangle, Brain, GitPullRequest,
-  Clock, Plus, MessageSquare, Zap, Users,
+  Clock, Plus, MessageSquare, Users,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -116,12 +116,11 @@ export function WorkspaceIntelDashboard({
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Zap className="w-6 h-6 text-indigo-400" />
+          <h1 className="text-2xl font-bold text-card-foreground">
             {workspaceName || 'Workspace Intelligence'}
           </h1>
-          <p className="text-sm text-muted mt-1">
-            AI-native operational coordination — real-time incidents, deployments, and insights
+          <p className="mt-1 text-sm text-muted-foreground">
+            Real-time incidents, deployments, and intelligence for this workspace
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -133,8 +132,8 @@ export function WorkspaceIntelDashboard({
             <GitPullRequest className="w-4 h-4 mr-1" />
             Log Deployment
           </Button>
-          <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 bg-emerald-500/5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />
+          <Badge variant="outline" className="border-emerald-500/30 text-emerald-400">
+            <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
             Live
           </Badge>
         </div>
@@ -151,7 +150,7 @@ export function WorkspaceIntelDashboard({
             <AlertTriangle className="w-4 h-4 mr-1.5" />
             Incidents
             {activeIncidents.length > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-rose-500/20 text-rose-300 rounded-full">
+              <span className="ml-1.5 rounded-full bg-rose-500/20 px-1.5 py-0.5 text-[10px] text-rose-400">
                 {activeIncidents.length}
               </span>
             )}
@@ -180,10 +179,10 @@ export function WorkspaceIntelDashboard({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Active Incidents */}
-            <Card className="card-premium border-white/10">
+            <Card className="border bg-card">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg text-white">Active Incidents</CardTitle>
-                <Button variant="ghost" size="sm" className="text-muted text-xs" onClick={() => setActiveTab('incidents')}>
+                <CardTitle className="text-lg text-card-foreground">Active Incidents</CardTitle>
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setActiveTab('incidents')}>
                   View All →
                 </Button>
               </CardHeader>
@@ -196,10 +195,10 @@ export function WorkspaceIntelDashboard({
             </Card>
 
             {/* Recent Timeline */}
-            <Card className="card-premium border-white/10">
+            <Card className="border bg-card">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg text-white">Recent Activity</CardTitle>
-                <Button variant="ghost" size="sm" className="text-muted text-xs" onClick={() => setActiveTab('timeline')}>
+                <CardTitle className="text-lg text-card-foreground">Recent Activity</CardTitle>
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setActiveTab('timeline')}>
                   View All →
                 </Button>
               </CardHeader>
@@ -212,11 +211,11 @@ export function WorkspaceIntelDashboard({
 
         {/* Incidents Tab */}
         <TabsContent value="incidents" className="space-y-4 mt-6">
-          <Card className="card-premium border-white/10">
+          <Card className="border bg-card">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg text-white">
+              <CardTitle className="text-lg text-card-foreground">
                 All Incidents
-                <span className="ml-2 text-sm text-muted font-normal">
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
                   ({incidents?.length || 0} total, {activeIncidents.length} active)
                 </span>
               </CardTitle>
@@ -233,11 +232,11 @@ export function WorkspaceIntelDashboard({
 
         {/* Timeline Tab */}
         <TabsContent value="timeline" className="space-y-4 mt-6">
-          <Card className="card-premium border-white/10">
+          <Card className="border bg-card">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg text-white">Operational Timeline</CardTitle>
-              <div className="flex items-center gap-2 text-xs text-muted">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Real-time
+              <CardTitle className="text-lg text-card-foreground">Operational Timeline</CardTitle>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" /> Real-time
               </div>
             </CardHeader>
             <CardContent className="max-h-[600px] overflow-y-auto">
@@ -248,9 +247,9 @@ export function WorkspaceIntelDashboard({
 
         {/* Activity Tab */}
         <TabsContent value="activity" className="space-y-4 mt-6">
-          <Card className="card-premium border-white/10">
+          <Card className="border bg-card">
             <CardHeader>
-              <CardTitle className="text-lg text-white">Activity Feed</CardTitle>
+              <CardTitle className="text-lg text-card-foreground">Activity Feed</CardTitle>
             </CardHeader>
             <CardContent className="max-h-[500px] overflow-y-auto">
               <ActivityFeed items={activityFeed || []} isLoading={activityLoading} />
@@ -260,30 +259,29 @@ export function WorkspaceIntelDashboard({
 
         {/* AI Memory Tab */}
         <TabsContent value="memory" className="space-y-4 mt-6">
-          <Card className="card-premium border-white/10">
+          <Card className="border bg-card">
             <CardHeader>
-              <CardTitle className="text-lg text-white">AI Operational Memory</CardTitle>
-              <p className="text-sm text-muted mt-1">
-                The system learns from every incident and deployment, building a knowledge base
-                of patterns, root causes, and fixes.
+              <CardTitle className="text-lg text-card-foreground">AI Operational Memory</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tracked patterns, deployment risk history, and validated root causes across all incidents.
               </p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {[
-                  { type: 'INCIDENT_PATTERNS', count: summary?.memory_entries || 0, icon: Brain, color: 'purple' },
-                  { type: 'DEPLOYMENT_RISK', count: (deployments || []).filter(d => d.risk_score && d.risk_score > 0.5).length, icon: GitPullRequest, color: 'amber' },
-                  { type: 'ROOT_CAUSES', count: (incidents || []).filter(i => i.root_cause).length, icon: AlertTriangle, color: 'rose' },
+                  { type: 'INCIDENT_PATTERNS', count: summary?.memory_entries || 0, icon: Brain },
+                  { type: 'DEPLOYMENT_RISK', count: (deployments || []).filter(d => d.risk_score && d.risk_score > 0.5).length, icon: GitPullRequest },
+                  { type: 'ROOT_CAUSES', count: (incidents || []).filter(i => i.root_cause).length, icon: AlertTriangle },
                 ].map((item) => (
                   <div
                     key={item.type}
-                    className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-indigo-500/30 transition-colors"
+                    className="rounded-lg border bg-card p-4 transition-colors hover:bg-muted/50"
                   >
                     <div className="flex items-center gap-3">
-                      <item.icon className={`w-5 h-5 text-${item.color}-400`} />
+                      <item.icon className="h-5 w-5 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-white">{item.type.replace(/_/g, ' ')}</p>
-                        <p className="text-xs text-muted">{item.count} entries</p>
+                        <p className="text-sm text-card-foreground">{item.type.replace(/_/g, ' ')}</p>
+                        <p className="text-xs text-muted-foreground">{item.count} entries</p>
                       </div>
                     </div>
                   </div>

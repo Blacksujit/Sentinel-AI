@@ -19,7 +19,7 @@ interface Org {
 
 export default function OrgPage() {
   const { getToken, isLoaded } = useAuth()
-  const params = useParams()
+  const params = useParams()!
   const [org, setOrg] = useState<Org | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -57,8 +57,8 @@ export default function OrgPage() {
   if (loading || !org) {
     return (
       <AppLayoutModern>
-        <div className="min-h-screen bg-gradient-navy flex items-center justify-center">
-          <div className="text-sm text-muted">Loading organization…</div>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-sm text-muted-foreground">Loading organization…</div>
         </div>
       </AppLayoutModern>
     )
@@ -66,8 +66,7 @@ export default function OrgPage() {
 
   return (
     <AppLayoutModern>
-      <div className="min-h-screen bg-gradient-navy">
-        <div className="relative z-10 space-y-6 p-6">
+      <div className="space-y-6 p-6">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -75,12 +74,11 @@ export default function OrgPage() {
             className="flex flex-col gap-2"
           >
             <h1 className="text-2xl font-bold text-foreground">{org.name}</h1>
-            <p className="text-sm text-muted">Organization ID: {org.id}</p>
-            <p className="text-sm text-muted">Slug: {org.slug}</p>
-            <p className="text-sm text-muted">Plan: {org.plan_tier}</p>
+            <p className="text-sm text-muted-foreground">Organization ID: {org.id}</p>
+            <p className="text-sm text-muted-foreground">Slug: {org.slug}</p>
+            <p className="text-sm text-muted-foreground">Plan: {org.plan_tier}</p>
           </motion.div>
         </div>
-      </div>
     </AppLayoutModern>
   )
 }

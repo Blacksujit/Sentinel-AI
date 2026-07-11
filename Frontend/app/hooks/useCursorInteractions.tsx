@@ -121,7 +121,7 @@ export function useCursorInteractions() {
   }, [isHovering])
 
   const registerInteractiveElement = (
-    elementOrRiskLevel: HTMLElement | null | undefined | ('critical' | 'high' | 'medium' | 'low'),
+    elementOrRiskLevel: HTMLElement | null | undefined | string,
     maybeRiskLevel?: 'critical' | 'high' | 'medium' | 'low'
   ) => {
     // Usage A: registerInteractiveElement(element, riskLevel?)

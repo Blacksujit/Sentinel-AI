@@ -156,14 +156,14 @@ function OrgOnboardingPageContent() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-gradient-navy flex items-center justify-center">
-        <div className="animate-pulse text-muted">Loading...</div>
+      <div className="min-h-screen bg-gradient-warm flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-navy">
+    <div className="min-h-screen bg-gradient-warm">
       <div className="container max-w-lg mx-auto px-4 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -178,7 +178,7 @@ function OrgOnboardingPageContent() {
             <h1 className="text-2xl font-bold text-foreground">
               Create Your Organization
             </h1>
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               Set up your SentinelAI organization to start monitoring AI risks
             </p>
           </div>
@@ -189,7 +189,7 @@ function OrgOnboardingPageContent() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <Card className="card-premium border-white/10">
+              <Card className="card-premium border-border">
                 <CardHeader>
                   <CardTitle className="text-lg">Organization Details</CardTitle>
                   <CardDescription>
@@ -204,7 +204,7 @@ function OrgOnboardingPageContent() {
                       placeholder="Acme Inc."
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
-                      className="bg-background/50 border-white/10"
+                      className="bg-background/50 border-border"
                     />
                   </div>
                   
@@ -216,9 +216,9 @@ function OrgOnboardingPageContent() {
                       placeholder="security@acme.com"
                       value={companyEmail}
                       onChange={(e) => setCompanyEmail(e.target.value)}
-                      className="bg-background/50 border-white/10"
+                      className="bg-background/50 border-border"
                     />
-                    <p className="text-xs text-muted">
+                    <p className="text-xs text-muted-foreground">
                       Used for security alerts and organization verification
                     </p>
                   </div>
@@ -226,7 +226,7 @@ function OrgOnboardingPageContent() {
                   <Button
                     onClick={handleCreateOrg}
                     disabled={isSubmitting}
-                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                    className="w-full"
                   >
                     {isSubmitting ? (
                       <span className="flex items-center gap-2">
@@ -251,7 +251,7 @@ function OrgOnboardingPageContent() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
             >
-              <Card className="card-premium border-white/10">
+              <Card className="card-premium border-border">
                 <CardContent className="pt-6 pb-6 text-center space-y-4">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 mb-2">
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
@@ -261,31 +261,31 @@ function OrgOnboardingPageContent() {
                     <h3 className="text-xl font-semibold text-foreground">
                       Organization Created!
                     </h3>
-                    <p className="text-sm text-muted">
+                    <p className="text-sm text-muted-foreground">
                       Your organization <strong>{orgName}</strong> is ready to go
                     </p>
                   </div>
 
                   <div className="bg-muted/30 rounded-lg p-4 text-left space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted">Organization ID</span>
+                      <span className="text-muted-foreground">Organization ID</span>
                       <span className="font-mono text-foreground">{createdOrg?.id}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted">Plan</span>
+                      <span className="text-muted-foreground">Plan</span>
                       <span className="text-foreground capitalize">{createdOrg?.plan_tier || 'Free'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted">Role</span>
+                      <span className="text-muted-foreground">Role</span>
                       <span className="text-foreground">Admin</span>
                     </div>
                   </div>
 
                   {isLoadingWorkspace && (
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-left text-sm">
+                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-left text-sm">
                       <div className="flex items-center gap-2">
                         <span className="animate-spin">⏳</span>
-                        <span className="text-muted">Preparing workspace...</span>
+                        <span className="text-muted-foreground">Preparing workspace...</span>
                       </div>
                     </div>
                   )}
@@ -293,7 +293,7 @@ function OrgOnboardingPageContent() {
                   <Button
                     onClick={handleGoToDashboard}
                     disabled={isLoadingWorkspace}
-                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                    className="w-full"
                   >
                     {isLoadingWorkspace ? (
                       <span className="flex items-center gap-2">
@@ -319,7 +319,7 @@ function OrgOnboardingPageContent() {
 
 export default function OrgOnboardingPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-navy flex items-center justify-center"><div className="animate-pulse text-muted">Loading...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gradient-warm flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}>
       <OrgOnboardingPageContent />
     </Suspense>
   )

@@ -69,27 +69,27 @@ export default function AcceptWorkspaceInvitePage({
 
   return (
     <div className="mx-auto mt-24 max-w-xl px-4 text-center">
-      <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-lg">
+      <div className="rounded-3xl border border-border bg-card p-10 shadow-card">
         <div className="flex justify-center mb-4">
           {status === "loading" && (
-            <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
+            <Loader2 className="w-12 h-12 text-primary animate-spin" />
           )}
           {status === "success" && (
-            <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+            <CheckCircle2 className="w-12 h-12 text-success" />
           )}
           {status === "error" && (
-            <XCircle className="w-12 h-12 text-rose-500" />
+            <XCircle className="w-12 h-12 text-destructive" />
           )}
         </div>
 
-        <h1 className="text-3xl font-semibold text-slate-900 flex items-center justify-center gap-2">
-          <Building2 className="w-7 h-7 text-indigo-500" />
+        <h1 className="text-3xl font-semibold text-foreground flex items-center justify-center gap-2">
+          <Building2 className="w-7 h-7 text-primary" />
           Workspace Invitation
         </h1>
-        <p className="mt-4 text-sm text-slate-600">{message}</p>
+        <p className="mt-4 text-sm text-muted-foreground">{message}</p>
 
         {errorDetail && (
-          <div className="mt-6 rounded-2xl bg-rose-50 p-5 text-left text-rose-800">
+          <div className="mt-6 rounded-2xl bg-destructive/10 p-4 text-left text-destructive">
             <p className="font-medium">Error details</p>
             <p className="mt-2 text-sm">{errorDetail}</p>
             <div className="mt-4 flex justify-center gap-3 text-sm">

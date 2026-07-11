@@ -40,6 +40,7 @@ from app.api.user_routes import router as user_router
 from app.api.learning_routes import router as learning_router
 from app.api.workspace_routes import router as workspace_router
 from app.api.workspace_intel_routes import router as workspace_intel_router
+from app.api.webhooks import router as webhooks_router
 from app.storage.db import init_db
 from app.middleware.request_id import RequestIDMiddleware
 
@@ -160,6 +161,7 @@ app.include_router(user_router, prefix="/api")
 app.include_router(learning_router, prefix="/api")
 app.include_router(workspace_router, prefix="/api")
 app.include_router(workspace_intel_router, prefix="/api")
+app.include_router(webhooks_router, prefix="/api")
 
 
 # ── Health & Observability Endpoints ──────────────────────────────

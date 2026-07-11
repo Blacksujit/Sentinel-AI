@@ -33,28 +33,28 @@ export function OrgProfileStep({ data, onChange, onNext }: Props) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
     >
-      <Card className="card-premium border-white/10">
+      <Card className="card-premium border-border">
         <CardHeader>
-          <CardTitle className="text-xl text-white">Organization Profile</CardTitle>
+          <CardTitle className="text-xl text-foreground">Organization Profile</CardTitle>
           <CardDescription>
             Tell us about your organization so we can tailor the experience
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="orgName" className="text-white">Organization Name</Label>
+            <Label htmlFor="orgName" className="text-foreground">Organization Name</Label>
             <Input
               id="orgName"
               placeholder="Acme Corp"
               value={data.orgName}
               onChange={(e) => onChange({ orgName: e.target.value })}
-              className="bg-black/30 border-white/15 text-white"
+              className="bg-muted border-border text-foreground"
             />
             {errors.orgName && <p className="text-xs text-red-400">{errors.orgName}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label className="text-white">Industry</Label>
+            <Label className="text-foreground">Industry</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {INDUSTRIES.map((ind) => (
                 <button
@@ -62,9 +62,9 @@ export function OrgProfileStep({ data, onChange, onNext }: Props) {
                   onClick={() => onChange({ industry: ind.value })}
                   className={`p-3 rounded-lg border text-sm transition-all text-left ${
                     data.industry === ind.value
-                      ? 'border-electric-blue bg-electric-blue/10 text-white'
-                      : 'border-white/10 text-muted hover:border-white/20 hover:text-white'
-                  }`}
+? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border text-muted-foreground hover:border-border hover:text-foreground'
+                   }`}
                 >
                   {ind.label}
                 </button>
@@ -74,7 +74,7 @@ export function OrgProfileStep({ data, onChange, onNext }: Props) {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-white">Company Size</Label>
+            <Label className="text-foreground">Company Size</Label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {COMPANY_SIZES.map((size) => (
                 <button
@@ -82,8 +82,8 @@ export function OrgProfileStep({ data, onChange, onNext }: Props) {
                   onClick={() => onChange({ companySize: size.value })}
                   className={`p-3 rounded-lg border text-sm transition-all ${
                     data.companySize === size.value
-                      ? 'border-electric-blue bg-electric-blue/10 text-white'
-                      : 'border-white/10 text-muted hover:border-white/20 hover:text-white'
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border text-muted-foreground hover:border-border hover:text-foreground'
                   }`}
                 >
                   {size.label}

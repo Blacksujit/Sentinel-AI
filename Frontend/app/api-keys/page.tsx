@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { AppLayoutModern } from '../components/layout/AppLayoutModern'
+import { AppLayout } from '../components/layout/AppLayout'
 import { Button, Input, Label, Separator } from '@/components/ui'
 import { MotionCard, slideUp, staggerContainer, buttonPress } from '@/components/ui/motion'
 import { motion } from 'framer-motion'
@@ -92,13 +92,13 @@ export default function ApiKeysPage() {
         icon: 'success',
         buttonsStyling: false,
         customClass: {
-          popup: 'rounded-2xl border border-white/10 bg-[#0b1220] text-white',
-          title: 'text-white',
-          htmlContainer: 'text-white/80',
+          popup: 'rounded-2xl border border-border bg-card text-foreground',
+          title: 'text-foreground',
+          htmlContainer: 'text-foreground/80',
           confirmButton:
-            'inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors',
+            'inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-primary text-primary-foreground transition-colors hover:opacity-90',
           denyButton:
-            'inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-slate-700 hover:bg-slate-600 text-white border border-white/10 transition-colors',
+            'inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-muted text-foreground border border-border transition-colors hover:bg-accent',
           actions: 'gap-2',
         },
         showDenyButton: true,
@@ -108,15 +108,15 @@ export default function ApiKeysPage() {
           try {
             await navigator.clipboard.writeText(data.api_key)
             if (btn) {
-              btn.classList.remove('bg-slate-700', 'hover:bg-slate-600', 'border-white/10')
-              btn.classList.add('bg-emerald-600')
+              btn.classList.remove('bg-muted', 'hover:bg-accent', 'border-border')
+              btn.classList.add('bg-success')
               btn.innerHTML =
                 '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-flex;">✓</span><span>Copied</span></span>'
               btn.disabled = true
               window.setTimeout(() => {
                 btn.disabled = false
-                btn.classList.remove('bg-emerald-600')
-                btn.classList.add('bg-slate-700', 'hover:bg-slate-600', 'border-white/10')
+                btn.classList.remove('bg-success')
+                btn.classList.add('bg-muted', 'hover:bg-accent', 'border-border')
                 btn.textContent = 'Copy'
               }, 1400)
             }
@@ -127,7 +127,7 @@ export default function ApiKeysPage() {
           return false
         },
         confirmButtonText: 'Done',
-        confirmButtonColor: '#3085d6',
+        confirmButtonColor: '#A83426',
       })
 
       setName('')
@@ -148,7 +148,7 @@ export default function ApiKeysPage() {
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Revoke',
-      confirmButtonColor: '#d33',
+      confirmButtonColor: '#A83426',
     })
 
     if (!confirm.isConfirmed) return
@@ -171,9 +171,8 @@ export default function ApiKeysPage() {
   }
 
   return (
-    <AppLayoutModern>
-      <div className="min-h-screen bg-gradient-navy">
-        <div className="relative z-10 space-y-6 p-6">
+    <AppLayout>
+      <div className="space-y-6 p-6">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -183,7 +182,7 @@ export default function ApiKeysPage() {
             <motion.h1 variants={slideUp} className="text-2xl font-bold text-foreground">
               API Keys
             </motion.h1>
-            <motion.p variants={slideUp} className="text-sm text-muted">
+            <motion.p variants={slideUp} className="text-sm text-muted-foreground">
               Generate and revoke SDK API keys. Keep keys secret and store them in environment variables.
             </motion.p>
           </motion.div>
@@ -191,7 +190,7 @@ export default function ApiKeysPage() {
           <MotionCard variants={slideUp} className="card-premium p-6">
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <div className="text-sm text-muted">Active keys: {activeCount}</div>
+                <div className="text-sm text-muted-foreground">Active keys: {activeCount}</div>
                 <motion.div {...buttonPress}>
                   <Button variant="outline" onClick={loadKeys} disabled={loading}>
                     Refresh
@@ -227,24 +226,24 @@ export default function ApiKeysPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search keys (name, prefix, status)…"
-                  className="bg-black/30 text-foreground placeholder:text-white/40 border-white/15 focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                  className="bg-muted text-foreground placeholder:text-foreground/40 border-border focus-visible:ring-2 focus-visible:ring-primary/40"
                 />
               </div>
             </div>
 
             <div className="mt-4">
               {loading ? (
-                <div className="text-sm text-muted">Loading…</div>
+                <div className="text-sm text-muted-foreground">Loading…</div>
               ) : keys.length === 0 ? (
-                <div className="text-sm text-muted">No keys created yet.</div>
+                <div className="text-sm text-muted-foreground">No keys created yet.</div>
               ) : filteredKeys.length === 0 ? (
-                <div className="text-sm text-muted">No keys match your search.</div>
+                <div className="text-sm text-muted-foreground">No keys match your search.</div>
               ) : (
-                <div className="rounded-xl border border-white/10 bg-black/20">
+                <div className="rounded-xl border border-border bg-card">
                   <div className="max-h-[420px] overflow-auto">
                     <table className="min-w-full text-left text-sm">
-                      <thead className="sticky top-0 z-10 bg-black/40 backdrop-blur">
-                        <tr className="border-b border-white/10">
+                      <thead className="sticky top-0 z-10 bg-background/80 backdrop-blur">
+                        <tr className="border-b border-border">
                           <th className="px-4 py-3 font-medium text-foreground">Name</th>
                           <th className="px-4 py-3 font-medium text-foreground">Prefix</th>
                           <th className="px-4 py-3 font-medium text-foreground">Status</th>
@@ -255,36 +254,35 @@ export default function ApiKeysPage() {
                       </thead>
                       <tbody>
                         {filteredKeys.map((k) => (
-                          <tr key={k.id} className="border-b border-white/10 last:border-b-0">
+                          <tr key={k.id} className="border-b border-border last:border-b-0">
                             <td className="px-4 py-3">
                               <div className="max-w-[280px] truncate font-semibold text-foreground">
                                 {k.name}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-muted">{k.prefix}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{k.prefix}</td>
                             <td className="px-4 py-3">
                               <span
                                 className={
                                   k.active
-                                    ? 'inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-1 text-xs font-medium text-emerald-200'
-                                    : 'inline-flex items-center rounded-full bg-red-500/15 px-2 py-1 text-xs font-medium text-red-200'
+                                    ? 'inline-flex items-center rounded-full bg-success/15 px-2 py-1 text-xs font-medium text-success'
+                                    : 'inline-flex items-center rounded-full bg-destructive/15 px-2 py-1 text-xs font-medium text-destructive'
                                 }
                               >
                                 {k.active ? 'Active' : 'Revoked'}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-muted">
+                            <td className="px-4 py-3 text-muted-foreground">
                               {k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '—'}
                             </td>
-                            <td className="px-4 py-3 text-muted">
+                            <td className="px-4 py-3 text-muted-foreground">
                               {k.created_at ? new Date(k.created_at).toLocaleString() : '—'}
                             </td>
                             <td className="px-4 py-3 text-right">
                               <Button
-                                variant="destructive"
-                                onClick={() => revokeKey(k.id)}
-                                disabled={!k.active || revokingId === k.id}
-                                className="bg-red-600 hover:bg-red-700"
+                variant="destructive"
+                  onClick={() => revokeKey(k.id)}
+                  disabled={!k.active || revokingId === k.id}
                               >
                                 {revokingId === k.id ? 'Revoking…' : 'Revoke'}
                               </Button>
@@ -299,7 +297,6 @@ export default function ApiKeysPage() {
             </div>
           </MotionCard>
         </div>
-      </div>
-    </AppLayoutModern>
+    </AppLayout>
   )
 }

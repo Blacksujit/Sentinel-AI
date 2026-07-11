@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
@@ -10,7 +9,7 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 from app.auth.dependencies import require_authenticated_user, get_db
-from app.tenancy.org_context import require_org_membership
+from app.tenancy.org_context import resolve_org, require_org_membership
 from app.rbac.enforce import require_permission, require_permission_from_path
 from app.rbac.permissions import user_permissions_for_org
 from app.services.audit_service import AuditService
@@ -110,17 +109,17 @@ def get_user_role_name(db: Session, user_id: int, org_id: int) -> Optional[str]:
 
 @router.get("/orgs/{org_id}/members", response_model=List[MemberResponse])
 async def list_members(
-    org_id: int,
+    org_id: str,
     user: User = Depends(require_authenticated_user),
     db: Session = Depends(get_db),
 ):
     """List members of an organization."""
-    # Verify membership
-    require_org_membership(db, user.id, org_id)
+    org = resolve_org(db, org_id)
+    require_org_membership(db, user.id, org.id)
 
     memberships = (
         db.query(OrgMembership)
-        .filter(OrgMembership.org_id == org_id)
+        .filter(OrgMembership.org_id == org.id)
         .all()
     )
     responses = []
@@ -140,15 +139,16 @@ async def list_members(
 
 @router.get("/orgs/{org_id}/invites", response_model=List[MemberInviteResponse])
 async def list_pending_invites(
-    org_id: int,
+    org_id: str,
     user: User = Depends(require_authenticated_user),
     _: None = require_permission_from_path("member.invite"),
     db: Session = Depends(get_db),
 ):
     """List pending invitations for an organization."""
+    org = resolve_org(db, org_id)
     invites = (
         db.query(OrgInvite)
-        .filter(OrgInvite.org_id == org_id)
+        .filter(OrgInvite.org_id == org.id)
         .filter(OrgInvite.status == InviteStatus.PENDING)
         .all()
     )
@@ -171,7 +171,7 @@ async def list_pending_invites(
 
 @router.post("/orgs/{org_id}/members/invite", response_model=MemberInviteResponse)
 async def invite_member(
-    org_id: int,
+    org_id: str,
     payload: MemberInviteRequest,
     user: User = Depends(require_authenticated_user),
     db: Session = Depends(get_db),
@@ -181,19 +181,16 @@ async def invite_member(
                  org_id, payload.email, payload.role, user.id)
 
     try:
-        org = db.query(Organization).filter(Organization.id == org_id).first()
-        if not org:
-            logger.warning("Organization %s not found", org_id)
-            raise HTTPException(status_code=404, detail="Organization not found")
+        org = resolve_org(db, org_id)
 
         # Verify user is member of this org
         membership = db.query(OrgMembership).filter(
             OrgMembership.user_id == user.id,
-            OrgMembership.org_id == org_id
+            OrgMembership.org_id == org.id
         ).first()
 
         if not membership:
-            logger.warning("User %s is not member of org %s", user.id, org_id)
+            logger.warning("User %s is not member of org %s", user.id, org.id)
             raise HTTPException(status_code=403, detail="You are not a member of this organization")
 
         # Check if user has permission to invite (ADMIN or OWNER only)
@@ -209,14 +206,14 @@ async def invite_member(
             db.query(RbacRole)
             .filter(
                 RbacRole.name == payload.role.upper(),
-                or_(RbacRole.org_id == org_id, RbacRole.org_id.is_(None)),
+                or_(RbacRole.org_id == org.id, RbacRole.org_id.is_(None)),
             )
             .order_by(RbacRole.org_id.desc())
             .first()
         )
 
         if not role:
-            logger.warning("Role %s not found for org %s", payload.role, org_id)
+            logger.warning("Role %s not found for org %s", payload.role, org.id)
             raise HTTPException(status_code=400, detail=f"Role '{payload.role}' not found")
 
         # Check if user is already a member
@@ -226,7 +223,7 @@ async def invite_member(
             # Check if already member of this org
             existing_member = db.query(OrgMembership).filter(
                 OrgMembership.user_id == existing_user.id,
-                OrgMembership.org_id == org_id
+                OrgMembership.org_id == org.id
             ).first()
 
             if existing_member:
@@ -235,7 +232,7 @@ async def invite_member(
 
         # Check for existing pending invite
         existing_invite = db.query(OrgInvite).filter(
-            OrgInvite.org_id == org_id,
+            OrgInvite.org_id == org.id,
             OrgInvite.email == payload.email.lower(),
             OrgInvite.status == InviteStatus.PENDING
         ).first()
@@ -247,7 +244,7 @@ async def invite_member(
         # Create invite with 7-day expiration
         logger.info("Creating invite for %s with role %s", payload.email, role.name)
         invite = OrgInvite(
-            org_id=org_id,
+            org_id=org.id,
             email=payload.email.lower(),
             role_id=role.id,
             invited_by_user_id=user.id,
@@ -269,7 +266,7 @@ async def invite_member(
         # Audit log
         AuditService.log(
             db,
-            org_id=org_id,
+            org_id=org.id,
             actor_user_id=user.id,
             actor_type="user",
             action="member.invite",
@@ -317,13 +314,12 @@ async def accept_invite(
         db.commit()
         raise HTTPException(status_code=400, detail="Invitation has expired")
 
-    # Verify accepting user's email matches invite (skipped in dev mode)
-    if os.getenv("ENVIRONMENT", "production") != "development":
-        if user.email.lower() != invite.email:
-            raise HTTPException(
-                status_code=403,
-                detail="This invitation was sent to a different email address"
-            )
+    # Verify accepting user's email matches invite
+    if user.email.lower() != invite.email:
+        raise HTTPException(
+            status_code=403,
+            detail="This invitation was sent to a different email address"
+        )
 
     # Check if user already has membership
     existing = (
@@ -374,18 +370,19 @@ async def accept_invite(
 
 @router.delete("/orgs/{org_id}/invites/{invite_id}")
 async def cancel_invite(
-    org_id: int,
+    org_id: str,
     invite_id: int,
     user: User = Depends(require_authenticated_user),
     _: None = Depends(require_permission("member.invite")),
     db: Session = Depends(get_db),
 ):
     """Cancel a pending invitation."""
+    org = resolve_org(db, org_id)
     invite = db.query(OrgInvite).filter(OrgInvite.id == invite_id).first()
     if not invite:
         raise HTTPException(status_code=404, detail="Invitation not found")
 
-    if invite.org_id != org_id:
+    if invite.org_id != org.id:
         raise HTTPException(status_code=403, detail="Invitation does not belong to this organization")
 
     if invite.status != InviteStatus.PENDING:
@@ -396,7 +393,7 @@ async def cancel_invite(
     # Audit log
     AuditService.log(
         db,
-        org_id=org_id,
+        org_id=org.id,
         actor_user_id=user.id,
         actor_type="user",
         action="member.invite_cancel",
@@ -410,7 +407,7 @@ async def cancel_invite(
 
 @router.patch("/orgs/{org_id}/members/{user_id}", response_model=MemberResponse)
 async def update_member_role(
-    org_id: int,
+    org_id: str,
     user_id: int,
     payload: RoleUpdateRequest,
     actor: User = Depends(require_authenticated_user),
@@ -418,17 +415,18 @@ async def update_member_role(
     db: Session = Depends(get_db),
 ):
     """Update a member's role."""
+    org = resolve_org(db, org_id)
     membership = (
         db.query(OrgMembership)
         .filter(OrgMembership.user_id == user_id)
-        .filter(OrgMembership.org_id == org_id)
+        .filter(OrgMembership.org_id == org.id)
         .first()
     )
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found")
 
     # Check if actor can assign this role
-    if not can_manage_role(db, actor.id, org_id, payload.role):
+    if not can_manage_role(db, actor.id, org.id, payload.role):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot assign a role higher than your own"
@@ -437,7 +435,7 @@ async def update_member_role(
     # Check if target user's current role is higher than actor's (can't demote higher-ups)
     target_current_role = db.query(RbacRole).filter(RbacRole.id == membership.role_id).first()
     if target_current_role:
-        if not can_manage_role(db, actor.id, org_id, target_current_role.name):
+        if not can_manage_role(db, actor.id, org.id, target_current_role.name):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Cannot modify a user with higher role than yours"
@@ -453,7 +451,7 @@ async def update_member_role(
         owner_role_id = target_current_role.id
         owner_count = (
             db.query(OrgMembership)
-            .filter(OrgMembership.org_id == org_id)
+            .filter(OrgMembership.org_id == org.id)
             .filter(OrgMembership.role_id == owner_role_id)
             .count()
         )
@@ -469,7 +467,7 @@ async def update_member_role(
 
     AuditService.log(
         db,
-        org_id=org_id,
+        org_id=org.id,
         actor_user_id=actor.id,
         actor_type="user",
         action="member.role_update",
@@ -490,17 +488,18 @@ async def update_member_role(
 
 @router.delete("/orgs/{org_id}/members/{user_id}")
 async def remove_member(
-    org_id: int,
+    org_id: str,
     user_id: int,
     actor: User = Depends(require_authenticated_user),
     _: None = Depends(require_permission("member.remove")),
     db: Session = Depends(get_db),
 ):
     """Remove a member from an organization."""
+    org = resolve_org(db, org_id)
     membership = (
         db.query(OrgMembership)
         .filter(OrgMembership.user_id == user_id)
-        .filter(OrgMembership.org_id == org_id)
+        .filter(OrgMembership.org_id == org.id)
         .first()
     )
     if not membership:
@@ -509,7 +508,7 @@ async def remove_member(
     # Check if target has higher role than actor (can't remove higher-ups)
     target_role = db.query(RbacRole).filter(RbacRole.id == membership.role_id).first()
     if target_role:
-        if not can_manage_role(db, actor.id, org_id, target_role.name):
+        if not can_manage_role(db, actor.id, org.id, target_role.name):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Cannot remove a user with higher role than yours"
@@ -519,7 +518,7 @@ async def remove_member(
     if target_role and target_role.name == "OWNER":
         owner_count = (
             db.query(OrgMembership)
-            .filter(OrgMembership.org_id == org_id)
+            .filter(OrgMembership.org_id == org.id)
             .filter(OrgMembership.role_id == target_role.id)
             .count()
         )
@@ -532,7 +531,7 @@ async def remove_member(
     db.delete(membership)
     AuditService.log(
         db,
-        org_id=org_id,
+        org_id=org.id,
         actor_user_id=actor.id,
         actor_type="user",
         action="member.remove",

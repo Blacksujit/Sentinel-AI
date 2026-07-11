@@ -17,6 +17,9 @@ router = APIRouter()
 
 
 def _resolve_org_by_identifier(db: Session, identifier: str) -> Organization:
+    org = db.query(Organization).filter(Organization.clerk_org_id == identifier).first()
+    if org:
+        return org
     if identifier.isdigit():
         org = db.query(Organization).filter(Organization.id == int(identifier)).first()
     else:

@@ -25,14 +25,14 @@ export interface FeedbackResponse {
 
 export async function submitFeedback(
   submission: FeedbackSubmission,
-  token?: string | null
+  token?: string | null | undefined
 ): Promise<FeedbackResponse> {
   return apiPost('/learning/feedback', submission, token)
 }
 
 export async function reportComplianceIssue(
   logId: string,
-  token?: string | null
+  token?: string | null | undefined
 ): Promise<FeedbackResponse> {
   return apiPost(`/learning/feedback/${logId}/compliance`, {}, token)
 }

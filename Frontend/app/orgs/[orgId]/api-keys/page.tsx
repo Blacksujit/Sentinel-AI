@@ -21,7 +21,7 @@ interface ApiKey {
 
 export default function OrgApiKeysPage() {
   const { getToken, isLoaded } = useAuth()
-  const params = useParams()
+  const params = useParams()!
   const [keys, setKeys] = useState<ApiKey[]>([])
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState('')
@@ -134,8 +134,8 @@ export default function OrgApiKeysPage() {
   if (loading) {
     return (
       <AppLayoutModern>
-        <div className="min-h-screen bg-gradient-navy flex items-center justify-center">
-          <div className="text-sm text-muted">Loading API keys…</div>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-sm text-muted-foreground">Loading API keys…</div>
         </div>
       </AppLayoutModern>
     )
@@ -143,8 +143,7 @@ export default function OrgApiKeysPage() {
 
   return (
     <AppLayoutModern>
-      <div className="min-h-screen bg-gradient-navy">
-        <div className="relative z-10 space-y-6 p-6">
+      <div className="space-y-6 p-6">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -172,8 +171,8 @@ export default function OrgApiKeysPage() {
                 <MotionCard key={k.id} className="p-4">
                   <div>
                     <div className="font-semibold text-foreground">{k.name}</div>
-                    <div className="text-sm text-muted">Prefix: {k.prefix}</div>
-                    <div className="text-xs text-muted">
+                    <div className="text-sm text-muted-foreground">Prefix: {k.prefix}</div>
+                    <div className="text-xs text-muted-foreground">
                       Status: {k.active ? 'Active' : 'Revoked'}
                       {k.last_used_at ? ` • Last used: ${new Date(k.last_used_at).toLocaleString()}` : ''}
                     </div>
@@ -193,7 +192,6 @@ export default function OrgApiKeysPage() {
             </div>
           </motion.div>
         </div>
-      </div>
     </AppLayoutModern>
   )
 }

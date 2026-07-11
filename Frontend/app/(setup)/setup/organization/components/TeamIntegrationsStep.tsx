@@ -54,16 +54,16 @@ export function TeamIntegrationsStep({ data, onChange, onNext, onBack }: Props) 
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
     >
-      <Card className="card-premium border-white/10">
+      <Card className="card-premium border-border">
         <CardHeader>
-          <CardTitle className="text-xl text-white">Team & Integrations</CardTitle>
+          <CardTitle className="text-xl text-foreground">Team & Integrations</CardTitle>
           <CardDescription>
             Configure your team size and connect your favorite tools
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label className="text-white">Team size</Label>
+            <Label className="text-foreground">Team size</Label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {TEAM_SIZE_OPTIONS.map((opt) => (
                 <button
@@ -71,8 +71,8 @@ export function TeamIntegrationsStep({ data, onChange, onNext, onBack }: Props) 
                   onClick={() => onChange({ teamSize: opt.value })}
                   className={`p-3 rounded-lg border text-sm transition-all ${
                     data.teamSize === opt.value
-                      ? 'border-electric-blue bg-electric-blue/10 text-white'
-                      : 'border-white/10 text-muted hover:border-white/20 hover:text-white'
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border text-muted-foreground hover:border-border hover:text-foreground'
                   }`}
                 >
                   {opt.label}
@@ -82,8 +82,8 @@ export function TeamIntegrationsStep({ data, onChange, onNext, onBack }: Props) 
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-white">Integrations</h3>
-            <p className="text-xs text-muted">
+            <h3 className="text-sm font-medium text-foreground">Integrations</h3>
+            <p className="text-xs text-muted-foreground">
               Connect your tools to receive alerts and create tickets automatically
             </p>
             <div className="space-y-2">
@@ -92,27 +92,27 @@ export function TeamIntegrationsStep({ data, onChange, onNext, onBack }: Props) 
                 return (
                   <div
                     key={integration.id}
-                    className="border border-white/10 rounded-xl overflow-hidden transition-all"
+                    className="border border-border rounded-xl overflow-hidden transition-all"
                   >
                     <button
                       onClick={() => toggleIntegration(integration.id)}
-                      className="w-full flex items-center justify-between p-4 text-left hover:bg-white/5 transition-colors"
+                      className="w-full flex items-center justify-between p-4 text-left hover:bg-card transition-colors"
                     >
                       <div>
-                        <div className="text-sm font-medium text-white">{integration.label}</div>
-                        <div className="text-xs text-muted mt-0.5">{integration.description}</div>
+                        <div className="text-sm font-medium text-foreground">{integration.label}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{integration.description}</div>
                       </div>
                       {isExpanded ? (
-                        <ChevronUp className="h-4 w-4 text-muted" />
+                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
                       ) : (
-                        <ChevronDown className="h-4 w-4 text-muted" />
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
                       )}
                     </button>
                     {isExpanded && (
-                      <div className="px-4 pb-4 space-y-3 border-t border-white/10 pt-3">
+                      <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
                         {integration.fields.map((field) => (
                           <div key={field.key} className="space-y-1.5">
-                            <Label className="text-xs text-muted">{field.label}</Label>
+                            <Label className="text-xs text-muted-foreground">{field.label}</Label>
                             {field.type === 'select' ? (
                               <div className="flex gap-2">
                                 {(field.options || []).map((opt) => (
@@ -123,8 +123,8 @@ export function TeamIntegrationsStep({ data, onChange, onNext, onBack }: Props) 
                                     }
                                     className={`px-3 py-1.5 rounded-lg border text-xs transition-all ${
                                       (data.integrations?.[integration.id]?.[field.key]) === opt
-                                        ? 'border-electric-blue bg-electric-blue/10 text-white'
-                                        : 'border-white/10 text-muted hover:border-white/20'
+                                        ? 'border-primary bg-primary/10 text-foreground'
+                                        : 'border-border text-muted-foreground hover:border-border'
                                     }`}
                                   >
                                     {opt}
@@ -139,7 +139,7 @@ export function TeamIntegrationsStep({ data, onChange, onNext, onBack }: Props) 
                                 onChange={(e) =>
                                   updateIntegrationField(integration.id, field.key, e.target.value)
                                 }
-                                className="bg-black/30 border-white/15 text-white text-sm"
+                                className="bg-muted border-border text-foreground text-sm"
                               />
                             )}
                           </div>
@@ -153,7 +153,7 @@ export function TeamIntegrationsStep({ data, onChange, onNext, onBack }: Props) 
           </div>
 
           <div className="flex justify-between pt-4">
-            <Button variant="ghost" onClick={onBack} className="text-muted">
+            <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
               Back
             </Button>
             <Button onClick={onNext} className="btn-premium">

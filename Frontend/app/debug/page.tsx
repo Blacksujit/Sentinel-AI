@@ -37,13 +37,13 @@ export default function DebugPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-navy p-6">
+    <div className="min-h-screen bg-gradient-warm p-6">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-white mb-6">System Diagnostics</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-6">System Diagnostics</h1>
         
         <Card className="card-premium p-6 mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Backend Configuration</h2>
-          <p className="text-muted mb-4">Current backend URL: {backendUrl}</p>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Backend Configuration</h2>
+          <p className="text-muted-foreground mb-4">Current backend URL: {backendUrl}</p>
           <Button onClick={runAllTests} className="btn-premium">
             Test All Endpoints
           </Button>
@@ -53,7 +53,7 @@ export default function DebugPage() {
           {Object.entries(results).map(([name, result]) => (
             <Card key={name} className="card-premium p-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-medium text-white">{name}</h3>
+                <h3 className="font-medium text-foreground">{name}</h3>
                 <span className={`px-2 py-1 rounded text-xs ${
                   result.status === 200 || result.status === 401 || result.status === 405
                     ? 'bg-emerald-500/20 text-emerald-400'
@@ -62,7 +62,7 @@ export default function DebugPage() {
                   {result.status}
                 </span>
               </div>
-              <code className="text-xs text-muted bg-black/50 p-2 rounded block">
+              <code className="text-xs text-muted-foreground bg-background/80 p-2 rounded block">
                 {result.text}
               </code>
             </Card>
@@ -70,8 +70,8 @@ export default function DebugPage() {
         </div>
 
         <Card className="card-premium p-6 mt-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Expected Status Codes</h2>
-          <ul className="text-sm text-muted space-y-2">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Expected Status Codes</h2>
+          <ul className="text-sm text-muted-foreground space-y-2">
             <li>• <span className="text-emerald-400">200</span> - Working correctly</li>
             <li>• <span className="text-emerald-400">401</span> - Working (needs auth token)</li>
             <li>• <span className="text-emerald-400">405</span> - Working (wrong method)</li>

@@ -68,15 +68,15 @@ export default function UserOnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-navy flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-warm flex items-center justify-center p-4">
       <div className="max-w-xl w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome to SentinelAI</h1>
-          <p className="text-muted">Let's personalize your experience</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to SentinelAI</h1>
+          <p className="text-muted-foreground">Let's personalize your experience</p>
         </motion.div>
 
         <Card className="card-premium p-8">
@@ -85,7 +85,7 @@ export default function UserOnboardingPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <h2 className="text-xl font-semibold text-white mb-6">What's your role?</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-6">What's your role?</h2>
               <div className="grid grid-cols-2 gap-4">
                 {roles.map((role) => (
                   <button
@@ -96,13 +96,13 @@ export default function UserOnboardingPage() {
                     }}
                     className={`p-4 rounded-xl border transition-all text-left ${
                       formData.role === role.id
-                        ? 'border-electric-blue bg-electric-blue/10'
-                        : 'border-white/10 hover:border-white/20'
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-border'
                     }`}
                   >
-                    <role.icon className="h-6 w-6 text-electric-blue mb-3" />
-                    <div className="font-medium text-white text-sm">{role.label}</div>
-                    <div className="text-xs text-muted mt-1">{role.description}</div>
+                    <role.icon className="h-6 w-6 text-primary mb-3" />
+                    <div className="font-medium text-foreground text-sm">{role.label}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{role.description}</div>
                   </button>
                 ))}
               </div>
@@ -114,7 +114,7 @@ export default function UserOnboardingPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <h2 className="text-xl font-semibold text-white mb-6">What brings you here?</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-6">What brings you here?</h2>
               <div className="space-y-3">
                 {useCases.map((useCase) => (
                   <button
@@ -125,18 +125,18 @@ export default function UserOnboardingPage() {
                     }}
                     className={`w-full p-4 rounded-xl border transition-all text-left ${
                       formData.useCase === useCase.id
-                        ? 'border-electric-blue bg-electric-blue/10'
-                        : 'border-white/10 hover:border-white/20'
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-border'
                     }`}
                   >
-                    <div className="font-medium text-white">{useCase.label}</div>
-                    <div className="text-sm text-muted mt-1">{useCase.description}</div>
+                    <div className="font-medium text-foreground">{useCase.label}</div>
+                    <div className="text-sm text-muted-foreground mt-1">{useCase.description}</div>
                   </button>
                 ))}
               </div>
               <Button
                 variant="ghost"
-                className="mt-4 text-muted"
+                className="mt-4 text-muted-foreground"
                 onClick={() => setStep(1)}
               >
                 Back
@@ -149,20 +149,20 @@ export default function UserOnboardingPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <h2 className="text-xl font-semibold text-white mb-6">Almost done!</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-6">Almost done!</h2>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-white">Company/Organization (optional)</Label>
+                  <Label className="text-foreground">Company/Organization (optional)</Label>
                   <Input
                     value={formData.company}
                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                     placeholder="Acme Inc"
-                    className="bg-black/30 border-white/15 text-white mt-2"
+                    className="bg-muted border-border text-foreground mt-2"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-white">Experience Level</Label>
+                  <Label className="text-foreground">Experience Level</Label>
                   <div className="grid grid-cols-3 gap-3 mt-2">
                     {['beginner', 'intermediate', 'expert'].map((level) => (
                       <button
@@ -170,8 +170,8 @@ export default function UserOnboardingPage() {
                         onClick={() => setFormData({ ...formData, experience: level })}
                         className={`p-3 rounded-lg border text-sm capitalize transition-all ${
                           formData.experience === level
-                            ? 'border-electric-blue bg-electric-blue/10 text-white'
-                            : 'border-white/10 text-muted hover:border-white/20'
+                            ? 'border-primary bg-primary/10 text-foreground'
+                            : 'border-border text-muted-foreground hover:border-border'
                         }`}
                       >
                         {level}
@@ -207,7 +207,7 @@ export default function UserOnboardingPage() {
               <div
                 key={i}
                 className={`h-2 w-8 rounded-full transition-all ${
-                  i <= step ? 'bg-electric-blue' : 'bg-white/10'
+                  i <= step ? 'bg-primary' : 'bg-muted'
                 }`}
               />
             ))}

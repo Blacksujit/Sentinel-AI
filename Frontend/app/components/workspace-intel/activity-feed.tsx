@@ -40,7 +40,7 @@ export function ActivityFeed({
     return (
       <div className="space-y-2 p-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-12 bg-white/5 rounded-lg animate-pulse" />
+          <div key={i} className="h-12 animate-pulse rounded-lg bg-muted" />
         ))}
       </div>
     )
@@ -48,9 +48,14 @@ export function ActivityFeed({
 
   if (items.length === 0) {
     return (
-      <div className="flex items-center justify-center h-32 text-muted text-sm">
-        <Activity className="w-4 h-4 mr-2 opacity-50" />
-        No recent activity
+      <div className="flex h-32 items-center justify-center rounded-lg border border-dashed bg-card p-8 text-center">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+          <Activity className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <p className="mt-2 text-sm font-medium text-foreground">No recent activity</p>
+        <p className="mt-0.5 text-xs text-muted-foreground max-w-sm">
+          Activity from incidents, deployments, member changes, integrations, and AI insights will appear here as they occur.
+        </p>
       </div>
     )
   }
@@ -63,21 +68,21 @@ export function ActivityFeed({
           initial={{ opacity: 0, x: -5 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: idx * 0.02 }}
-          className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-white/5 transition-colors"
+          className="flex items-start gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted/50"
         >
-          <div className="p-1.5 rounded-md bg-white/5 text-muted mt-0.5">
+          <div className="mt-0.5 rounded-md bg-muted p-1.5 text-muted-foreground">
             <ActivityIcon type={item.activity_type} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-white truncate">{item.title}</p>
+            <p className="truncate text-sm text-card-foreground">{item.title}</p>
             {item.description && (
-              <p className="text-xs text-muted truncate">{item.description}</p>
+              <p className="truncate text-xs text-muted-foreground">{item.description}</p>
             )}
             {item.actor_name && (
-              <p className="text-[10px] text-muted mt-0.5">by {item.actor_name}</p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">by {item.actor_name}</p>
             )}
           </div>
-          <span className="text-[10px] text-muted shrink-0 whitespace-nowrap">
+          <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground">
             {formatTimeAgo(item.activity_time)}
           </span>
         </motion.div>

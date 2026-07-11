@@ -57,7 +57,7 @@ function EventIcon({ eventType }: { eventType: string }) {
 
 function SeverityDot({ severity }: { severity: TimelineSeverity }) {
   const colors = {
-    INFO: 'bg-slate-400',
+    INFO: 'bg-muted-foreground',
     LOW: 'bg-emerald-400',
     MEDIUM: 'bg-amber-400',
     HIGH: 'bg-orange-400',
@@ -68,25 +68,25 @@ function SeverityDot({ severity }: { severity: TimelineSeverity }) {
 
 function EventCard({ event }: { event: TimelineEvent }) {
   return (
-    <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors group">
-      <div className="mt-0.5">
+    <div className="flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-muted/50 group">
+      <div className="mt-0.5 text-muted-foreground">
         <EventIcon eventType={event.event_type} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-white font-medium truncate">{event.title}</span>
+          <span className="truncate text-sm font-medium text-card-foreground">{event.title}</span>
           <SeverityDot severity={event.severity} />
         </div>
         {event.description && (
-          <p className="text-xs text-muted truncate mt-0.5">{event.description}</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">{event.description}</p>
         )}
         {event.ai_summary && (
-          <p className="text-xs text-indigo-300/70 mt-1 italic line-clamp-2">
-            🤖 {event.ai_summary}
+          <p className="mt-1 line-clamp-2 text-xs italic text-muted-foreground/70">
+            AI: {event.ai_summary}
           </p>
         )}
       </div>
-      <span className="text-xs text-muted shrink-0 whitespace-nowrap">
+      <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
         {formatTime(event.event_time)}
       </span>
     </div>
@@ -104,7 +104,7 @@ export function TimelineView({
     return (
       <div className="space-y-3 p-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-white/5 rounded-lg animate-pulse" />
+          <div key={i} className="h-16 animate-pulse rounded-lg bg-muted" />
         ))}
       </div>
     )
@@ -112,9 +112,14 @@ export function TimelineView({
 
   if (!groups || groups.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-muted text-sm">
-        <Activity className="w-5 h-5 mr-2 opacity-50" />
-        No timeline events yet
+      <div className="flex h-48 items-center justify-center rounded-lg border border-dashed bg-card p-8 text-center">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+          <Activity className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <p className="mt-3 text-sm font-medium text-foreground">No timeline events yet</p>
+        <p className="mt-1 text-xs text-muted-foreground max-w-sm">
+          The timeline captures PR merges, deployments, anomalies, escalations, and AI-generated summaries in real time. Events begin populating once integrations are active and activity is detected.
+        </p>
       </div>
     )
   }
@@ -131,33 +136,33 @@ export function TimelineView({
         >
           {/* Timeline line */}
           {idx < groups.length - 1 && (
-            <div className="absolute left-[7px] top-3 bottom-0 w-px bg-white/10" />
+            <div className="absolute left-[7px] top-3 bottom-0 w-px bg-muted" />
           )}
 
           {/* Time indicator dot */}
           <div className={`absolute left-0 top-2 w-[15px] h-[15px] rounded-full border-2 flex items-center justify-center ${
             group.max_severity === 'CRITICAL' ? 'border-rose-500 bg-rose-500/20' :
             group.max_severity === 'HIGH' ? 'border-orange-500 bg-orange-500/20' :
-            'border-white/20 bg-white/5'
+            'border-border bg-card'
           }`}>
             <div className={`w-1.5 h-1.5 rounded-full ${
               group.max_severity === 'CRITICAL' ? 'bg-rose-400' :
               group.max_severity === 'HIGH' ? 'bg-orange-400' :
-              'bg-white/30'
+              'bg-muted-foreground/10'
             }`} />
           </div>
 
           {/* Group header */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs text-muted font-medium">{formatGroupTime(group.time_start)}</span>
-            <span className="text-[10px] text-muted bg-white/5 px-1.5 py-0.5 rounded">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">{formatGroupTime(group.time_start)}</span>
+            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
               {group.event_count} events
             </span>
             {group.max_severity !== 'INFO' && (
               <Badge variant="outline" className={`text-[10px] px-1 py-0 ${
                 group.max_severity === 'CRITICAL' ? 'text-rose-400 border-rose-500/30' :
                 group.max_severity === 'HIGH' || group.max_severity === 'MEDIUM' ? 'text-amber-400 border-amber-500/30' :
-                'text-slate-400 border-slate-500/30'
+                'text-muted-foreground border-muted-foreground/30'
               }`}>
                 {group.max_severity}
               </Badge>

@@ -1,7 +1,19 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  ReactNode,
+  useEffect,
+  useMemo,
+} from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
+import {
+  useOrganization as useClerkOrganization,
+  useOrganizationList,
+} from "@clerk/nextjs";
 
 interface Organization {
   id: string;
@@ -27,116 +39,129 @@ interface OrganizationContextType {
   activeWorkspace: Workspace | null;
   organizations: Organization[];
   workspaces: Workspace[];
-  setActiveOrganization: (org: Organization | null) => void;
+  setActiveOrganization: (org: Organization | null) => Promise<void>;
   setActiveWorkspace: (workspace: Workspace | null) => void;
   refreshOrganizations: () => Promise<void>;
   refreshWorkspaces: () => Promise<void>;
   isLoading: boolean;
 }
 
-const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
+const OrganizationContext = createContext<OrganizationContextType | undefined>(
+  undefined,
+);
 
 export function OrganizationProvider({ children }: { children: ReactNode }) {
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded: userLoaded } = useUser();
   const { getToken, isSignedIn } = useAuth();
-  const [activeOrganization, setActiveOrganizationState] = useState<Organization | null>(null);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
+
+  const {
+    userMemberships,
+    setActive: setActiveClerkOrg,
+    isLoaded: orgListLoaded,
+  } = useOrganizationList();
+
+  const {
+    organization: activeClerkOrg,
+    membership: activeClerkMembership,
+    isLoaded: activeOrgLoaded,
+  } = useClerkOrganization();
+
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [activeWorkspace, setActiveWorkspaceState] = useState<Workspace | null>(null);
+  const [activeWorkspace, setActiveWorkspaceState] =
+    useState<Workspace | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshOrganizations = useCallback(async () => {
-    if (!isLoaded || !isSignedIn || !user) return;
+  const allLoaded = userLoaded && orgListLoaded && activeOrgLoaded;
 
-    setIsLoading(true);
+  const membershipList = userMemberships?.data || [];
+
+  const organizations: Organization[] = useMemo(
+    () =>
+      membershipList.map((m) => ({
+        id: m.organization.id,
+        name: m.organization.name,
+        slug: m.organization.slug || m.organization.id,
+        role: m.role || "member",
+      })),
+    [membershipList],
+  );
+
+  const activeOrganization: Organization | null = useMemo(() => {
+    if (!activeClerkOrg) return null;
+    return {
+      id: activeClerkOrg.id,
+      name: activeClerkOrg.name,
+      slug: activeClerkOrg.slug || activeClerkOrg.id,
+      role: activeClerkMembership?.role || "member",
+    };
+  }, [activeClerkOrg, activeClerkMembership]);
+
+  const setActiveOrganization = useCallback(
+    async (org: Organization | null) => {
+      try {
+        if (org) {
+          await setActiveClerkOrg!({ organization: org.id });
+          localStorage.setItem("activeOrgId", org.id);
+        } else {
+          await setActiveClerkOrg!({ organization: null });
+          localStorage.removeItem("activeOrgId");
+        }
+      } catch (error) {
+        console.error("Failed to set active org:", error);
+      }
+    },
+    [setActiveClerkOrg],
+  );
+
+  const setActiveWorkspace = useCallback(
+    (workspace: Workspace | null) => {
+      setActiveWorkspaceState(workspace);
+      if (workspace) {
+        localStorage.setItem("activeWorkspaceId", workspace.id);
+      } else {
+        localStorage.removeItem("activeWorkspaceId");
+      }
+    },
+    [],
+  );
+
+  // Restore saved active org on mount
+  useEffect(() => {
+    if (!allLoaded || !isSignedIn) return;
+
+    const savedOrgId = localStorage.getItem("activeOrgId");
+    if (savedOrgId && !activeClerkOrg) {
+      const orgExists = membershipList.some((m) => m.organization.id === savedOrgId);
+      if (orgExists) {
+        setActiveClerkOrg({ organization: savedOrgId });
+      }
+    }
+
+    setIsLoading(false);
+  }, [
+    allLoaded,
+    isSignedIn,
+    membershipList,
+    activeClerkOrg,
+    setActiveClerkOrg,
+  ]);
+
+  // Fetch workspaces when active org changes
+  const refreshWorkspaces = useCallback(async () => {
+    if (!allLoaded || !isSignedIn || !activeOrganization) return;
 
     try {
       const token = await getToken();
       if (!token) return;
-
-      const response = await fetch('/api/me', {
+      const response = await fetch("/api/workspaces", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
         const data = await response.json();
-        
-        const orgs: Organization[] = data.memberships?.map((m: { org_id: number; role: string }) => ({
-          id: String(m.org_id),
-          name: `Organization ${m.org_id}`,
-          slug: String(m.org_id),
-          role: m.role,
-        })) || [];
-
-        setOrganizations(orgs);
-
-        const savedOrgId = localStorage.getItem("activeOrgId");
-        if (savedOrgId) {
-          const saved = orgs.find((o) => o.id === savedOrgId);
-          if (saved) setActiveOrganizationState(saved);
-        } else if (orgs.length === 1) {
-          setActiveOrganizationState(orgs[0]);
-          localStorage.setItem("activeOrgId", orgs[0].id);
-        }
-
-        // Get workspaces
-        const response2 = await fetch('/api/workspaces', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response2.ok) {
-          const workspacesData = await response2.json();
-          const workspaceList: Workspace[] = workspacesData.map((w: any) => ({
-            id: w.id.toString(),
-            name: w.name,
-            slug: w.slug,
-            description: w.description,
-            is_default: w.is_default,
-            member_count: w.member_count || 0,
-            created_at: w.created_at,
-            updated_at: w.updated_at,
-            org_id: w.org_id,
-          })) || [];
-          
-          console.log('Organization Context - Workspaces loaded:', workspaceList);
-          setWorkspaces(workspaceList);
-
-          // Restore saved workspace if exists
-          const savedWorkspaceId = localStorage.getItem("activeWorkspaceId");
-          if (savedWorkspaceId) {
-            const savedWorkspace = workspaceList.find((w: Workspace) => w.id.toString() === savedWorkspaceId);
-            if (savedWorkspace) {
-              setActiveWorkspace(savedWorkspace);
-            }
-          } else if (workspaceList.length === 1) {
-            // If only one workspace, auto-select it
-            setActiveWorkspace(workspaceList[0]);
-          }
-        }
-      } else {
-        const errorText = await response.text();
-        console.error('Organization Context - /api/me error:', response.status, errorText);
-        setOrganizations([]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch organizations:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, isLoaded, isSignedIn, getToken]);
-
-  const refreshWorkspaces = useCallback(async () => {
-    if (!isLoaded || !isSignedIn || !user) return;
-
-    try {
-      const token = await getToken();
-      const response = await fetch('/api/workspaces', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const workspacesData = await response.json();
-        const workspaceList = workspacesData.map((w: any) => ({
+        const workspaceList: Workspace[] = (
+          data || []
+        ).map((w: any) => ({
           id: w.id.toString(),
           name: w.name,
           slug: w.slug,
@@ -146,56 +171,37 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
           created_at: w.created_at,
           updated_at: w.updated_at,
           org_id: w.org_id,
-        })) || [];
-        
-        console.log('Organization Context - Workspaces loaded:', workspaceList);
+        }));
+
         setWorkspaces(workspaceList);
 
-        // Restore saved workspace if exists
         const savedWorkspaceId = localStorage.getItem("activeWorkspaceId");
         if (savedWorkspaceId) {
-          const savedWorkspace = workspaceList.find((w: Workspace) => w.id.toString() === savedWorkspaceId);
-          if (savedWorkspace) {
-            setActiveWorkspaceState(savedWorkspace);
-          }
+          const saved = workspaceList.find(
+            (w: Workspace) => w.id.toString() === savedWorkspaceId,
+          );
+          if (saved) setActiveWorkspaceState(saved);
         } else if (workspaceList.length === 1) {
-          // If only one workspace, auto-select it
           setActiveWorkspaceState(workspaceList[0]);
         }
-      } else {
-        const errorText = await response.text();
-        console.error('Organization Context - /api/workspaces error:', response.status, errorText);
-        setWorkspaces([]);
       }
     } catch (error) {
       console.error("Failed to fetch workspaces:", error);
-      setWorkspaces([]);
-    } finally {
-      setIsLoading(false);
     }
-  }, [user, isLoaded, isSignedIn, getToken]);
+  }, [allLoaded, isSignedIn, activeOrganization, getToken]);
 
-  const setActiveOrganization = useCallback((org: Organization | null) => {
-    setActiveOrganizationState(org);
-    if (org) {
-      localStorage.setItem("activeOrgId", org.id);
-    } else {
-      localStorage.removeItem("activeOrgId");
+  const refreshOrganizations = useCallback(async () => {
+    // Clerk handles org list sync; just re-fetch workspaces
+    if (activeOrganization) {
+      await refreshWorkspaces();
     }
-  }, []);
-
-  const setActiveWorkspace = useCallback((workspace: Workspace | null) => {
-    setActiveWorkspaceState(workspace);
-    if (workspace) {
-      localStorage.setItem("activeWorkspaceId", workspace.id);
-    } else {
-      localStorage.removeItem("activeWorkspaceId");
-    }
-  }, []);
+  }, [activeOrganization, refreshWorkspaces]);
 
   useEffect(() => {
-    refreshOrganizations();
-  }, [refreshOrganizations]);
+    if (activeOrganization) {
+      refreshWorkspaces();
+    }
+  }, [activeOrganization, refreshWorkspaces]);
 
   return (
     <OrganizationContext.Provider
@@ -216,39 +222,15 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useOrganization() {
+export function useOrgContext() {
   const context = useContext(OrganizationContext);
   if (context === undefined) {
-    throw new Error("useOrganization must be used within an OrganizationProvider");
+    throw new Error("useOrgContext must be used within an OrganizationProvider");
   }
   return context;
 }
 
-export function useWorkspace() {
-  const context = useContext(OrganizationContext);
-  if (context === undefined) {
-    throw new Error("useWorkspace must be used within an OrganizationProvider");
-  }
-  return context.activeWorkspace;
-}
-
-export function useWorkspaces() {
-  const context = useContext(OrganizationContext);
-  if (context === undefined) {
-    throw new Error("useWorkspaces must be used within an OrganizationProvider");
-  }
-  return { workspaces: context.workspaces || [], isLoading: context.isLoading };
-}
-
-export function useActiveWorkspace() {
-  const context = useContext(OrganizationContext);
-  if (context === undefined) {
-    throw new Error("useActiveWorkspace must be used within an OrganizationProvider");
-  }
-  return context.activeWorkspace;
-}
-
 export function useIsOrgUser() {
-  const { organizations, isLoading } = useOrganization();
+  const { organizations, isLoading } = useOrgContext();
   return { isOrgUser: organizations.length > 0, isLoading };
 }

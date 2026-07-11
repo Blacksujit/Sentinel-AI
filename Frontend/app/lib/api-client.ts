@@ -30,7 +30,7 @@ async function handleResponse(response: Response) {
   return data;
 }
 
-export async function apiGet<T = unknown>(path: string, token?: string): Promise<T> {
+export async function apiGet<T = unknown>(path: string, token?: string | null): Promise<T> {
   const response = await fetch(path, {
     method: "GET",
     headers: {
@@ -41,7 +41,7 @@ export async function apiGet<T = unknown>(path: string, token?: string): Promise
   return handleResponse(response) as Promise<T>;
 }
 
-export async function apiPost<T = unknown>(path: string, body: unknown, token?: string): Promise<T> {
+export async function apiPost<T = unknown>(path: string, body: unknown, token?: string | null): Promise<T> {
   const response = await fetch(path, {
     method: "POST",
     headers: {
@@ -53,7 +53,7 @@ export async function apiPost<T = unknown>(path: string, body: unknown, token?: 
   return handleResponse(response) as Promise<T>;
 }
 
-export async function apiPatch<T = unknown>(path: string, body: unknown, token?: string): Promise<T> {
+export async function apiPatch<T = unknown>(path: string, body: unknown, token?: string | null): Promise<T> {
   const response = await fetch(path, {
     method: "PATCH",
     headers: {
@@ -65,7 +65,7 @@ export async function apiPatch<T = unknown>(path: string, body: unknown, token?:
   return handleResponse(response) as Promise<T>;
 }
 
-export async function apiDelete<T = unknown>(path: string, token?: string): Promise<T> {
+export async function apiDelete<T = unknown>(path: string, token?: string | null): Promise<T> {
   const response = await fetch(path, {
     method: "DELETE",
     headers: {

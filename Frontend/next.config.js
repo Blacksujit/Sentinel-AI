@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
     // Remove fallback Clerk keys - they should be properly configured
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
@@ -20,7 +20,7 @@ const nextConfig = {
   // standalone is for Docker/self-host only; breaks Vercel's default Next.js output
   ...(process.env.VERCEL ? {} : { output: 'standalone' }),
   async rewrites() {
-    const raw = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001'
+    const raw = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
     let backendBase = raw.trim().replace(/\/+$/, '')
     if (backendBase.endsWith('/api')) {
       backendBase = backendBase.slice(0, -4)

@@ -99,21 +99,21 @@ export const hoverScaleLiftStrong = {
 
 export const hoverGlow = {
   whileHover: { 
-    boxShadow: '0 0 20px rgba(79, 139, 255, 0.3)',
+    boxShadow: 'var(--shadow-sm)',
     transition: { duration: 0.12, ease: 'easeOut' } 
   }
 }
 
 export const hoverGlowViolet = {
   whileHover: { 
-    boxShadow: '0 0 20px rgba(124, 92, 255, 0.3)',
+    boxShadow: 'var(--shadow-sm)',
     transition: { duration: 0.12, ease: 'easeOut' } 
   }
 }
 
 export const hoverGlowTeal = {
   whileHover: { 
-    boxShadow: '0 0 20px rgba(20, 184, 166, 0.3)',
+    boxShadow: 'var(--shadow-sm)',
     transition: { duration: 0.12, ease: 'easeOut' } 
   }
 }
@@ -132,16 +132,16 @@ export const pageTransition: Variants = {
 // Risk level animations
 export const riskLevelAnimations = {
   low: {
-    whileHover: { boxShadow: '0 0 25px rgba(34, 197, 94, 0.4)' }
+    whileHover: { boxShadow: '0 0 12px rgba(56, 118, 56, 0.25)' }
   },
   medium: {
-    whileHover: { boxShadow: '0 0 25px rgba(245, 158, 11, 0.4)' }
+    whileHover: { boxShadow: '0 0 12px rgba(178, 127, 27, 0.25)' }
   },
   high: {
-    whileHover: { boxShadow: '0 0 25px rgba(239, 68, 68, 0.4)' }
+    whileHover: { boxShadow: '0 0 12px rgba(153, 60, 45, 0.25)' }
   },
   critical: {
-    whileHover: { boxShadow: '0 0 30px rgba(220, 38, 38, 0.6)' }
+    whileHover: { boxShadow: '0 0 16px rgba(153, 60, 45, 0.35)' }
   }
 }
 
@@ -267,10 +267,10 @@ export const AnimatedGradient = ({
       className={`relative overflow-hidden ${className}`}
       animate={{
         background: [
-          'radial-gradient(circle at 50% 50%, rgba(79, 139, 255, 0.15) 0%, transparent 70%)',
-          'radial-gradient(circle at 50% 50%, rgba(124, 92, 255, 0.15) 0%, transparent 70%)',
-          'radial-gradient(circle at 50% 50%, rgba(20, 184, 166, 0.15) 0%, transparent 70%)',
-          'radial-gradient(circle at 50% 50%, rgba(79, 139, 255, 0.15) 0%, transparent 70%)'
+          'radial-gradient(circle at 50% 50%, rgba(153, 60, 45, 0.08) 0%, transparent 70%)',
+          'radial-gradient(circle at 50% 50%, rgba(56, 118, 56, 0.08) 0%, transparent 70%)',
+          'radial-gradient(circle at 50% 50%, rgba(178, 127, 27, 0.08) 0%, transparent 70%)',
+          'radial-gradient(circle at 50% 50%, rgba(153, 60, 45, 0.08) 0%, transparent 70%)'
         ]
       }}
       transition={{

@@ -53,7 +53,7 @@ export default function ApiKeysPage() {
     async function fetchApiKeys() {
       try {
         const token = await getToken()
-        const data = await apiGet(`/api/orgs/${orgId}/api-keys`, token)
+        const data = await apiGet<ApiKey[]>(`/api/orgs/${orgId}/api-keys`, token)
         setApiKeys(data)
       } catch (error) {
         console.error('Failed to fetch API keys:', error)
@@ -76,7 +76,7 @@ export default function ApiKeysPage() {
 
     try {
       const token = await getToken()
-      const response = await apiPost(`/api/orgs/${orgId}/api-keys`, {
+      const response = await apiPost<{ api_key: string }>(`/api/orgs/${orgId}/api-keys`, {
         name: newKeyName
       }, token)
       
@@ -86,7 +86,7 @@ export default function ApiKeysPage() {
       setNewKeyName('')
       
       // Refresh the list
-      const data = await apiGet(`/api/orgs/${orgId}/api-keys`, token)
+      const data = await apiGet<ApiKey[]>(`/api/orgs/${orgId}/api-keys`, token)
       setApiKeys(data)
       
       toast.success('API key created successfully')
@@ -100,12 +100,12 @@ export default function ApiKeysPage() {
     try {
       setRotatingKeyId(keyId)
       const token = await getToken()
-      const response = await apiPost(`/api/orgs/${orgId}/api-keys/${keyId}/rotate`, {}, token)
+      const response = await apiPost<{ api_key: string }>(`/api/orgs/${orgId}/api-keys/${keyId}/rotate`, {}, token)
 
       setCreatedKey(response.api_key)
       setShowKeyDialog(true)
 
-      const data = await apiGet(`/api/orgs/${orgId}/api-keys`, token)
+      const data = await apiGet<ApiKey[]>(`/api/orgs/${orgId}/api-keys`, token)
       setApiKeys(data)
 
       toast.success('API key rotated')
@@ -123,7 +123,7 @@ export default function ApiKeysPage() {
       await apiPost(`/api/orgs/${orgId}/api-keys/${keyId}/revoke`, {}, token)
       
       // Refresh the list
-      const data = await apiGet(`/api/orgs/${orgId}/api-keys`, token)
+      const data = await apiGet<ApiKey[]>(`/api/orgs/${orgId}/api-keys`, token)
       setApiKeys(data)
       
       setRevokingKeyId(null)
@@ -159,13 +159,12 @@ export default function ApiKeysPage() {
       >
         <div>
           <h1 className="text-3xl font-bold text-foreground">API Keys</h1>
-          <p className="text-muted mt-1">
+          <p className="text-muted-foreground mt-1">
             Manage API keys for accessing SentinelAI services
           </p>
         </div>
         <Button
           onClick={() => setShowCreateDialog(true)}
-          className="bg-gradient-to-r from-indigo-500 to-purple-500"
         >
           <Plus className="w-4 h-4 mr-2" />
           Create New Key
@@ -187,7 +186,7 @@ export default function ApiKeysPage() {
       </Card>
 
       {/* API Keys Table */}
-      <Card className="card-premium border-white/10">
+      <Card className="card-premium border-border">
         <CardHeader>
           <CardTitle className="text-lg">Your API Keys</CardTitle>
           <CardDescription>
@@ -198,19 +197,19 @@ export default function ApiKeysPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-white/5 rounded-lg animate-pulse" />
+                <div key={i} className="h-16 bg-card rounded-lg animate-pulse" />
               ))}
             </div>
           ) : apiKeys.length === 0 ? (
             <div className="text-center py-12">
-              <Key className="w-12 h-12 text-muted mx-auto mb-4" />
+              <Key className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground">No API keys yet</h3>
-              <p className="text-muted mt-1">
+              <p className="text-muted-foreground mt-1">
                 Create your first API key to start using SentinelAI services
               </p>
               <Button
                 onClick={() => setShowCreateDialog(true)}
-                className="mt-4 bg-gradient-to-r from-indigo-500 to-purple-500"
+                className="mt-4"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create API Key
@@ -221,7 +220,7 @@ export default function ApiKeysPage() {
               {apiKeys.map((key) => (
                 <div
                   key={key.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10"
+                  className="flex items-center justify-between p-4 rounded-lg bg-card border border-border"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -234,10 +233,10 @@ export default function ApiKeysPage() {
                         {key.status}
                       </span>
                     </div>
-                    <p className="text-sm font-mono text-muted">
+                    <p className="text-sm font-mono text-muted-foreground">
                       {key.prefix}••••••••••••
                     </p>
-                    <div className="flex items-center gap-4 text-xs text-muted">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       {key.created_at ? (
                         <span>Created {new Date(key.created_at).toLocaleDateString()}</span>
                       ) : null}
@@ -255,7 +254,7 @@ export default function ApiKeysPage() {
                         size="sm"
                         onClick={() => handleRotateKey(key.id)}
                         disabled={rotatingKeyId === key.id}
-                        className="border-white/20 text-foreground hover:bg-white/10"
+                        className="border-border text-foreground hover:bg-muted"
                       >
                         <RefreshCw className={`w-4 h-4 ${rotatingKeyId === key.id ? 'animate-spin' : ''}`} />
                       </Button>
@@ -304,7 +303,6 @@ export default function ApiKeysPage() {
             </Button>
             <Button
               onClick={handleCreateKey}
-              className="bg-gradient-to-r from-indigo-500 to-purple-500"
             >
               Create Key
             </Button>
@@ -347,7 +345,7 @@ export default function ApiKeysPage() {
                 setCreatedKey(null)
                 setHasCopiedKey(false)
               }}
-              className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500"
+              className="flex-1"
             >
               I&apos;ve Saved It
             </Button>

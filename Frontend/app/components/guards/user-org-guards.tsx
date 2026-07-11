@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { useOrganization, useIsOrgUser } from "@/contexts/organization-context";
+import { useOrgContext, useIsOrgUser } from "@/contexts/organization-context";
 
 interface UserGuardProps {
   children: React.ReactNode;
@@ -40,8 +40,8 @@ export function UserGuard({ children }: UserGuardProps) {
 // Guard for organization routes
 export function OrgGuard({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded } = useUser();
-  const { isOrgUser, isLoading: orgLoading } = useIsOrgUser();
-  const { activeOrganization } = useOrganization();
+  const { organizations, isLoading: orgLoading } = useOrgContext();
+  const { isOrgUser } = useIsOrgUser();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -63,12 +63,15 @@ export function OrgGuard({ children }: { children: React.ReactNode }) {
     const pathMatch = pathname?.match(/\/org\/([^\/]+)/);
     const pathOrgId = pathMatch?.[1];
 
-    // If accessing specific org route, verify access
-    if (pathOrgId && activeOrganization && pathOrgId !== activeOrganization.id) {
-      // TODO: Verify user has access to this org
-      console.warn("Org ID mismatch - verify access");
+    // Verify the user is actually a member of the org they're trying to access
+    if (pathOrgId) {
+      const hasAccess = organizations.some((org) => org.id === pathOrgId);
+      if (!hasAccess) {
+        router.replace("/");
+        return;
+      }
     }
-  }, [isLoaded, isSignedIn, isOrgUser, orgLoading, router, pathname, activeOrganization]);
+  }, [isLoaded, isSignedIn, isOrgUser, orgLoading, router, pathname, organizations]);
 
   if (!isLoaded || orgLoading) {
     return (

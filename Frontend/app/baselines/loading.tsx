@@ -1,9 +1,9 @@
-import { AppLayoutModern } from '../components/layout/AppLayoutModern'
+import { AppLayout } from '../components/layout/AppLayout'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function Loading() {
   return (
-    <AppLayoutModern>
+    <AppLayout>
       <div className="space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
@@ -23,6 +23,6 @@ export default function Loading() {
         <Skeleton className="h-[420px] w-full" />
         <Skeleton className="h-[320px] w-full" />
       </div>
-    </AppLayoutModern>
+    </AppLayout>
   )
 }

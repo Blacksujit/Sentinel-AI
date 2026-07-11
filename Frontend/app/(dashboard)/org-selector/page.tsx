@@ -1,149 +1,106 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
-import { Building2, ArrowRight, Plus } from "lucide-react";
-import { apiGet } from "@/lib/api-client";
-
-interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  role: string;
-}
-
-type MeResponse = {
-  memberships?: Array<{ org_id: number; role: string }>;
-};
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useOrganizationList } from '@clerk/nextjs'
+import { motion } from 'framer-motion'
+import { Building2, ArrowRight, Plus, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 
 export default function OrgSelectorPage() {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
-  const router = useRouter();
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [redirecting, setRedirecting] = useState(false);
+  const router = useRouter()
+  const {
+    userMemberships,
+    setActive,
+    isLoaded,
+    createOrganization,
+  } = useOrganizationList()
+
+  const membershipList = userMemberships?.data || []
 
   useEffect(() => {
-    if (!isLoaded) return;
-
-    if (!isSignedIn) {
-      router.replace("/auth/sign-in");
-      return;
+    if (!isLoaded) return
+    if (membershipList.length === 1) {
+      const org = membershipList[0].organization
+      setActive!({ organization: org.id })
+      localStorage.setItem("activeOrgId", org.id)
+      router.replace(`/org/${org.id}/dashboard`)
     }
+  }, [isLoaded, membershipList, setActive, router])
 
-    let cancelled = false;
+  const selectOrg = async (orgId: string) => {
+    localStorage.setItem("activeOrgId", orgId)
+    await setActive!({ organization: orgId })
+    router.push(`/org/${orgId}/dashboard`)
+  }
 
-    const fetchOrgs = async () => {
-      try {
-        const token = await getToken();
-        if (!token) return;
-
-        const data = (await apiGet("/me", token)) as MeResponse;
-        if (cancelled) return;
-
-        const orgs: Organization[] =
-          data.memberships?.map((m) => ({
-            id: String(m.org_id),
-            name: `Organization ${m.org_id}`,
-            slug: String(m.org_id),
-            role: m.role,
-          })) ?? [];
-
-        setOrganizations(orgs);
-
-        if (orgs.length === 0) {
-          setRedirecting(true);
-          router.replace("/user/dashboard");
-          return;
-        }
-
-        if (orgs.length === 1) {
-          setRedirecting(true);
-          localStorage.setItem("activeOrgId", orgs[0].id);
-          router.replace(`/org/${orgs[0].id}/dashboard`);
-        }
-      } catch (error) {
-        console.error("Failed to fetch organizations:", error);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchOrgs();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoaded, isSignedIn, getToken, router]);
-
-  const selectOrg = (orgId: string) => {
-    localStorage.setItem("activeOrgId", orgId);
-    router.push(`/org/${orgId}/dashboard`);
-  };
-
-  if (!isLoaded || loading || redirecting) {
+  if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-warm flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Select an Organization</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground">Select an Organization</h1>
+          <p className="mt-2 text-muted-foreground">
             You have access to multiple organizations. Choose one to continue.
           </p>
         </div>
 
         <div className="space-y-4">
-          {organizations.map((org) => (
+          {membershipList.map((m) => (
             <button
-              key={org.id}
+              key={m.organization.id}
               type="button"
-              onClick={() => selectOrg(org.id)}
-              className="w-full bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all text-left"
+              onClick={() => selectOrg(m.organization.id)}
+              className="w-full bg-card rounded-lg shadow-sm border border-border p-6 hover:shadow-md hover:border-primary/30 transition-all text-left"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Building2 className="h-6 w-6 text-blue-600" />
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Building2 className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{org.name}</h3>
-                    <p className="text-sm text-gray-500 mt-1">Role: {org.role}</p>
+                    <h3 className="text-lg font-semibold text-foreground">{m.organization.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Role: {m.role || 'member'}
+                    </p>
                   </div>
                 </div>
-                <ArrowRight className="h-5 w-5 text-gray-400" />
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </button>
           ))}
 
-          <a
-            href="/org/create"
-            className="w-full block bg-gray-50 rounded-lg border border-gray-200 border-dashed p-6 hover:bg-gray-100 transition-all text-center"
+          <button
+            type="button"
+            onClick={() => router.push('/org/create')}
+            className="w-full block bg-card/50 rounded-lg border border-border border-dashed p-6 hover:bg-card transition-all text-center"
           >
-            <div className="flex items-center justify-center space-x-2 text-gray-600">
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
               <Plus className="h-5 w-5" />
               <span className="font-medium">Create New Organization</span>
             </div>
-          </a>
+          </button>
         </div>
 
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-600 mb-2">Or continue as an individual user</p>
+          <p className="text-sm text-muted-foreground mb-2">Or continue as an individual user</p>
           <a
             href="/user/dashboard"
-            className="text-blue-600 hover:text-blue-700 font-medium"
+            className="text-primary hover:text-primary/80 font-medium"
           >
             Go to Personal Dashboard →
           </a>
         </div>
       </div>
     </div>
-  );
+  )
 }

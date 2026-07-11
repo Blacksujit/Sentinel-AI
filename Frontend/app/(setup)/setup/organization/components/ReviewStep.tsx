@@ -36,10 +36,10 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <div className="border border-white/10 rounded-lg p-4">
+    <div className="border border-border rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium text-white">{title}</h3>
-        <button onClick={onEdit} className="text-electric-blue hover:text-electric-violet transition-colors">
+        <h3 className="text-sm font-medium text-foreground">{title}</h3>
+        <button onClick={onEdit} className="text-primary hover:text-primary/80 transition-colors">
           <Edit3 className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -51,8 +51,8 @@ function Section({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between py-1 text-sm">
-      <span className="text-muted">{label}</span>
-      <span className="text-white">{value || '—'}</span>
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-foreground">{value || '—'}</span>
     </div>
   )
 }
@@ -66,9 +66,9 @@ export function ReviewStep({ data, onEdit, onComplete, onBack, isSubmitting }: P
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
     >
-      <Card className="card-premium border-white/10">
+      <Card className="card-premium border-border">
         <CardHeader>
-          <CardTitle className="text-xl text-white">Review Your Configuration</CardTitle>
+          <CardTitle className="text-xl text-foreground">Review Your Configuration</CardTitle>
           <CardDescription>
             Please review your selections before creating your account
           </CardDescription>
@@ -120,20 +120,20 @@ export function ReviewStep({ data, onEdit, onComplete, onBack, isSubmitting }: P
             <Row label="Selected Plan" value={planName} />
           </Section>
 
-          <div className="bg-gradient-to-r from-electric-blue/10 to-electric-violet/10 rounded-lg p-4 mt-4">
-            <p className="text-sm text-white text-center">
+          <div className="bg-primary/10 rounded-lg p-4 mt-4">
+            <p className="text-sm text-foreground text-center">
               You're all set! Creating your account will save all of the above configuration.
             </p>
           </div>
 
           <div className="flex justify-between pt-4">
-            <Button variant="ghost" onClick={onBack} className="text-muted" disabled={isSubmitting}>
+            <Button variant="ghost" onClick={onBack} className="text-muted-foreground" disabled={isSubmitting}>
               Back
             </Button>
             <Button onClick={onComplete} disabled={isSubmitting} className="btn-premium">
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
-                  <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  <span className="animate-spin h-4 w-4 border-2 border-foreground border-t-transparent rounded-full" />
                   Creating Account...
                 </span>
               ) : (

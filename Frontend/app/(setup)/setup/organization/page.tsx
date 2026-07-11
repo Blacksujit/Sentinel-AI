@@ -80,13 +80,13 @@ export default function OrganizationSetupPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-electric-blue/20 to-electric-violet/20 mb-4">
-          <Shield className="w-6 h-6 text-electric-blue" />
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 mb-4">
+          <Shield className="w-6 h-6 text-primary" />
         </div>
-        <h1 className="text-2xl md:text-3xl font-bold text-white">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">
           Set Up Your Organization
         </h1>
-        <p className="text-muted mt-2 text-sm">
+        <p className="text-muted-foreground mt-2 text-sm">
           Configure your SentinelAI workspace. Your settings will be saved when you create your account.
         </p>
       </div>
@@ -129,9 +129,9 @@ export default function OrganizationSetupPage() {
       </AnimatePresence>
 
       <div className="text-center mt-8">
-        <p className="text-xs text-muted">
+        <p className="text-xs text-muted-foreground">
           Already have an account?{' '}
-          <a href="/auth/sign-in" className="text-electric-blue hover:underline">
+          <a href="/auth/sign-in" className="text-primary hover:underline">
             Sign in
           </a>
         </p>

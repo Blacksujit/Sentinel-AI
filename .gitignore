@@ -478,3 +478,7 @@ Backend/sentinel_ai.db-journal
 # AI Assistant Tools
 .opencode/
 claude-skills/
+
+# sentinelai-main
+
+Frontend/Sentinal-AI-main

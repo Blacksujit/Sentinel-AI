@@ -58,7 +58,7 @@ export function SkeletonShimmer({
             )}
           >
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent"
               variants={shimmerVariants}
               initial="initial"
               animate="animate"
@@ -73,7 +73,7 @@ export function SkeletonShimmer({
   return (
     <div className={baseClasses} style={style} {...props}>
       <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent -skew-x-12"
         variants={shimmerVariants}
         initial="initial"
         animate="animate"

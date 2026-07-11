@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import require_authenticated_user, get_db
+from app.tenancy.org_context import require_workspace_member_from_path
 from app.storage.user_models import User
 from app.storage.workspace_intel_models import (
     IncidentSeverity, IncidentStatus, IncidentSource,
@@ -26,7 +27,14 @@ from app.services.intelligence_service import (
 )
 from app.api.ws_manager import ws_manager
 
-router = APIRouter(prefix="/workspaces/{workspace_id}/intel", tags=["workspace-intelligence"])
+router = APIRouter(
+    prefix="/workspaces/{workspace_id}/intel",
+    tags=["workspace-intelligence"],
+    dependencies=[
+        Depends(require_authenticated_user),
+        Depends(require_workspace_member_from_path),
+    ],
+)
 engine = IntelligenceEngine()
 
 

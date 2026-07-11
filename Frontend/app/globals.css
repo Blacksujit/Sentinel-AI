@@ -2,7 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-@import './styles/cursor-interactions.css';
+
+@import './styles/tokens.css';
+@import './styles/layout.css';
+@import './styles/hero.css';
+@import './styles/sections.css';
+@import './styles/sections2.css';
+@import './styles/analyze.css';
+@import './styles/docs.css';
 
 /* SweetAlert2 custom styling - Settings Page Optimized */
 .swal2-popup {
@@ -31,40 +38,39 @@
 }
 
 .swal2-confirm {
-  border-radius: 6px !important; /* Smaller radius */
+  border-radius: 6px !important;
   font-weight: 500 !important;
-  padding: 8px 16px !important; /* Much smaller touch target */
-  font-size: 12px !important; /* Smaller font */
-  background-color: #3085d6 !important; /* Make visible */
-  color: white !important; /* High contrast */
-  border: none !important; /* Clean look */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; /* Subtle shadow */
-  transition: all 0.2s ease !important; /* Smooth hover */
+  padding: 8px 16px !important;
+  font-size: 12px !important;
+  background: var(--red) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.2s ease !important;
 }
 
 .swal2-cancel {
-  border-radius: 6px !important; /* Smaller radius */
+  border-radius: 6px !important;
   font-weight: 500 !important;
-  padding: 8px 16px !important; /* Much smaller touch target */
-  font-size: 12px !important; /* Smaller font */
-  background-color: #d33 !important; /* Red for cancel */
-  color: white !important; /* High contrast */
-  border: none !important; /* Clean look */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; /* Subtle shadow */
-  transition: all 0.2s ease !important; /* Smooth hover */
+  padding: 8px 16px !important;
+  font-size: 12px !important;
+  background: var(--ink-soft) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.2s ease !important;
 }
 
-/* Remove hover effects for buttons */
 .swal2-confirm:hover {
-  background-color: #3085d6 !important; /* Keep same color */
-  transform: none !important; /* Remove lift effect */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; /* Keep same shadow */
+  background: var(--red) !important;
+  transform: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
 .swal2-cancel:hover {
-  background-color: #d33 !important; /* Keep same color */
-  transform: none !important; /* Remove lift effect */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; /* Keep same shadow */
+  background: var(--ink-soft) !important;
+  transform: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
 /* Mobile-specific adjustments */
@@ -97,26 +103,6 @@
 /* Toast notifications z-index fix */
 [data-sonner-toast] {
   z-index: 9999 !important;
-}
-
-/* Button hover effects */
-.btn-premium {
-  transition: all 0.2s ease !important;
-}
-
-.btn-premium:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 16px rgba(79, 139, 255, 0.3) !important;
-}
-
-.btn-premium-outline {
-  transition: all 0.2s ease !important;
-}
-
-.btn-premium-outline:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 16px rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 /* Validation popup styling - Mobile & Desktop Optimized */
@@ -156,22 +142,22 @@
 }
 
 .swal2-validation-popup .swal2-confirm {
-  border-radius: 6px !important; /* Smaller radius */
+  border-radius: 6px !important;
   font-weight: 500 !important;
-  padding: 6px 12px !important; /* Much smaller touch target */
-  font-size: 11px !important; /* Smaller font */
-  margin-top: 8px !important; /* Reduced spacing */
-  background-color: #3085d6 !important; /* Make visible */
-  color: white !important; /* High contrast */
-  border: none !important; /* Clean look */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; /* Subtle shadow */
-  transition: all 0.2s ease !important; /* Smooth hover */
+  padding: 6px 12px !important;
+  font-size: 11px !important;
+  margin-top: 8px !important;
+  background: var(--red) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.2s ease !important;
 }
 
 .swal2-validation-popup .swal2-confirm:hover {
-  background-color: #2170b9 !important; /* Darker on hover */
-  transform: translateY(-1px) !important; /* Subtle lift */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important; /* Enhanced shadow */
+  opacity: 0.85 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
 }
 
 /* Mobile-specific adjustments */
@@ -248,48 +234,48 @@ html {
 
 @layer base {
   :root {
-    --background: 11 26% 7%;
-    --foreground: 210 40% 95%;
-    --card: 215 28% 17%;
-    --card-foreground: 210 40% 95%;
-    --popover: 215 28% 17%;
-    --popover-foreground: 210 40% 95%;
-    --primary: 217 100% 65%;
-    --primary-foreground: 210 40% 5%;
-    --secondary: 258 100% 65%;
-    --secondary-foreground: 210 40% 5%;
-    --muted: 215 20% 65%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 217 100% 65%;
-    --accent-foreground: 210 40% 5%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 5%;
-    --border: 210 40% 6%;
-    --input: 215 28% 17%;
-    --ring: 217 100% 65%;
+    --background: 42 32% 92%;
+    --foreground: 44 13% 9%;
+    --card: 48 55% 98%;
+    --card-foreground: 44 13% 9%;
+    --popover: 48 55% 98%;
+    --popover-foreground: 44 13% 9%;
+    --primary: 6 54% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 45 26% 88%;
+    --secondary-foreground: 44 13% 9%;
+    --muted: 45 26% 88%;
+    --muted-foreground: 41 9% 38%;
+    --accent: 45 26% 88%;
+    --accent-foreground: 44 13% 9%;
+    --destructive: 6 63% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 42 20% 81%;
+    --input: 42 20% 81%;
+    --ring: 6 54% 39%;
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 11 26% 7%;
-    --foreground: 210 40% 95%;
-    --card: 215 28% 17%;
-    --card-foreground: 210 40% 95%;
-    --popover: 215 28% 17%;
-    --popover-foreground: 210 40% 95%;
-    --primary: 217 100% 65%;
-    --primary-foreground: 210 40% 5%;
-    --secondary: 258 100% 65%;
-    --secondary-foreground: 210 40% 5%;
-    --muted: 215 20% 65%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 217 100% 65%;
-    --accent-foreground: 210 40% 5%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 5%;
-    --border: 210 40% 6%;
-    --input: 215 28% 17%;
-    --ring: 217 100% 65%;
+    --background: 45 9% 6%;
+    --foreground: 42 20% 90%;
+    --card: 45 10% 10%;
+    --card-foreground: 42 20% 90%;
+    --popover: 45 10% 10%;
+    --popover-foreground: 42 20% 90%;
+    --primary: 7 29% 63%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 42 8% 18%;
+    --secondary-foreground: 42 20% 90%;
+    --muted: 45 9% 12%;
+    --muted-foreground: 42 8% 55%;
+    --accent: 42 8% 18%;
+    --accent-foreground: 42 20% 90%;
+    --destructive: 9 56% 53%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 42 8% 15%;
+    --input: 42 8% 15%;
+    --ring: 7 29% 63%;
   }
 }
 
@@ -298,108 +284,197 @@ html {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01";
+  }
+  ::selection {
+    background: var(--red);
+    color: #fff;
   }
 }
 
 @layer components {
-  /* Premium Glass Effects */
+  /* Glass Effects */
   .glass-effect {
-    @apply backdrop-blur-md bg-white/5 border-white/10;
+    @apply backdrop-blur-md bg-card border-border;
   }
-  
+
   .glass-effect-dark {
-    @apply backdrop-blur-md bg-black/20 border-white/5;
+    @apply backdrop-blur-md bg-muted/20 border-muted/20;
   }
-  
+
   .glass-effect-card {
-    @apply backdrop-blur-lg bg-white/5 border-white/10 shadow-premium;
+    @apply backdrop-blur-lg bg-card border border-border shadow-card;
   }
-  
-  /* Premium Glow Effects */
+
+  /* Glow Effects - warm-paper shadows */
   .glow-effect {
-    @apply shadow-glow;
+    @apply shadow-card;
   }
-  
+
   .glow-effect-violet {
-    @apply shadow-glow-violet;
+    @apply shadow-card;
   }
-  
+
   .glow-effect-teal {
-    @apply shadow-glow-teal;
+    @apply shadow-card;
   }
-  
+
   .glow-effect-risk {
-    @apply shadow-glow-risk;
+    box-shadow: 0 0 12px rgba(153, 60, 45, 0.2);
   }
-  
+
   .glow-effect-warning {
-    @apply shadow-glow-warning;
+    box-shadow: 0 0 12px rgba(178, 127, 27, 0.2);
   }
-  
+
   .glow-effect-success {
-    @apply shadow-glow-success;
+    box-shadow: 0 0 12px rgba(56, 118, 56, 0.2);
   }
-  
-  /* Premium Text Gradients */
+
+  /* Text colors - flat, no gradients */
   .text-gradient {
-    @apply bg-gradient-to-r from-electric-blue to-electric-violet bg-clip-text text-transparent;
+    color: var(--red);
   }
-  
+
   .text-gradient-secondary {
-    @apply bg-gradient-to-r from-electric-teal to-electric-blue bg-clip-text text-transparent;
+    color: var(--ink);
   }
-  
+
   .text-gradient-risk {
-    @apply bg-gradient-to-r from-risk-high to-risk-critical bg-clip-text text-transparent;
+    color: var(--red);
   }
-  
+
   .text-gradient-success {
-    @apply bg-gradient-to-r from-success to-emerald-600 bg-clip-text text-transparent;
+    color: var(--green);
   }
-  
+
   .text-gradient-warning {
-    @apply bg-gradient-to-r from-warning to-amber-600 bg-clip-text text-transparent;
+    color: var(--amber);
   }
-  
-  /* Premium Button Styles */
+
+  /* Primary button - warm-paper red accent */
   .btn-premium {
-    @apply bg-gradient-to-r from-electric-blue to-electric-violet text-white font-medium px-6 py-3 rounded-xl shadow-glow hover:shadow-glow-violet transition-all duration-300 hover:scale-105;
+    background: var(--red);
+    color: #fff;
+    font-weight: 500;
+    padding: 10px 24px;
+    border-radius: var(--radius-md);
+    border: none;
+    transition: opacity 0.15s, transform 0.15s;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    line-height: 1;
   }
-  
+  .btn-premium:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+  }
+
   .btn-premium-outline {
-    @apply border border-electric-blue/50 bg-transparent text-electric-blue font-medium px-6 py-3 rounded-xl hover:bg-electric-blue/10 transition-all duration-300;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font-weight: 500;
+    padding: 10px 24px;
+    border-radius: var(--radius-md);
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    line-height: 1;
   }
-  
-  /* Premium Card Styles */
+  .btn-premium-outline:hover {
+    border-color: var(--line-strong);
+    background: var(--paper-sunken);
+  }
+
+  /* Card styles */
   .card-premium {
-    @apply bg-gradient-to-br from-navy-800 to-navy-900 border border-white/10 rounded-2xl shadow-premium backdrop-blur-lg;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
   }
-  
+
   .card-premium-glow {
-    @apply card-premium shadow-glow hover:shadow-glow-violet transition-all duration-300;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
   }
-  
-  /* Premium Input Styles */
+
+  /* Input styles */
   .input-premium {
-    @apply bg-navy-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:border-electric-blue focus:shadow-glow transition-all duration-300;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    color: var(--ink);
+    font-size: 14px;
+    transition: border-color 0.15s;
+    width: 100%;
   }
-  
-  /* Premium Badge Styles */
+  .input-premium:focus {
+    outline: none;
+    border-color: var(--red);
+  }
+
+  /* Badge styles */
   .badge-premium {
-    @apply bg-gradient-to-r from-electric-blue to-electric-violet text-white text-xs font-medium px-3 py-1 rounded-full shadow-glow;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
-  
+
   .badge-risk {
-    @apply bg-gradient-to-r from-risk-high to-risk-critical text-white text-xs font-medium px-3 py-1 rounded-full shadow-glow-risk;
+    background: var(--red);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
-  
+
   .badge-success {
-    @apply bg-gradient-to-r from-success to-emerald-600 text-white text-xs font-medium px-3 py-1 rounded-full shadow-glow-success;
+    background: var(--green);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
-  
+
   .badge-warning {
-    @apply bg-gradient-to-r from-warning to-amber-600 text-white text-xs font-medium px-3 py-1 rounded-full shadow-glow-warning;
+    background: var(--amber);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
 }

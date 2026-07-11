@@ -51,13 +51,13 @@ export default function WorkspaceDashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6 p-6">
-        <div className="h-6 w-48 bg-white/5 rounded animate-pulse" />
+        <div className="h-6 w-48 bg-card rounded animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 bg-white/5 rounded-xl animate-pulse" />
+            <div key={i} className="h-24 bg-card rounded-xl animate-pulse" />
           ))}
         </div>
-        <div className="h-64 bg-white/5 rounded-xl animate-pulse" />
+        <div className="h-64 bg-card rounded-xl animate-pulse" />
       </div>
     )
   }
@@ -66,8 +66,8 @@ export default function WorkspaceDashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
-          <ShieldAlert className="w-12 h-12 text-muted mx-auto" />
-          <p className="text-muted">{error || 'Workspace not found'}</p>
+          <ShieldAlert className="w-12 h-12 text-muted-foreground mx-auto" />
+          <p className="text-muted-foreground">{error || 'Workspace not found'}</p>
           <Button variant="outline" onClick={() => router.back()}>Go Back</Button>
         </div>
       </div>
@@ -80,7 +80,7 @@ export default function WorkspaceDashboardPage() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <button
           onClick={() => router.push(`/org/${orgId}/dashboard/workspaces`)}
-          className="flex items-center gap-1 text-sm text-muted hover:text-white transition-colors mb-4"
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Workspaces

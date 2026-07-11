@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { ThemeProvider } from 'next-themes'
+import { ThemeProvider, useTheme } from 'next-themes'
 import { CursorProvider } from './hooks/useCursorInteractions'
 import { toast } from 'sonner'
 
@@ -58,7 +58,7 @@ function ClerkErrorBoundary({ children }: { children: React.ReactNode }) {
           <h2 className="text-xl font-semibold text-foreground mb-2">
             Authentication Service Issue
           </h2>
-          <p className="text-muted mb-4">
+          <p className="text-muted-foreground mb-4">
             {error || 'The authentication service is temporarily unavailable. This is usually a configuration issue.'}
           </p>
           <div className="space-y-3">
@@ -97,6 +97,19 @@ function ClerkErrorBoundary({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+// Syncs data-theme attribute on <html> whenever next-themes resolves the theme.
+// This ensures CSS tokens (tokens.css) stay in sync with the shadcn dark class.
+function ThemeSync() {
+  const { resolvedTheme } = useTheme()
+
+  useEffect(() => {
+    const html = document.documentElement
+    html.setAttribute('data-theme', resolvedTheme === 'dark' ? 'dark' : 'cream')
+  }, [resolvedTheme])
+
+  return null
+}
+
 // Providers component wraps app with React Query and theme support
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -112,13 +125,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ClerkErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <CursorProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <ThemeSync />
+            <CursorProvider>
             {children}
           </CursorProvider>
           {process.env.NODE_ENV === 'development' ? (

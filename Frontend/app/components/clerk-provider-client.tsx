@@ -12,13 +12,13 @@ function ClerkConfigError() {
   return (
     <div className="max-w-md text-center space-y-4">
       <h1 className="text-xl font-semibold text-foreground">Clerk not configured</h1>
-      <p className="text-muted text-sm">
+      <p className="text-muted-foreground text-sm">
         Add your publishable key to <code className="text-xs">Frontend/.env.local</code>:
       </p>
       <pre className="text-left text-xs bg-muted p-3 rounded overflow-x-auto">
         {`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...\nCLERK_SECRET_KEY=sk_test_...`}
       </pre>
-      <p className="text-muted text-xs">
+      <p className="text-muted-foreground text-xs">
         Get keys from{' '}
         <a
           href="https://dashboard.clerk.com"
@@ -59,7 +59,6 @@ export function ClerkProviderClient({
     <ClerkProvider
       publishableKey={publishableKey}
       clerkJSVersion={CLERK_JS_VERSION}
-      scriptLoadTimeout={30_000}
       signInUrl="/auth/sign-in"
       signUpUrl="/auth/sign-up"
       afterSignOutUrl="/"

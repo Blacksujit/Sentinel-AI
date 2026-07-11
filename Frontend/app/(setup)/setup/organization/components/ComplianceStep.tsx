@@ -41,16 +41,16 @@ export function ComplianceStep({ data, onChange, onNext, onBack }: Props) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
     >
-      <Card className="card-premium border-white/10">
+      <Card className="card-premium border-border">
         <CardHeader>
-          <CardTitle className="text-xl text-white">Compliance & Security</CardTitle>
+          <CardTitle className="text-xl text-foreground">Compliance & Security</CardTitle>
           <CardDescription>
             Configure compliance frameworks and security requirements
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-white">Compliance frameworks required</h3>
+            <h3 className="text-sm font-medium text-foreground">Compliance frameworks required</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {COMPLIANCE_FRAMEWORKS.map((fw) => (
                 <button
@@ -58,19 +58,19 @@ export function ComplianceStep({ data, onChange, onNext, onBack }: Props) {
                   onClick={() => toggleFramework(fw.id)}
                   className={`p-3 rounded-lg border text-sm transition-all text-left ${
                     (data.complianceFrameworks || []).includes(fw.id)
-                      ? 'border-electric-blue bg-electric-blue/10'
-                      : 'border-white/10 hover:border-white/20'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-border'
                   }`}
                 >
-                  <div className="font-medium text-white">{fw.label}</div>
-                  <div className="text-xs text-muted mt-0.5">{fw.description}</div>
+                  <div className="font-medium text-foreground">{fw.label}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{fw.description}</div>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-white">Security requirements</h3>
+            <h3 className="text-sm font-medium text-foreground">Security requirements</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {SECURITY_REQUIREMENTS.map((sr) => (
                 <button
@@ -78,19 +78,19 @@ export function ComplianceStep({ data, onChange, onNext, onBack }: Props) {
                   onClick={() => toggleSecurity(sr.id)}
                   className={`p-3 rounded-lg border text-sm transition-all text-left ${
                     (data.securityRequirements || []).includes(sr.id)
-                      ? 'border-electric-blue bg-electric-blue/10'
-                      : 'border-white/10 hover:border-white/20'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-border'
                   }`}
                 >
-                  <div className="font-medium text-white">{sr.label}</div>
-                  <div className="text-xs text-muted mt-0.5">{sr.description}</div>
+                  <div className="font-medium text-foreground">{sr.label}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{sr.description}</div>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-white">Data retention period</Label>
+            <Label className="text-foreground">Data retention period</Label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {DATA_RETENTION_OPTIONS.map((opt) => (
                 <button
@@ -98,8 +98,8 @@ export function ComplianceStep({ data, onChange, onNext, onBack }: Props) {
                   onClick={() => onChange({ dataRetention: opt.value })}
                   className={`p-2 rounded-lg border text-xs transition-all ${
                     data.dataRetention === opt.value
-                      ? 'border-electric-blue bg-electric-blue/10 text-white'
-                      : 'border-white/10 text-muted hover:border-white/20'
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border text-muted-foreground hover:border-border'
                   }`}
                 >
                   {opt.label}
@@ -109,7 +109,7 @@ export function ComplianceStep({ data, onChange, onNext, onBack }: Props) {
           </div>
 
           <div className="flex justify-between pt-4">
-            <Button variant="ghost" onClick={onBack} className="text-muted">
+            <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
               Back
             </Button>
             <Button onClick={onNext} className="btn-premium">

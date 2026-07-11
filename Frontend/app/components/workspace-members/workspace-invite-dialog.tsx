@@ -93,13 +93,13 @@ export function WorkspaceInviteDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-xl border-white/10">
+      <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-xl border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <UserPlus className="w-5 h-5 text-indigo-400" />
+            <UserPlus className="w-5 h-5 text-primary" />
             Invite Workspace Member
           </DialogTitle>
-          <DialogDescription className="text-muted">
+          <DialogDescription className="text-muted-foreground">
             Send an invitation to join this workspace.
           </DialogDescription>
         </DialogHeader>
@@ -108,19 +108,19 @@ export function WorkspaceInviteDialog({
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 id="email"
                 type="email"
                 placeholder="colleague@company.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setEmailError('') }}
-                className={`pl-10 bg-white/5 border-white/10 focus:border-indigo-500/50 ${emailError ? 'border-red-500/50' : ''}`}
+                className={`pl-10 bg-card border-border focus:border-primary/50 ${emailError ? 'border-destructive/50' : ''}`}
                 disabled={isSubmitting}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }}
               />
             </div>
-            {emailError && <p className="text-xs text-red-400">{emailError}</p>}
+            {emailError &&                     <p className="text-xs text-destructive">{emailError}</p>}
           </div>
 
           <div className="space-y-2">
@@ -131,8 +131,8 @@ export function WorkspaceInviteDialog({
                   key={role.value}
                   className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                     selectedRole === role.value
-                      ? 'bg-indigo-500/10 border-indigo-500/50'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      ? 'bg-primary/10 border-primary/50'
+                      : 'bg-card border-border hover:bg-muted'
                   }`}
                 >
                   <input
@@ -146,10 +146,10 @@ export function WorkspaceInviteDialog({
                   />
                   <div className="flex-1">
                     <div className="font-medium text-sm">{role.label}</div>
-                    <div className="text-xs text-muted">{role.description}</div>
+                    <div className="text-xs text-muted-foreground">{role.description}</div>
                   </div>
                   {selectedRole === role.value && (
-                    <div className="w-2 h-2 rounded-full bg-indigo-400" />
+                    <div className="w-2 h-2 rounded-full bg-primary" />
                   )}
                 </label>
               ))}
@@ -158,7 +158,7 @@ export function WorkspaceInviteDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={handleClose} disabled={isSubmitting} className="border-white/10 hover:bg-white/5">
+          <Button variant="outline" onClick={handleClose} disabled={isSubmitting} className="border-border hover:bg-card">
             <X className="w-4 h-4 mr-1" /> Cancel
           </Button>
           <Button
@@ -168,7 +168,7 @@ export function WorkspaceInviteDialog({
           >
             {isSubmitting ? (
               <>
-                <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
                 Sending...
               </>
             ) : (

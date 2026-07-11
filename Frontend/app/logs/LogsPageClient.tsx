@@ -35,7 +35,6 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
     setError(null)
     
     try {
-      // Re-fetch data from server
       const response = await fetch('/api/logs?limit=50', {
         cache: 'no-store',
       })
@@ -45,12 +44,9 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
       }
       
       const logs = await response.json()
-      // Note: In a real implementation, you'd update the parent component or use a state management system
-      // For now, we'll just clear the error and show a success message
       if (isDev) console.log('Retry successful, fetched logs:', logs?.length || 0)
       setError(null)
       
-      // Force a page refresh to re-fetch data
       window.location.reload()
     } catch (err) {
       console.error('Retry failed:', err)
@@ -60,7 +56,6 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
     }
   }
 
-  // Convert risk level filter to minimum score
   const getMinRiskScore = (level: string) => {
     switch (level) {
       case 'critical': return 0.8
@@ -71,20 +66,15 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
     }
   }
   
-  // Apply filters (client-side)
   const filteredLogs = initialLogs ? initialLogs.filter(log => {
-    // Defensive rendering: ensure log exists and has required fields
     if (!log) return false
     
-    // Search filter
     const matchesSearch = searchTerm === '' || 
       (log.prompt && typeof log.prompt === 'string' && log.prompt.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (log.response && typeof log.response === 'string' && log.response.toLowerCase().includes(searchTerm.toLowerCase()))
     
-    // Decision filter
     const matchesDecision = decisionFilter === 'all' || (log.decision && log.decision === decisionFilter)
     
-    // Risk score filter with safe fallback
     const riskScore = typeof log.final_risk_score === 'number' ? log.final_risk_score : 0
     const minScore = getMinRiskScore(riskLevelFilter)
     const matchesRiskScore = minScore === undefined || riskScore >= minScore
@@ -92,12 +82,10 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
     return matchesSearch && matchesDecision && matchesRiskScore
   }) : []
 
-  // Calculate pagination
   const totalPages = Math.ceil(filteredLogs.length / pageSize)
   const startIndex = (currentPage - 1) * pageSize
   const paginatedLogs = filteredLogs.slice(startIndex, startIndex + pageSize)
 
-  // Reset to page 1 when filters change
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
     setCurrentPage(1)
@@ -128,20 +116,37 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
     { key: "actions", header: "View", width: "80px" }
   ]
 
+  const scoreBadgeBg = (score: number) => {
+    if (score >= 0.8) return 'risk.critical'
+    if (score >= 0.6) return 'risk.high'
+    if (score >= 0.4) return 'risk.medium'
+    return 'risk.low'
+  }
+
+  const decisionBadgeBg = (decision: string) => {
+    switch (decision) {
+      case 'block': return 'risk.critical'
+      case 'escalate': return 'risk.high'
+      case 'warn': return 'risk.medium'
+      case 'allow': return 'risk.low'
+      default: return 'ink.soft'
+    }
+  }
+
   return (
     <>
       {/* Filters Bar */}
       <Box>
         <VStack spacing={4} align="stretch">
-          <Heading size="lg" color="gray.700">
+          <Heading size="lg" color="ink">
             Filters
           </Heading>
-          <Text color="gray.500" fontSize="sm">
+          <Text color="ink.soft" fontSize="sm">
             Filter risk logs by decision type, risk level, or search content
           </Text>
           <Box 
             p={6} 
-            bg="white" 
+            bg="paper.raised" 
             borderRadius="lg" 
             boxShadow="md"
             border="1px"
@@ -185,7 +190,7 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
                   <option value="high">High (≥0.6)</option>
                   <option value="critical">Critical (≥0.8)</option>
                 </Select>
-                <Button variant="primary" size="md" onClick={handleFilterChange}>
+                <Button colorScheme="brand" size="md" onClick={handleFilterChange}>
                   Apply Filters
                 </Button>
               </HStack>
@@ -198,10 +203,10 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
         {error && (
           <Card>
             <VStack spacing={4} py={8}>
-              <Text color="red.500" fontSize="lg" fontWeight="medium">
+              <Text color="risk.high" fontSize="lg" fontWeight="medium">
                 Unable to load risk logs
               </Text>
-              <Text color="gray.600" fontSize="sm" textAlign="center" maxW="400px">
+              <Text color="ink.soft" fontSize="sm" textAlign="center" maxW="400px">
                 {error}
               </Text>
               <Button 
@@ -221,10 +226,10 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
         <Box>
           <VStack spacing={4} align="stretch">
             <Box>
-              <Heading size="lg" color="gray.700">
+              <Heading size="lg" color="ink">
                 Risk Events ({filteredLogs.length} results, Page {currentPage} of {totalPages || 1})
               </Heading>
-              <Text color="gray.500" fontSize="sm">
+              <Text color="ink.soft" fontSize="sm">
                 Each risk log represents an AI interaction that was analyzed for safety and compliance
               </Text>
             </Box>
@@ -232,7 +237,7 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
             {/* Data State */}
             {paginatedLogs.length > 0 && !error && (
             <Box 
-              bg="white" 
+              bg="paper.raised" 
               borderRadius="lg" 
               boxShadow="sm"
               border="1px"
@@ -243,41 +248,40 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
               {/* Table Header */}
               <HStack 
                 p={4} 
-                bg="gray.50" 
+                bg="paper.sunken" 
                 borderBottom="1px" 
                 borderColor="gray.200"
                 spacing={4}
                 align="center"
               >
-                <Text flex="0 0 80px" fontSize="xs" fontWeight="bold" color="gray.600" textAlign="center">
+                <Text flex="0 0 80px" fontSize="xs" fontWeight="bold" color="ink.soft" textAlign="center">
                   ID
                 </Text>
-                <Text flex="0 0 160px" fontSize="xs" fontWeight="bold" color="gray.600" textAlign="left">
+                <Text flex="0 0 160px" fontSize="xs" fontWeight="bold" color="ink.soft" textAlign="left">
                   Time
                 </Text>
-                <Text flex="0 0 120px" fontSize="xs" fontWeight="bold" color="gray.600" textAlign="center">
+                <Text flex="0 0 120px" fontSize="xs" fontWeight="bold" color="ink.soft" textAlign="center">
                   Risk Score
                 </Text>
-                <Text flex="0 0 220px" fontSize="xs" fontWeight="bold" color="gray.600" textAlign="left">
+                <Text flex="0 0 220px" fontSize="xs" fontWeight="bold" color="ink.soft" textAlign="left">
                   Flags
                 </Text>
-                <Text flex="0 0 100px" fontSize="xs" fontWeight="bold" color="gray.600" textAlign="center">
+                <Text flex="0 0 100px" fontSize="xs" fontWeight="bold" color="ink.soft" textAlign="center">
                   Confidence
                 </Text>
-                <Text flex="0 0 100px" fontSize="xs" fontWeight="bold" color="gray.600" textAlign="center">
+                <Text flex="0 0 100px" fontSize="xs" fontWeight="bold" color="ink.soft" textAlign="center">
                   Decision
                 </Text>
-                <Text flex="0 0 100px" fontSize="xs" fontWeight="bold" color="gray.600" textAlign="center">
+                <Text flex="0 0 100px" fontSize="xs" fontWeight="bold" color="ink.soft" textAlign="center">
                   Action
                 </Text>
-                <Text flex="0 0 80px" fontSize="xs" fontWeight="bold" color="gray.600" textAlign="center">
+                <Text flex="0 0 80px" fontSize="xs" fontWeight="bold" color="ink.soft" textAlign="center">
                   View
                 </Text>
               </HStack>
               
               {/* Table Rows */}
               {paginatedLogs.map((log, index) => {
-                // Defensive rendering: ensure log has required fields
                 const logId = log?.id || 'Unknown'
                 const createdAt = log?.created_at ? new Date(log.created_at) : new Date()
                 const riskScore = typeof log?.final_risk_score === 'number' ? log.final_risk_score : 0
@@ -294,14 +298,14 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
                   borderColor="gray.100"
                   spacing={4}
                   align="center"
-                  bg="white"
-                  _hover={{ bg: "gray.50" }}
+                  bg="paper.raised"
+                  _hover={{ bg: "paper.bg" }}
                   transition="background-color 0.2s"
                 >
-                  <Text flex="0 0 80px" fontSize="sm" fontWeight="medium" color="gray.900" textAlign="center">
+                  <Text flex="0 0 80px" fontSize="sm" fontWeight="medium" color="ink" textAlign="center">
                     #{logId}
                   </Text>
-                  <Text flex="0 0 160px" fontSize="sm" color="gray.700" textAlign="left">
+                  <Text flex="0 0 160px" fontSize="sm" color="ink" textAlign="left">
                     {createdAt.toLocaleString()}
                   </Text>
                   <Box flex="0 0 120px" display="flex" justifyContent="center">
@@ -312,22 +316,17 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
                       py={1}
                       borderRadius="md"
                       color="white"
-                      bg={
-                        riskScore >= 0.8 ? 'red.500' :
-                        riskScore >= 0.6 ? 'orange.500' :
-                        riskScore >= 0.4 ? 'yellow.500' :
-                        'green.500'
-                      }
+                      bg={scoreBadgeBg(riskScore)}
                     >
                       {riskScore.toFixed(2)}
                     </Text>
                   </Box>
                   <Box flex="0 0 220px" textAlign="left">
-                    <Text fontSize="sm" color="gray.700" noOfLines={2} wordBreak="break-word">
+                    <Text fontSize="sm" color="ink" noOfLines={2} wordBreak="break-word">
                       {flags.length > 0 ? flags.join(', ') : 'None'}
                     </Text>
                   </Box>
-                  <Text flex="0 0 100px" fontSize="sm" color="gray.700" textAlign="center">
+                  <Text flex="0 0 100px" fontSize="sm" color="ink" textAlign="center">
                     {(confidence * 100).toFixed(0)}%
                   </Text>
                   <Box flex="0 0 100px" display="flex" justifyContent="center">
@@ -338,13 +337,7 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
                       py={1}
                       borderRadius="md"
                       color="white"
-                      bg={
-                        decision === 'block' ? 'red.500' :
-                        decision === 'escalate' ? 'orange.500' :
-                        decision === 'warn' ? 'yellow.600' :
-                        decision === 'allow' ? 'green.500' :
-                        'gray.500'
-                      }
+                      bg={decisionBadgeBg(decision)}
                     >
                       {decision}
                     </Text>
@@ -357,13 +350,7 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
                       py={1}
                       borderRadius="md"
                       color="white"
-                      bg={
-                        actionTaken === 'escalate' ? 'orange.500' :
-                        actionTaken === 'block' ? 'red.500' :
-                        actionTaken === 'warn' ? 'yellow.600' :
-                        actionTaken === 'allow' ? 'green.500' :
-                        'gray.500'
-                      }
+                      bg={decisionBadgeBg(actionTaken)}
                     >
                       {actionTaken}
                     </Text>
@@ -374,7 +361,7 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
                       size="sm" 
                       fontSize="xs"
                       borderColor="gray.300"
-                      _hover={{ bg: "gray.50" }}
+                      _hover={{ bg: "paper.bg" }}
                     >
                       View
                     </Button>
@@ -390,10 +377,10 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
         {!error && paginatedLogs.length === 0 && filteredLogs.length === 0 && (
           <Card>
             <VStack spacing={4} py={8}>
-              <Text color="gray.500" fontSize="lg" fontWeight="medium">
+              <Text color="ink.soft" fontSize="lg" fontWeight="medium">
                 No AI interactions recorded yet.
               </Text>
-              <Text color="gray.400" fontSize="sm" textAlign="center" maxW="400px">
+              <Text color="ink.soft" fontSize="sm" textAlign="center" maxW="400px">
                 Risk logs will appear here once AI interactions are analyzed. 
                 These logs help track and monitor AI safety decisions.
               </Text>
@@ -405,10 +392,10 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
         {!error && paginatedLogs.length === 0 && filteredLogs.length > 0 && (
           <Card>
             <VStack spacing={4} py={8}>
-              <Text color="gray.500" fontSize="lg" fontWeight="medium">
+              <Text color="ink.soft" fontSize="lg" fontWeight="medium">
                 No logs match the selected filters.
               </Text>
-              <Text color="gray.400" fontSize="sm" textAlign="center" maxW="400px">
+              <Text color="ink.soft" fontSize="sm" textAlign="center" maxW="400px">
                 Try adjusting your search terms or filter criteria to find the logs you're looking for.
               </Text>
               <Button 
@@ -433,7 +420,7 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
       <Box>
         <HStack justify="center" spacing={4}>
           <Button 
-            variant="secondary" 
+            variant="outline" 
             size="md"
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             isDisabled={currentPage === 1}
@@ -444,7 +431,7 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
             Page {currentPage} of {totalPages || 1}
           </Text>
           <Button 
-            variant="secondary" 
+            variant="outline" 
             size="md"
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             isDisabled={currentPage === totalPages || totalPages === 0}

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import Nav from '@/components/public/Nav'
+import Footer from '@/components/public/Footer'
 
 export const metadata: Metadata = {
   title: 'SentinelAI - AI Safety Monitoring',
@@ -11,8 +13,10 @@ export default function PublicLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-background">
-      {children}
+    <div className="app-shell">
+      <Nav />
+      <main>{children}</main>
+      <Footer />
     </div>
   )
 }

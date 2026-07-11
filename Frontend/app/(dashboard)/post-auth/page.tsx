@@ -2,42 +2,37 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@clerk/nextjs'
+import { useAuth, useOrganizationList } from '@clerk/nextjs'
 import { apiGet } from '@/lib/api-client'
 
-type Membership = {
-  org_id: number
-  role: string
-  joined_at: string
-}
-
-type MeResponse = {
+type MemberResponse = {
   id: number
   clerk_user_id: string
   email: string
   name?: string | null
   onboarding_completed: boolean
-  memberships: Membership[]
 }
 
 export default function PostAuthPage() {
   const router = useRouter()
   const { getToken, isLoaded, isSignedIn } = useAuth()
+  const { userMemberships, isLoaded: orgListLoaded } = useOrganizationList()
+
+  const membershipList = userMemberships?.data || []
 
   useEffect(() => {
     const run = async () => {
-      if (!isLoaded) return
+      if (!isLoaded || !orgListLoaded) return
       if (!isSignedIn) {
         router.replace('/auth/sign-in')
         return
       }
 
       const token = await getToken()
-      let me: MeResponse
+      let me: MemberResponse
       try {
-        me = await apiGet('/me', token)
-      } catch (err) {
-        // If /me fails, user needs onboarding
+        me = await apiGet('/me', token!)
+      } catch {
         router.replace('/user/onboarding')
         return
       }
@@ -47,27 +42,26 @@ export default function PostAuthPage() {
         return
       }
 
-      if (me.memberships && me.memberships.length > 0) {
-        if (me.memberships.length === 1) {
-          // Single org - go directly
-          router.replace(`/org/${me.memberships[0].org_id}/dashboard`)
+      if (membershipList.length > 0) {
+        if (membershipList.length === 1) {
+          const org = membershipList[0].organization
+          localStorage.setItem("activeOrgId", org.id)
+          router.replace(`/org/${org.id}/dashboard`)
         } else {
-          // Multiple orgs - show selector
           router.replace('/org-selector')
         }
         return
       }
 
-      // No org memberships - send user to organization onboarding
       router.replace('/org-onboarding')
     }
 
     run()
-  }, [getToken, isLoaded, isSignedIn, router])
+  }, [getToken, isLoaded, isSignedIn, orgListLoaded, membershipList, router])
 
   return (
-    <div className="min-h-screen bg-gradient-navy flex items-center justify-center">
-      <div className="text-muted">Preparing your workspace...</div>
+    <div className="min-h-screen bg-gradient-warm flex items-center justify-center">
+      <div className="text-muted-foreground">Preparing your workspace...</div>
     </div>
   )
 }

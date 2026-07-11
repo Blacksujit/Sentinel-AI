@@ -32,11 +32,9 @@
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": [
     "node_modules",
-    "**/*-chakra.tsx",
     "**/*-broken.tsx",
     "**/*-modern.tsx",
     "**/LogsPageClient.tsx",
-    "**/RiskLogDetailClient.tsx",
-    "**/TopNavbar.tsx"
+    "**/RiskLogDetailClient.tsx"
   ]
 }

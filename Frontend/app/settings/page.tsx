@@ -1,24 +1,16 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { AppLayoutModern } from '../components/layout/AppLayoutModern'
-import { Button, Switch, Separator, Input, Label } from '@/components/ui'
+import { AppLayout } from '../components/layout/AppLayout'
+import { Button, Separator, Label, Badge } from '@/components/ui'
 import { Slider } from '@/components/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { motion } from 'framer-motion'
-import { useCursorInteractions } from '@/hooks/useCursorInteractions'
-import { 
-  MotionCard,
-  staggerContainer,
-  slideUp,
-  hoverScaleLift,
-  hoverGlow,
-  buttonPress
-} from '@/components/ui/motion'
 import { toast } from 'sonner'
-import Swal from 'sweetalert2'
 import { UserGuard } from '@/components/guards/user-org-guards'
+import { History, RotateCcw, Save, Settings2 } from 'lucide-react'
 
 type Settings = {
   warn_threshold: number
@@ -58,7 +50,6 @@ const DEFAULT_SETTINGS: Settings = {
 }
 
 export function SettingsPageContent() {
-  const { registerInteractiveElement } = useCursorInteractions()
   const { getToken } = useAuth()
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
   const [loading, setLoading] = useState(true)
@@ -132,90 +123,44 @@ export function SettingsPageContent() {
 
   // Reset to defaults
   const resetToDefaults = async () => {
-    const result = await Swal.fire({
-      title: 'Reset to Defaults?',
-      text: 'Are you sure you want to reset all settings to their default values? This will overwrite your current configuration and save to database.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, reset!',
-      cancelButtonText: 'Cancel'
-    })
-    
-    if (!result.isConfirmed) {
-      return
-    }
-    
     try {
-      console.log('Attempting to reset settings...')
-      
       let token = null
       try { token = await getToken() } catch (e) { console.warn('getToken failed:', e) }
       const authHeaders = token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : { 'Content-Type': 'application/json' }
-      
-      // Try POST reset endpoint first
+
       let response = await fetch('/api/settings/reset', {
         method: 'POST',
-        headers: authHeaders
+        headers: authHeaders as HeadersInit
       })
-      
-      console.log('Reset response status:', response.status)
-      
+
       if (!response.ok) {
-        console.log('POST reset failed, trying fallback method...')
-        // Fallback: get defaults and save them
         const defaultResponse = await fetch('/api/settings/default', {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
         if (defaultResponse.ok) {
           const defaultSettings = await defaultResponse.json()
-          console.log('Got default settings:', defaultSettings)
-          
-          // Save the defaults
           response = await fetch('/api/settings', {
             method: 'PUT',
-            headers: authHeaders,
+            headers: authHeaders as HeadersInit,
             body: JSON.stringify(defaultSettings)
           })
-          console.log('Save defaults response status:', response.status)
         }
       }
-      
+
       if (response.ok) {
         const defaultSettings = await response.json()
-        console.log('Reset settings received:', defaultSettings)
-        
-        // Check if values actually changed from initial loaded settings
-        const valuesChanged = initialSettings ? JSON.stringify(initialSettings) !== JSON.stringify(defaultSettings) : true
         setSettings(defaultSettings)
-        setInitialSettings(defaultSettings) // Update initial settings
-        setHasChanges(false) // Always set to false after successful reset
-        setWasReset(true) // Mark that reset was performed
+        setInitialSettings(defaultSettings)
+        setHasChanges(false)
+        setWasReset(true)
         toast.success('Settings reset to defaults')
-        
-        await Swal.fire({
-          title: 'Reset Complete!',
-          text: 'Settings have been reset to default values and saved to database.',
-          icon: 'success',
-          timer: 3000,
-          showConfirmButton: false
-        })
       } else {
         const errorText = await response.text()
-        console.error('Reset failed with status:', response.status, errorText)
         throw new Error(`HTTP ${response.status}: ${errorText}`)
       }
     } catch (error) {
       console.error('Failed to reset settings:', error)
-      toast.error('Failed to reset settings')
-      
-      await Swal.fire({
-        title: 'Error!',
-        text: `Failed to reset settings: ${error.message}`,
-        icon: 'error',
-        confirmButtonText: 'OK'
-      })
+      toast.error(`Failed to reset settings: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -233,74 +178,41 @@ export function SettingsPageContent() {
         },
         body: JSON.stringify(settings)
       })
-      
+
       if (response.ok) {
         const updatedSettings = await response.json()
         setSettings(updatedSettings)
-        
-        // Check if values actually changed from initial loaded settings
         const valuesChanged = initialSettings ? JSON.stringify(initialSettings) !== JSON.stringify(updatedSettings) : false
         setHasChanges(valuesChanged)
         toast.success('Settings saved successfully')
-        
-        await Swal.fire({
-          title: 'Settings Saved!',
-          text: 'Your configuration has been updated and saved to the database.',
-          icon: 'success',
-          timer: 2000,
-          showConfirmButton: false
-        })
       } else {
         const error = await response.text()
         toast.error(`Failed to save settings: ${error}`)
-        
-        await Swal.fire({
-          title: 'Save Failed!',
-          text: `Failed to save settings: ${error}`,
-          icon: 'error',
-          confirmButtonText: 'OK'
-        })
       }
     } catch (error: any) {
-      console.error('Failed to save settings:', error)
       const errorMsg = error?.message || error?.toString() || 'Unknown error'
       toast.error(`Failed to save settings: ${errorMsg}`)
-      
-      await Swal.fire({
-        title: 'Error!',
-        text: `Failed to save settings: ${errorMsg}`,
-        icon: 'error',
-        confirmButtonText: 'OK'
-      })
     } finally {
       setSaving(false)
     }
   }
 
-  // Update settings and track changes
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }))
-    setWasReset(false) // Reset wasReset flag when user makes changes
-    
-    // Check if values actually changed from initial loaded settings
+    setWasReset(false)
     const valuesChanged = initialSettings ? JSON.stringify({ ...settings, [key]: value }) !== JSON.stringify(initialSettings) : true
     setHasChanges(valuesChanged)
   }
 
   const updateSignalWeight = (signal: keyof Settings['signal_weights'], value: number) => {
-    setSettings(prev => {
-      const updatedSettings = {
-        ...prev,
-        signal_weights: {
-          ...prev.signal_weights,
-          [signal]: value
-        }
+    setSettings(prev => ({
+      ...prev,
+      signal_weights: {
+        ...prev.signal_weights,
+        [signal]: value
       }
-      return updatedSettings
-    })
-    setWasReset(false) // Reset wasReset flag when user makes changes
-    
-    // Check if values actually changed from initial loaded settings
+    }))
+    setWasReset(false)
     const updatedSettings = {
       ...settings,
       signal_weights: {
@@ -312,54 +224,75 @@ export function SettingsPageContent() {
     setHasChanges(valuesChanged)
   }
 
+  const sectionHeaderClass = "text-lg font-semibold text-foreground mb-4"
+
+  const isDefault = useMemo(() => {
+    return JSON.stringify(settings) === JSON.stringify(DEFAULT_SETTINGS)
+  }, [settings])
+
   return (
-    <div className="min-h-screen bg-gradient-navy">
-        {/* Premium animated background */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:50px_50px]" />
-        </div>
-        
-        <div className="relative z-10 space-y-8 p-6">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="space-y-2"
-          >
-            <motion.h1 variants={slideUp} className="text-3xl font-bold tracking-tight text-foreground">
-              Settings
-              {loading && <span className="ml-2 text-sm text-muted">(Loading...)</span>}
-            </motion.h1>
-            <motion.p variants={slideUp} className="text-muted">
+    <div className="min-h-screen bg-background">
+      <div className="space-y-8 p-6">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                Settings
+              </h1>
+              {loading && <Badge variant="outline" className="text-muted-foreground">Loading</Badge>}
+              {isDefault && !loading && <Badge className="badge-premium">Default</Badge>}
+            </div>
+            <p className="text-sm text-muted-foreground">
               Configure SentinelAI risk assessment behavior
               {settings.updated_at && (
-                <span className="ml-2 text-xs text-muted">
+                <span className="ml-2 text-xs text-muted-foreground">
                   (Last updated: {new Date(settings.updated_at).toLocaleDateString()})
                 </span>
               )}
-            </motion.p>
-          </motion.div>
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetToDefaults}
+              disabled={saving || !hasChanges || wasReset || isDefault}
+              className="btn-premium-outline"
+            >
+              <RotateCcw className="mr-1.5 h-4 w-4" />
+              Reset
+            </Button>
+            <Button
+              size="sm"
+              onClick={saveSettings}
+              disabled={saving || !hasChanges}
+              className="btn-premium"
+            >
+              <Save className="mr-1.5 h-4 w-4" />
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        </motion.div>
 
-          {/* Settings Sections */}
-          <motion.div 
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
-          >
-            {/* Risk Thresholds */}
-            <MotionCard variants={slideUp} className="card-premium p-6">
-              <h2 className="text-xl font-semibold text-foreground mb-4">Risk Thresholds</h2>
-              <div className="space-y-6">
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                  className="space-y-3"
-                >
+        {/* Settings Sections */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+        >
+          {/* Risk Thresholds */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+            <Card className="card-premium border-border">
+              <CardHeader>
+                <CardTitle className={sectionHeaderClass}>Risk Thresholds</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="warn-threshold" className="text-foreground">Warning Threshold</Label>
-                    <span className="text-sm font-mono bg-navy-800 px-2 py-1 rounded">
+                    <span className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground tabular-nums">
                       {settings.warn_threshold.toFixed(2)}
                     </span>
                   </div>
@@ -370,22 +303,16 @@ export function SettingsPageContent() {
                     step={0.01}
                     value={[settings.warn_threshold]}
                     onValueChange={([value]) => updateSetting('warn_threshold', value)}
-                    className="w-full"
                   />
-                  <p className="text-xs text-muted">Risk score at which warnings are triggered</p>
-                </motion.div>
-                
-                <Separator className="bg-white/10" />
-                
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                  className="space-y-3"
-                >
+                  <p className="text-xs text-muted-foreground">Risk score at which warnings are triggered</p>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="escalate-threshold" className="text-foreground">Escalation Threshold</Label>
-                    <span className="text-sm font-mono bg-navy-800 px-2 py-1 rounded">
+                    <span className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground tabular-nums">
                       {settings.escalate_threshold.toFixed(2)}
                     </span>
                   </div>
@@ -396,22 +323,16 @@ export function SettingsPageContent() {
                     step={0.01}
                     value={[settings.escalate_threshold]}
                     onValueChange={([value]) => updateSetting('escalate_threshold', value)}
-                    className="w-full"
                   />
-                  <p className="text-xs text-muted">Risk score at which escalation is triggered</p>
-                </motion.div>
-                
-                <Separator className="bg-white/10" />
-                
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.3 }}
-                  className="space-y-3"
-                >
+                  <p className="text-xs text-muted-foreground">Risk score at which escalation is triggered</p>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="confidence-floor" className="text-foreground">Confidence Floor</Label>
-                    <span className="text-sm font-mono bg-navy-800 px-2 py-1 rounded">
+                    <span className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground tabular-nums">
                       {settings.confidence_floor.toFixed(2)}
                     </span>
                   </div>
@@ -422,26 +343,24 @@ export function SettingsPageContent() {
                     step={0.01}
                     value={[settings.confidence_floor]}
                     onValueChange={([value]) => updateSetting('confidence_floor', value)}
-                    className="w-full"
                   />
-                  <p className="text-xs text-muted">Minimum confidence required for risk assessment</p>
-                </motion.div>
-              </div>
-            </MotionCard>
+                  <p className="text-xs text-muted-foreground">Minimum confidence required for risk assessment</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-            {/* Signal Sensitivity */}
-            <MotionCard variants={slideUp} className="card-premium p-6">
-              <h2 className="text-xl font-semibold text-foreground mb-4">Signal Sensitivity</h2>
-              <div className="space-y-6">
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                  className="space-y-3"
-                >
+          {/* Signal Sensitivity */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.11 }}>
+            <Card className="card-premium border-border">
+              <CardHeader>
+                <CardTitle className={sectionHeaderClass}>Signal Sensitivity</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="prompt-anomaly" className="text-foreground">Prompt Anomaly</Label>
-                    <span className="text-sm font-mono bg-navy-800 px-2 py-1 rounded">
+                    <span className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground tabular-nums">
                       {settings.signal_weights.prompt_anomaly.toFixed(2)}
                     </span>
                   </div>
@@ -452,22 +371,16 @@ export function SettingsPageContent() {
                     step={0.01}
                     value={[settings.signal_weights.prompt_anomaly]}
                     onValueChange={([value]) => updateSignalWeight('prompt_anomaly', value)}
-                    className="w-full"
                   />
-                  <p className="text-xs text-muted">Weight for detecting unusual prompt patterns</p>
-                </motion.div>
-                
-                <Separator className="bg-white/10" />
-                
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                  className="space-y-3"
-                >
+                  <p className="text-xs text-muted-foreground">Weight for detecting unusual prompt patterns</p>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="jailbreak-attempt" className="text-foreground">Jailbreak Attempt</Label>
-                    <span className="text-sm font-mono bg-navy-800 px-2 py-1 rounded">
+                    <span className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground tabular-nums">
                       {settings.signal_weights.jailbreak_attempt.toFixed(2)}
                     </span>
                   </div>
@@ -478,22 +391,16 @@ export function SettingsPageContent() {
                     step={0.01}
                     value={[settings.signal_weights.jailbreak_attempt]}
                     onValueChange={([value]) => updateSignalWeight('jailbreak_attempt', value)}
-                    className="w-full"
                   />
-                  <p className="text-xs text-muted">Weight for detecting jailbreak attempts</p>
-                </motion.div>
-                
-                <Separator className="bg-white/10" />
-                
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.3 }}
-                  className="space-y-3"
-                >
+                  <p className="text-xs text-muted-foreground">Weight for detecting jailbreak attempts</p>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="unsafe-output" className="text-foreground">Unsafe Output</Label>
-                    <span className="text-sm font-mono bg-navy-800 px-2 py-1 rounded">
+                    <span className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground tabular-nums">
                       {settings.signal_weights.unsafe_output.toFixed(2)}
                     </span>
                   </div>
@@ -504,152 +411,152 @@ export function SettingsPageContent() {
                     step={0.01}
                     value={[settings.signal_weights.unsafe_output]}
                     onValueChange={([value]) => updateSignalWeight('unsafe_output', value)}
-                    className="w-full"
                   />
-                  <p className="text-xs text-muted">Weight for detecting unsafe output patterns</p>
-                </motion.div>
-              </div>
-            </MotionCard>
+                  <p className="text-xs text-muted-foreground">Weight for detecting unsafe output patterns</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-            {/* Enforcement Mode */}
-            <MotionCard variants={slideUp} className="card-premium p-6">
-              <h2 className="text-xl font-semibold text-foreground mb-4">Enforcement Mode</h2>
-              <div className="space-y-4">
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                  className="space-y-3"
-                >
+          {/* Enforcement Mode */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}>
+            <Card className="card-premium border-border">
+              <CardHeader>
+                <CardTitle className={sectionHeaderClass}>Enforcement Mode</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
                   <Label htmlFor="enforcement-mode" className="text-foreground">Default Action</Label>
                   <Select value={settings.enforcement_mode} onValueChange={(value) => updateSetting('enforcement_mode', value as 'allow' | 'warn' | 'escalate')}>
-                    <SelectTrigger className="input-premium">
+                    <SelectTrigger aria-label="Enforcement mode">
                       <SelectValue placeholder="Select enforcement mode" />
                     </SelectTrigger>
-                    <SelectContent className="card-premium border-white/10">
+                    <SelectContent>
                       <SelectItem value="allow">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
                           Allow - Pass through all requests
                         </div>
                       </SelectItem>
                       <SelectItem value="warn">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                          <span className="inline-block h-2 w-2 rounded-full bg-amber-500"></span>
                           Warn - Log warnings but allow
                         </div>
                       </SelectItem>
                       <SelectItem value="escalate">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                          <span className="inline-block h-2 w-2 rounded-full bg-red-500"></span>
                           Escalate - Block high-risk requests
                         </div>
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted">Default action when thresholds are exceeded</p>
-                </motion.div>
-              </div>
-            </MotionCard>
-
+                  <p className="text-xs text-muted-foreground">Default action when thresholds are exceeded</p>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
+        </motion.div>
 
-          {/* Action Buttons */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.4 }}
-            className="flex justify-between items-center pt-6"
-          >
-            <div className="text-sm text-muted">
-              Version {settings.version} 
-              {hasChanges && <span className="ml-2 text-yellow-400">(Unsaved changes)</span>}
-            </div>
-            <div className="flex space-x-4">
-              <motion.div {...buttonPress}>
-                <Button 
-                  variant="outline" 
-                  className="btn-premium-outline"
-                  onClick={resetToDefaults}
-                  disabled={saving || !hasChanges || wasReset}
-                >
-                  Reset to Defaults
-                </Button>
-              </motion.div>
-              <motion.div {...buttonPress}>
-                <Button 
-                  className="btn-premium"
-                  onClick={saveSettings}
-                  disabled={saving || !hasChanges}
-                >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </motion.div>
-            </div>
-          </motion.div>
+        {/* Version footer */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex items-center justify-between px-1"
+        >
+          <div className="flex items-center gap-2 text-sm">
+            <Settings2 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">v{settings.version}</span>
+            {hasChanges && <Badge variant="secondary" className="text-xs">Unsaved</Badge>}
+            {wasReset && <Badge className="badge-premium text-xs">Reset to defaults</Badge>}
+          </div>
+        </motion.div>
 
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="pt-6"
-          >
-            <MotionCard variants={slideUp} className="card-premium p-6">
+        {/* Settings History */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <Card className="card-premium border-border">
+            <CardHeader>
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">Settings history</h2>
-                  <p className="text-xs text-muted">Versioned audit trail of settings updates</p>
+                  <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <History className="h-4 w-4 text-muted-foreground" />
+                    Settings history
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">Versioned audit trail of settings updates</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {historyLoading && <span className="text-xs text-muted">Loading…</span>}
-                  <Button 
-                    variant="outline" 
+                  {historyLoading && <span className="text-xs text-muted-foreground">Loading...</span>}
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => setHistoryPage(Math.max(1, historyPage - 1))}
                     disabled={historyPage <= 1 || historyLoading}
+                    className="btn-premium-outline"
                   >
                     Previous
                   </Button>
-                  <span className="text-xs text-muted">Page {historyPage}</span>
-                  <Button 
-                    variant="outline" 
+                  <span className="text-xs text-muted-foreground tabular-nums">Page {historyPage}</span>
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => setHistoryPage(historyPage + 1)}
                     disabled={history.length < 10 || historyLoading}
+                    className="btn-premium-outline"
                   >
                     Next
                   </Button>
                 </div>
               </div>
-
-              <div className="mt-4 max-h-96 overflow-y-auto space-y-2">
-                {history.length === 0 ? (
-                  <div className="text-sm text-muted">No history available</div>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-96 space-y-2 overflow-y-auto">
+                {historyLoading && history.length === 0 ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="h-16 animate-pulse rounded-lg bg-muted" />
+                    ))}
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2 py-8 text-center">
+                    <History className="h-6 w-6 text-muted-foreground/40" />
+                    <p className="text-sm text-muted-foreground">No history available yet</p>
+                  </div>
                 ) : (
                   history.slice(0, 10).map((h) => (
                     <div
                       key={h.id}
-                      className="rounded-xl border border-white/10 bg-black/20 p-3"
+                      className="rounded-lg border border-border bg-card p-3 hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="text-sm font-medium text-foreground">
-                          v{h.version}
-                          {h.updated_by ? <span className="ml-2 text-xs text-muted">by {h.updated_by}</span> : null}
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                            v{h.version}
+                          </span>
+                          {h.updated_by && (
+                            <span className="text-xs text-muted-foreground">{h.updated_by}</span>
+                          )}
                         </div>
-                        <div className="text-xs font-mono text-muted">
+                        <div className="font-mono text-xs text-muted-foreground">
                           {h.created_at ? new Date(h.created_at).toLocaleString() : '—'}
                         </div>
                       </div>
-                      <div className="mt-2 text-xs font-mono text-foreground/90 whitespace-pre-wrap">
+                      <div className="mt-2 whitespace-pre-wrap font-mono text-xs text-foreground/90">
                         {h.thresholds_applied ? JSON.stringify(h.thresholds_applied, null, 2) : '—'}
                       </div>
                     </div>
                   ))
                 )}
               </div>
-            </MotionCard>
-          </motion.div>
-        </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
     </div>
   )
 }
@@ -657,9 +564,9 @@ export function SettingsPageContent() {
 export default function SettingsPageModern() {
   return (
     <UserGuard>
-      <AppLayoutModern>
+      <AppLayout>
         <SettingsPageContent />
-      </AppLayoutModern>
+      </AppLayout>
     </UserGuard>
   )
 }

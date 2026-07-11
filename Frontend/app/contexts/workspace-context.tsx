@@ -63,7 +63,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           org_id: w.org_id,
         })) || [];
         
-        console.log('Workspace Context - Workspaces loaded:', workspaceList);
         setWorkspaces(workspaceList);
 
         // Restore saved workspace if exists

@@ -19,7 +19,7 @@ interface Member {
 
 export default function OrgMembersPage() {
   const { getToken, isLoaded } = useAuth()
-  const params = useParams()
+  const params = useParams()!
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(false)
   const [invites, setInvites] = useState<any[]>([])
@@ -82,8 +82,8 @@ export default function OrgMembersPage() {
   if (loading || !members.length) {
     return (
       <AppLayoutModern>
-        <div className="min-h-screen bg-gradient-navy flex items-center justify-center">
-          <div className="text-sm text-muted">Loading members…</div>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-sm text-muted-foreground">Loading members…</div>
         </div>
       </AppLayoutModern>
     )
@@ -91,8 +91,7 @@ export default function OrgMembersPage() {
 
   return (
     <AppLayoutModern>
-      <div className="min-h-screen bg-gradient-navy">
-        <div className="relative z-10 space-y-6 p-6">
+      <div className="space-y-6 p-6">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -100,7 +99,7 @@ export default function OrgMembersPage() {
             className="flex flex-col gap-2"
           >
             <h2 className="text-xl font-bold text-foreground">Organization Members</h2>
-            <p className="text-sm text-muted">Manage team members and their roles</p>
+            <p className="text-sm text-muted-foreground">Manage team members and their roles</p>
           </motion.div>
 
           {/* Invite form */}
@@ -119,7 +118,7 @@ export default function OrgMembersPage() {
             <h3 className="text-lg font-semibold text-foreground">Active Members</h3>
             {members.length === 0 ? (
               <MotionCard className="p-6 text-center">
-                <p className="text-muted">No members yet</p>
+                <p className="text-muted-foreground">No members yet</p>
               </MotionCard>
             ) : (
               <div className="space-y-2">
@@ -128,13 +127,13 @@ export default function OrgMembersPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="font-semibold text-foreground">{m.name || m.email}</div>
-                        <div className="text-sm text-muted">{m.email}</div>
+                        <div className="text-sm text-muted-foreground">{m.email}</div>
                       </div>
                       <div className="text-right">
-                        <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
+                        <div className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                           {m.role}
                         </div>
-                        <div className="text-xs text-muted mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           Joined {new Date(m.joined_at).toLocaleDateString()}
                         </div>
                       </div>
@@ -145,7 +144,6 @@ export default function OrgMembersPage() {
             )}
           </motion.div>
         </div>
-      </div>
     </AppLayoutModern>
   )
 }

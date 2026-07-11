@@ -64,7 +64,7 @@ export function WorkspacePendingInvites({
       animate={{ opacity: 1, y: 0 }}
       className="space-y-3"
     >
-      <h3 className="text-sm font-medium text-muted flex items-center gap-2">
+      <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
         <RotateCcw className="w-4 h-4" />
         Pending Invites ({invites.length})
       </h3>
@@ -73,7 +73,7 @@ export function WorkspacePendingInvites({
         {invites.map((invite) => (
           <div
             key={invite.id}
-            className="flex items-center justify-between p-3 rounded-lg bg-white/[0.03] border border-white/10"
+            className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border"
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
@@ -81,7 +81,7 @@ export function WorkspacePendingInvites({
               </div>
               <div>
                 <div className="font-medium text-sm text-foreground">{invite.email}</div>
-                <div className="flex items-center gap-2 text-xs text-muted">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>Invited by {invite.invited_by || 'Unknown'}</span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
@@ -98,7 +98,7 @@ export function WorkspacePendingInvites({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-muted hover:text-red-400"
+                  className="h-7 w-7 text-muted-foreground hover:text-red-400"
                   onClick={() => handleCancel(invite.id, invite.email)}
                 >
                   <X className="w-4 h-4" />

@@ -5,6 +5,9 @@ import { useAuth } from '@clerk/nextjs'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { MotionCard, slideUp } from '@/components/ui/motion'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 interface InviteMemberFormProps {
   orgId: string | string[]
@@ -78,40 +81,37 @@ export function InviteMemberForm({ orgId, onInviteSent }: InviteMemberFormProps)
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-foreground">Invite Team Member</h3>
-            <p className="text-sm text-muted mt-1">Add new members to collaborate in this organization</p>
+            <p className="text-sm text-muted-foreground mt-1">Add new members to collaborate in this organization</p>
           </div>
-          <button
+          <Button
             onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+            variant={showForm ? "ghost" : "default"}
           >
             {showForm ? 'Cancel' : 'Invite Member'}
-          </button>
+          </Button>
         </div>
 
         {showForm && (
           <form onSubmit={handleInvite} className="mt-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Email Address
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="invite-email">Email Address</Label>
+              <Input
+                id="invite-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="colleague@example.com"
-                className="w-full px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Role
-              </label>
+            <div className="space-y-2">
+              <Label htmlFor="invite-role">Role</Label>
               <select
+                id="invite-role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 disabled={loading}
               >
                 <option value="VIEWER">Viewer (read-only)</option>
@@ -122,20 +122,20 @@ export function InviteMemberForm({ orgId, onInviteSent }: InviteMemberFormProps)
             </div>
 
             <div className="flex gap-3 pt-2">
-              <button
+              <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1"
               >
                 {loading ? 'Sending...' : 'Send Invite'}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 rounded-lg border border-slate-300 text-slate-900 font-medium hover:bg-slate-50 transition-colors"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
         )}

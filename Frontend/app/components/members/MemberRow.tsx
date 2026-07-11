@@ -71,14 +71,14 @@ export function MemberRow({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/[0.07] transition-colors"
+      className="flex items-center justify-between p-4 rounded-lg bg-card border border-border hover:bg-muted/70 transition-colors"
     >
       <div className="flex items-center gap-3">
         <div className={cn(
           "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium",
           isCurrentUser
-            ? "bg-gradient-to-br from-indigo-500 to-purple-500 text-white"
-            : "bg-white/10 text-muted"
+            ? "bg-primary/20 text-primary"
+            : "bg-muted text-muted-foreground"
         )}>
           {isCurrentUser ? <User className="w-5 h-5" /> : getInitials(member.name, member.email)}
         </div>
@@ -88,12 +88,12 @@ export function MemberRow({
               {member.name || member.email}
             </span>
             {isCurrentUser && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400">
+              <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
                 You
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Mail className="w-3 h-3" />
             {member.email}
           </div>
@@ -101,7 +101,7 @@ export function MemberRow({
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="text-xs text-muted">
+        <div className="text-xs text-muted-foreground">
           Joined {new Date(member.joined_at).toLocaleDateString()}
         </div>
 
@@ -113,15 +113,15 @@ export function MemberRow({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted hover:text-foreground"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
               >
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-background/95 backdrop-blur-xl border-white/10">
+            <DropdownMenuContent align="end" className="w-48 bg-background/95 backdrop-blur-xl border-border">
               {canChangeThisMember && (
                 <>
-                  <div className="px-2 py-1.5 text-xs text-muted">Change Role</div>
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">Change Role</div>
                   {ROLE_OPTIONS.filter(r => r.level <= maxRoleLevel).map((role) => (
                     <DropdownMenuItem
                       key={role.value}
@@ -129,17 +129,17 @@ export function MemberRow({
                       disabled={member.role.toUpperCase() === role.value}
                       className={cn(
                         "cursor-pointer",
-                        member.role.toUpperCase() === role.value && "bg-white/5"
+                        member.role.toUpperCase() === role.value && "bg-card"
                       )}
                     >
                       <role.icon className="w-4 h-4 mr-2" />
                       {role.label}
                       {member.role.toUpperCase() === role.value && (
-                        <span className="ml-auto text-xs text-muted">Current</span>
+                        <span className="ml-auto text-xs text-muted-foreground">Current</span>
                       )}
                     </DropdownMenuItem>
                   ))}
-                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuSeparator className="bg-muted" />
                 </>
               )}
               {canRemoveThisMember && (

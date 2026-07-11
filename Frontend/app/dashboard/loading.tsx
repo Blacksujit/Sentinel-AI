@@ -1,9 +1,9 @@
-import { AppLayoutModern } from '../components/layout/AppLayoutModern'
+import { AppLayout } from '../components/layout/AppLayout'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function Loading() {
   return (
-    <AppLayoutModern>
+    <AppLayout>
       <div className="space-y-6">
         <div className="space-y-2">
           <Skeleton className="h-8 w-56" />
@@ -24,6 +24,6 @@ export default function Loading() {
 
         <Skeleton className="h-[320px] w-full" />
       </div>
-    </AppLayoutModern>
+    </AppLayout>
   )
 }

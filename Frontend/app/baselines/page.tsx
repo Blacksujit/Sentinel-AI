@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
-import { AppLayoutModern } from '../components/layout/AppLayoutModern'
+import { AppLayout } from '../components/layout/AppLayout'
 import { Button, Card, Badge, Input, Label, Switch, Separator, Slider, 
   Dialog,
   DialogContent,
@@ -144,14 +144,9 @@ export default function BaselinesPageModern() {
   }
 
   return (
-    <AppLayoutModern>
-      <div className="min-h-screen bg-gradient-navy">
-        {/* Premium animated background */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:50px_50px]" />
-        </div>
-        
-        <div className="relative z-10 space-y-8 p-6">
+    <AppLayout>
+      <div className="min-h-screen bg-background">
+        <div className="space-y-8 p-6">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -160,7 +155,7 @@ export default function BaselinesPageModern() {
           >
             <motion.div variants={slideUp} className="space-y-2">
               <h1 className="text-3xl font-bold tracking-tight text-foreground">Risk Baselines</h1>
-              <p className="text-muted">Configure the brain of your AI safety system</p>
+              <p className="text-muted-foreground">Configure the brain of your AI safety system</p>
             </motion.div>
             
             <motion.div variants={slideUp}>
@@ -189,27 +184,27 @@ export default function BaselinesPageModern() {
             <MotionCard variants={slideUp} className="card-premium p-6" {...hoverGlow}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted">Active Baselines</p>
+                  <p className="text-sm font-medium text-muted-foreground">Active Baselines</p>
                   <p className="text-2xl font-bold text-foreground">{stats.activeCount}</p>
                 </div>
-                <Shield className="h-8 w-8 text-electric-blue" />
+                <Shield className="h-8 w-8 text-primary" />
               </div>
             </MotionCard>
             
             <MotionCard variants={slideUp} className="card-premium p-6" {...hoverGlow}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted">Total Baselines</p>
+                  <p className="text-sm font-medium text-muted-foreground">Total Baselines</p>
                   <p className="text-2xl font-bold text-foreground">{stats.totalCount}</p>
                 </div>
-                <Shield className="h-8 w-8 text-electric-violet" />
+                <Shield className="h-8 w-8 text-primary/80" />
               </div>
             </MotionCard>
             
             <MotionCard variants={slideUp} className="card-premium p-6" {...hoverGlow}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted">Avg Threshold</p>
+                  <p className="text-sm font-medium text-muted-foreground">Avg Threshold</p>
                   <p className="text-2xl font-bold text-foreground">—</p>
                 </div>
                 <Shield className="h-8 w-8 text-warning" />
@@ -219,7 +214,7 @@ export default function BaselinesPageModern() {
             <MotionCard variants={slideUp} className="card-premium p-6" {...hoverGlow}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted">Defaults</p>
+                  <p className="text-sm font-medium text-muted-foreground">Defaults</p>
                   <p className="text-2xl font-bold text-foreground">Ready</p>
                 </div>
                 <Shield className="h-8 w-8 text-success" />
@@ -232,22 +227,22 @@ export default function BaselinesPageModern() {
             <h2 className="text-xl font-semibold text-foreground mb-4">Baseline Prompts</h2>
             <Table>
               <TableHeader>
-                <TableRow className="border-white/10">
-                  <TableHead className="text-muted">Prompt</TableHead>
-                  <TableHead className="text-muted">Active</TableHead>
-                  <TableHead className="text-muted">Actions</TableHead>
+                <TableRow className="border-border">
+                  <TableHead className="text-muted-foreground">Prompt</TableHead>
+                  <TableHead className="text-muted-foreground">Active</TableHead>
+                  <TableHead className="text-muted-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-muted">
+                    <TableCell colSpan={3} className="text-muted-foreground">
                       Loading baselines...
                     </TableCell>
                   </TableRow>
                 ) : baselines.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-muted">
+                    <TableCell colSpan={3} className="text-muted-foreground">
                       No baselines found.
                     </TableCell>
                   </TableRow>
@@ -258,7 +253,7 @@ export default function BaselinesPageModern() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="border-b border-white/5 hover:bg-black/30 transition-all"
+                      className="border-b border-muted/20 hover:bg-muted transition-all"
                       {...hoverScaleLift}
                     >
                       <TableCell className="font-medium">
@@ -270,7 +265,7 @@ export default function BaselinesPageModern() {
                             checked={baseline.active}
                             onCheckedChange={(checked) => toggleBaseline(baseline.id, checked)}
                             aria-label={`Toggle baseline ${baseline.id}`}
-                            className="data-[state=checked]:bg-electric-blue"
+                            className="data-[state=checked]:bg-primary"
                           />
                           <Badge className={baseline.active ? 'badge-premium' : 'badge-premium-outline'}>
                             {baseline.active ? 'Active' : 'Inactive'}
@@ -311,10 +306,10 @@ export default function BaselinesPageModern() {
           </MotionCard>
 
           <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-            <DialogContent className="card-premium border-white/10 bg-black/80">
+            <DialogContent className="card-premium border-border bg-muted">
               <DialogHeader>
                 <DialogTitle className="text-foreground">{isEditing ? 'Edit Baseline' : 'Add Baseline'}</DialogTitle>
-                <DialogDescription className="text-muted">
+                <DialogDescription className="text-muted-foreground">
                   Create or update a baseline prompt used for safety evaluation.
                 </DialogDescription>
               </DialogHeader>
@@ -331,12 +326,12 @@ export default function BaselinesPageModern() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 p-3">
+                <div className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
                   <div className="space-y-0.5">
                     <div className="text-sm font-medium text-foreground">Active</div>
-                    <div className="text-xs text-muted">Enable this baseline</div>
+                    <div className="text-xs text-muted-foreground">Enable this baseline</div>
                   </div>
-                  <Switch checked={formActive} onCheckedChange={setFormActive} aria-label="Active" className="data-[state=checked]:bg-electric-blue" />
+                  <Switch checked={formActive} onCheckedChange={setFormActive} aria-label="Active" className="data-[state=checked]:bg-primary" />
                 </div>
               </div>
 
@@ -356,6 +351,6 @@ export default function BaselinesPageModern() {
           </Dialog>
         </div>
       </div>
-    </AppLayoutModern>
+    </AppLayout>
   )
 }

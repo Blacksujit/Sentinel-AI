@@ -6,7 +6,6 @@ from sqlalchemy.sql import func
 from .db import Base
 import enum
 import secrets
-import string
 
 
 class InviteStatus(str, enum.Enum):
@@ -43,7 +42,7 @@ class OrgInvite(Base):
     @staticmethod
     def generate_token():
         """Generate a secure random token for invite acceptance."""
-        return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
+        return secrets.token_urlsafe(32)
 
 
 # Add relationship to Organization model

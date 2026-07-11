@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/input'
 import { apiGet, apiPatch, apiDelete } from '@/lib/api-client'
 import { useAuth } from '@clerk/nextjs'
-import { useOrganization } from '@/contexts/organization-context'
+import { useOrgContext } from '@/contexts/organization-context'
 
 import { MemberRow } from '@/components/members/MemberRow'
 import { InviteDialog } from '@/components/members/InviteDialog'
@@ -46,7 +46,7 @@ const ROLE_HIERARCHY: Record<string, number> = {
 export default function OrgMembersPage() {
   const params = useParams()
   const { getToken } = useAuth()
-  const { organizations } = useOrganization()
+  const { organizations } = useOrgContext()
   
   const orgId = params?.orgId as string
   const [members, setMembers] = useState<Member[]>([])
@@ -65,30 +65,18 @@ export default function OrgMembersPage() {
   const canManageRole = currentUserRoleLevel >= ROLE_HIERARCHY.ADMIN
   const canRemove = currentUserRoleLevel >= ROLE_HIERARCHY.ADMIN
 
-  // Debug logging
-  console.log('Members Debug:', {
-    orgId,
-    organizations,
-    currentMembership,
-    currentUserRole,
-    currentUserRoleLevel,
-    canInvite,
-    canManageRole,
-    canRemove
-  })
-
   const fetchData = useCallback(async () => {
     try {
       const token = await getToken()
       
       // Fetch members
-      const membersData = await apiGet(`/api/orgs/${orgId}/members`, token)
+      const membersData = await apiGet<Member[]>(`/api/orgs/${orgId}/members`, token)
       setMembers(Array.isArray(membersData) ? membersData : [])
       
       // Fetch pending invites if user has permission
       if (canInvite) {
         try {
-          const invitesData = await apiGet(`/api/orgs/${orgId}/invites`, token)
+          const invitesData = await apiGet<PendingInvite[]>(`/api/orgs/${orgId}/invites`, token)
           setInvites(Array.isArray(invitesData) ? invitesData : [])
         } catch {
           setInvites([])
@@ -117,7 +105,7 @@ export default function OrgMembersPage() {
       showCancelButton: true,
       confirmButtonText: 'Change Role',
       cancelButtonText: 'Cancel',
-      confirmButtonColor: '#6366f1',
+      confirmButtonColor: '#A83426',
     })
 
     if (!result.isConfirmed) return
@@ -193,10 +181,10 @@ export default function OrgMembersPage() {
       >
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <Users className="w-8 h-8 text-indigo-400" />
+            <Users className="w-8 h-8 text-primary" />
             Members
           </h1>
-          <p className="text-muted mt-1">
+          <p className="text-muted-foreground mt-1">
             Manage who has access to this organization
           </p>
         </div>
@@ -204,23 +192,14 @@ export default function OrgMembersPage() {
         {canInvite && (
           <Button
             onClick={() => setShowInviteDialog(true)}
-            className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+            className=""
           >
             <UserPlus className="w-4 h-4 mr-2" />
             Invite Member
           </Button>
         )}
 
-        {/* Temporary debug fallback - remove after testing */}
-        {!canInvite && (
-          <Button
-            onClick={() => setShowInviteDialog(true)}
-            className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            DEBUG: Invite (Role: {currentUserRole})
-          </Button>
-        )}
+
       </motion.div>
 
       <motion.div
@@ -235,9 +214,9 @@ export default function OrgMembersPage() {
             const count = members.filter(m => m.role.toUpperCase() === role).length
             if (count === 0) return null
             return (
-              <div key={role} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+              <div key={role} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border">
                 <RoleBadge role={role} />
-                <span className="text-sm text-muted">{count}</span>
+                <span className="text-sm text-muted-foreground">{count}</span>
               </div>
             )
           })}
@@ -273,24 +252,24 @@ export default function OrgMembersPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <Card className="card-premium border-white/10">
+        <Card className="card-premium border-border">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-400" />
+                <Users className="w-5 h-5 text-primary" />
                 Team Members
-                <span className="text-sm font-normal text-muted ml-2">
+                <span className="text-sm font-normal text-muted-foreground ml-2">
                   ({members.length})
                 </span>
               </CardTitle>
               
               <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search members..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/10 focus:border-indigo-500/50"
+                  className="pl-10 bg-card border-border focus:border-primary/50"
                 />
               </div>
             </div>
@@ -300,14 +279,14 @@ export default function OrgMembersPage() {
             {isLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 bg-white/5 rounded-lg animate-pulse" />
+                  <div key={i} className="h-16 bg-card rounded-lg animate-pulse" />
                 ))}
               </div>
             ) : sortedMembers.length === 0 ? (
               <div className="text-center py-12">
                 {searchQuery ? (
                   <>
-                    <p className="text-muted">No members match your search</p>
+                    <p className="text-muted-foreground">No members match your search</p>
                     <Button
                       variant="ghost"
                       onClick={() => setSearchQuery('')}
@@ -318,13 +297,13 @@ export default function OrgMembersPage() {
                   </>
                 ) : (
                   <>
-                    <Users className="w-12 h-12 text-muted mx-auto mb-3" />
-                    <p className="text-muted">No members found</p>
+                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">No members found</p>
                     {canInvite && (
                       <Button
                         variant="outline"
                         onClick={() => setShowInviteDialog(true)}
-                        className="mt-4 border-white/10"
+                        className="mt-4 border-border"
                       >
                         <UserPlus className="w-4 h-4 mr-2" />
                         Invite your first member

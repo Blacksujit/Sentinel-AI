@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { apiPost } from "@/lib/api-client";
+import { Button } from "@/components/ui/Button";
 
 export default function InviteAcceptPage({ params }: { params: { token: string } }) {
   const router = useRouter();
@@ -47,31 +48,24 @@ export default function InviteAcceptPage({ params }: { params: { token: string }
 
   return (
     <div className="mx-auto mt-24 max-w-xl px-4 text-center">
-      <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-lg">
-        <h1 className="text-3xl font-semibold text-slate-900">Accept Invitation</h1>
-        <p className="mt-4 text-sm text-slate-600">
+      <div className="rounded-3xl border border-border bg-card p-10 shadow-card">
+        <h1 className="text-3xl font-semibold text-foreground">Accept Invitation</h1>
+        <p className="mt-4 text-sm text-muted-foreground">
           {isProcessing ? "One moment while we accept your invite..." : message}
         </p>
 
         {error ? (
-          <div className="mt-6 rounded-2xl bg-rose-50 p-5 text-left text-rose-800">
+          <div className="mt-6 rounded-2xl bg-destructive/10 p-4 text-left text-destructive">
             <p className="font-medium">Unable to accept invite</p>
             <p className="mt-2 text-sm">{error}</p>
             <div className="mt-4 flex justify-center gap-3 text-sm">
-              <button
-                type="button"
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-slate-900 hover:bg-slate-50"
+              <Button
+                variant="outline"
                 onClick={() => router.push('/')}
               >
                 Back to home
-              </button>
-              <button
-                type="button"
-                className="rounded-full bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
-                onClick={() => router.refresh()}
-              >
-                Try again
-              </button>
+              </Button>
+              <Button onClick={() => router.refresh()}>Try again</Button>
             </div>
           </div>
         ) : null}

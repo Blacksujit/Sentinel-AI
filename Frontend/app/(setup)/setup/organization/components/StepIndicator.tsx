@@ -22,10 +22,10 @@ export function StepIndicator({ currentStep }: { currentStep: number }) {
                 className={cn(
                   'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 transition-all duration-300',
                   s.step === currentStep
-                    ? 'border-electric-blue bg-electric-blue/20 text-electric-blue'
+                    ? 'border-primary bg-primary/20 text-primary'
                     : s.step < currentStep
                     ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                    : 'border-white/20 text-muted'
+                    : 'border-border text-muted-foreground'
                 )}
               >
                 {s.step < currentStep ? (
@@ -39,7 +39,7 @@ export function StepIndicator({ currentStep }: { currentStep: number }) {
               <span
                 className={cn(
                   'text-xs mt-1.5 transition-colors',
-                  s.step <= currentStep ? 'text-white' : 'text-muted'
+                  s.step <= currentStep ? 'text-foreground' : 'text-muted-foreground'
                 )}
               >
                 {s.label}
@@ -49,7 +49,7 @@ export function StepIndicator({ currentStep }: { currentStep: number }) {
               <div
                 className={cn(
                   'w-12 sm:w-20 h-0.5 mx-2 sm:mx-4 transition-colors duration-300',
-                  s.step < currentStep ? 'bg-emerald-500/50' : 'bg-white/10'
+                  s.step < currentStep ? 'bg-emerald-500/50' : 'bg-muted'
                 )}
               />
             )}

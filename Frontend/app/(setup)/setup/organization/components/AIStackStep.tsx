@@ -36,16 +36,16 @@ export function AIStackStep({ data, onChange, onNext, onBack }: Props) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
     >
-      <Card className="card-premium border-white/10">
+      <Card className="card-premium border-border">
         <CardHeader>
-          <CardTitle className="text-xl text-white">AI Stack & Use Case</CardTitle>
+          <CardTitle className="text-xl text-foreground">AI Stack & Use Case</CardTitle>
           <CardDescription>
             Help us understand your AI infrastructure and monitoring needs
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-white">Which AI models do you use?</h3>
+            <h3 className="text-sm font-medium text-foreground">Which AI models do you use?</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {AI_MODELS.map((model) => (
                 <button
@@ -53,19 +53,19 @@ export function AIStackStep({ data, onChange, onNext, onBack }: Props) {
                   onClick={() => toggleModel(model.id)}
                   className={`p-3 rounded-lg border text-sm transition-all text-left ${
                     (data.aiModels || []).includes(model.id)
-                      ? 'border-electric-blue bg-electric-blue/10'
-                      : 'border-white/10 hover:border-white/20'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-border'
                   }`}
                 >
-                  <div className="font-medium text-white">{model.label}</div>
-                  <div className="text-xs text-muted mt-0.5">{model.provider}</div>
+                  <div className="font-medium text-foreground">{model.label}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{model.provider}</div>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-white">Daily API call volume</h3>
+            <h3 className="text-sm font-medium text-foreground">Daily API call volume</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {VOLUME_RANGES.map((vol) => (
                 <button
@@ -73,8 +73,8 @@ export function AIStackStep({ data, onChange, onNext, onBack }: Props) {
                   onClick={() => onChange({ dailyVolume: vol.value })}
                   className={`p-3 rounded-lg border text-sm transition-all ${
                     data.dailyVolume === vol.value
-                      ? 'border-electric-blue bg-electric-blue/10 text-white'
-                      : 'border-white/10 text-muted hover:border-white/20 hover:text-white'
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border text-muted-foreground hover:border-border hover:text-foreground'
                   }`}
                 >
                   {vol.label}
@@ -84,7 +84,7 @@ export function AIStackStep({ data, onChange, onNext, onBack }: Props) {
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-white">Primary use cases</h3>
+            <h3 className="text-sm font-medium text-foreground">Primary use cases</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {USE_CASES.map((uc) => (
                 <button
@@ -92,19 +92,19 @@ export function AIStackStep({ data, onChange, onNext, onBack }: Props) {
                   onClick={() => toggleUseCase(uc.id)}
                   className={`p-3 rounded-lg border text-sm transition-all text-left ${
                     (data.useCases || []).includes(uc.id)
-                      ? 'border-electric-blue bg-electric-blue/10'
-                      : 'border-white/10 hover:border-white/20'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-border'
                   }`}
                 >
-                  <div className="font-medium text-white">{uc.label}</div>
-                  <div className="text-xs text-muted mt-0.5">{uc.description}</div>
+                  <div className="font-medium text-foreground">{uc.label}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{uc.description}</div>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="flex justify-between pt-4">
-            <Button variant="ghost" onClick={onBack} className="text-muted">
+            <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
               Back
             </Button>
             <Button onClick={onNext} className="btn-premium">

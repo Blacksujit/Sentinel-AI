@@ -8,7 +8,7 @@ import re
 from sqlalchemy.exc import IntegrityError
 
 from app.auth.dependencies import require_authenticated_user, get_db
-from app.tenancy.org_context import resolve_org_from_request, require_org_membership
+from app.tenancy.org_context import resolve_org, resolve_org_from_request, require_org_membership
 from app.rbac.enforce import require_permission, require_permission_from_path
 from app.services.audit_service import AuditService
 from app.services.usage_service import UsageService
@@ -47,6 +47,7 @@ class OrgCreate(BaseModel):
 
 class OrgResponse(BaseModel):
     id: int
+    clerk_org_id: str
     name: str
     slug: str
     owner_user_id: int
@@ -56,6 +57,8 @@ class OrgResponse(BaseModel):
 class MembershipResponse(BaseModel):
     user_id: int
     org_id: int
+    clerk_org_id: str
+    org_name: str
     role: str
     joined_at: datetime
 
@@ -85,10 +88,13 @@ async def get_me(
     membership_responses = []
     for m in memberships:
         role_name = db.query(RbacRole).filter(RbacRole.id == m.role_id).first()
+        org = db.query(Organization).filter(Organization.id == m.org_id).first()
         membership_responses.append(
             MembershipResponse(
                 user_id=m.user_id,
                 org_id=m.org_id,
+                clerk_org_id=org.clerk_org_id if org else "",
+                org_name=org.name if org else f"Organization {m.org_id}",
                 role=role_name.name if role_name else "unknown",
                 joined_at=m.joined_at,
             )
@@ -182,6 +188,7 @@ async def create_org(
     db.commit()
     return OrgResponse(
         id=org.id,
+        clerk_org_id=org.clerk_org_id,
         name=org.name,
         slug=org.slug,
         owner_user_id=org.owner_user_id,
@@ -204,6 +211,7 @@ async def list_orgs(
     return [
         OrgResponse(
             id=o.id,
+            clerk_org_id=o.clerk_org_id,
             name=o.name,
             slug=o.slug,
             owner_user_id=o.owner_user_id,
@@ -216,16 +224,13 @@ async def list_orgs(
 
 @router.get("/orgs/{org_id}/risk-logs", response_model=List[RiskLogResponse])
 async def get_org_risk_logs(
-    org_id: int,
+    org_id: str,
     limit: int = 50,
     workspace_id: Optional[int] = None,
     user: User = Depends(require_authenticated_user),
     db: Session = Depends(get_db),
 ):
-    org = db.query(Organization).filter(Organization.id == org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
-
+    org = resolve_org(db, org_id)
     require_org_membership(db, user_id=user.id, org_id=org.id)
 
     query = db.query(RiskLog).filter(RiskLog.org_id == org.id)
@@ -265,15 +270,14 @@ async def get_org_risk_logs(
 
 @router.get("/orgs/{org_id}", response_model=OrgResponse)
 async def get_org(
-    org_id: int,
+    org_id: str,
     _: None = require_permission_from_path("org.manage"),
     db: Session = Depends(get_db),
 ):
-    org = db.query(Organization).filter(Organization.id == org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = resolve_org(db, org_id)
     return OrgResponse(
         id=org.id,
+        clerk_org_id=org.clerk_org_id,
         name=org.name,
         slug=org.slug,
         owner_user_id=org.owner_user_id,
@@ -284,17 +288,16 @@ async def get_org(
 
 @router.get("/orgs/{org_id}/logs")
 async def get_org_logs(
-    org_id: int,
+    org_id: str,
     limit: int = 50,
     user: User = Depends(require_authenticated_user),
     db: Session = Depends(get_db),
 ):
     """Get organization usage logs."""
-    org = db.query(Organization).filter(Organization.id == org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = resolve_org(db, org_id)
+    require_org_membership(db, user_id=user.id, org_id=org.id)
     
-    logs = UsageService.get_org_logs(db, org_id, limit=limit)
+    logs = UsageService.get_org_logs(db, org.id, limit=limit)
     return [
         {
             "id": log.id,
@@ -311,14 +314,13 @@ async def get_org_logs(
 
 @router.get("/orgs/{org_id}/baselines")
 async def get_org_baselines(
-    org_id: int,
+    org_id: str,
     user: User = Depends(require_authenticated_user),
     db: Session = Depends(get_db),
 ):
     """Get organization baseline configuration."""
-    org = db.query(Organization).filter(Organization.id == org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = resolve_org(db, org_id)
+    require_org_membership(db, user_id=user.id, org_id=org.id)
     
     # Return default baselines for now
     return {
@@ -335,15 +337,14 @@ async def get_org_baselines(
 
 @router.post("/orgs/{org_id}/baselines")
 async def update_org_baselines(
-    org_id: int,
+    org_id: str,
     config: dict,
     user: User = Depends(require_authenticated_user),
     db: Session = Depends(get_db),
 ):
     """Update organization baseline configuration."""
-    org = db.query(Organization).filter(Organization.id == org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = resolve_org(db, org_id)
+    require_org_membership(db, user_id=user.id, org_id=org.id)
     
     # Update baseline config in organization
     org.baseline_config = config
