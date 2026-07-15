@@ -140,7 +140,7 @@ export default function OrgMembersPage() {
       showCancelButton: true,
       confirmButtonText: 'Remove',
       cancelButtonText: 'Cancel',
-      confirmButtonColor: '#ef4444',
+      confirmButtonColor: '#A83426',
     })
 
     if (!result.isConfirmed) return
@@ -228,9 +228,9 @@ export default function OrgMembersPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="card-premium border-amber-500/20">
+          <Card variant="danger">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2 text-amber-400">
+              <CardTitle className="text-lg flex items-center gap-2 text-[color:var(--amber)]">
                 <Shield className="w-5 h-5" />
                 Pending Invitations
               </CardTitle>
@@ -252,7 +252,7 @@ export default function OrgMembersPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <Card className="card-premium border-border">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">

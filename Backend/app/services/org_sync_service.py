@@ -115,6 +115,18 @@ class OrganizationSyncService:
                 **DEFAULT_BASELINE_CONFIG
             )
             db.add(baseline)
+
+            # Create default workspace
+            from app.services.workspace_service import WorkspaceService
+            from app.storage.workspace_models import Workspace
+            existing_workspace = db.query(Workspace).filter(Workspace.org_id == org.id).first()
+            if not existing_workspace:
+                default_workspace = WorkspaceService.create_workspace(
+                    db=db, org_id=org.id, name="Default Workspace",
+                    created_by_user_id=owner.id,
+                )
+                default_workspace.is_default = True
+                WorkspaceService.create_default_workspace_roles(db, default_workspace.id)
             
             # Audit log
             AuditService.log(

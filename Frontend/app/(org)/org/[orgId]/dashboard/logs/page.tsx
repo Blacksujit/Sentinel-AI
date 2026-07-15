@@ -55,18 +55,18 @@ function formatDateLabel(dateStr: string): string {
 
 const severityBadge = (score: number) => {
   const pct = Math.round(score * 100)
-  if (pct >= 85) return <Badge className="bg-red-500/10 text-red-500 border-red-500/30">Critical</Badge>
-  if (pct >= 70) return <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/30">High</Badge>
-  if (pct >= 50) return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/30">Medium</Badge>
-  return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">Low</Badge>
+  if (pct >= 85) return <Badge variant="destructive">Critical</Badge>
+  if (pct >= 70) return <Badge variant="warning">High</Badge>
+  if (pct >= 50) return <Badge variant="warning">Medium</Badge>
+  return <Badge variant="success">Low</Badge>
 }
 
 const decisionColor = (decision: string | null) => {
   const d = (decision || '').toLowerCase()
-  if (d === 'block') return 'text-destructive'
-  if (d === 'escalate') return 'text-amber-500'
-  if (d === 'warn') return 'text-yellow-500'
-  return 'text-emerald-500'
+  if (d === 'block') return 'text-[color:var(--red)]'
+  if (d === 'escalate') return 'text-[color:var(--amber)]'
+  if (d === 'warn') return 'text-[color:var(--amber)]'
+  return 'text-[color:var(--green)]'
 }
 
 export default function OrgLogsPage() {
@@ -244,7 +244,7 @@ export default function OrgLogsPage() {
 
       {/* Logs List */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-        <Card className="card-premium border-border">
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg text-foreground">Risk Logs</CardTitle>
           </CardHeader>

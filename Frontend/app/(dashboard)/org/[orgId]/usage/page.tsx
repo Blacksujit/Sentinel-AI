@@ -118,7 +118,7 @@ function UsageContent() {
                 </div>
                 <Activity className="h-8 w-8 text-primary" />
               </div>
-              <p className="text-sm text-green-600 mt-2">+12% from last period</p>
+              <p className="text-sm text-[color:var(--green)] mt-2">+12% from last period</p>
             </div>
 
             <div className="bg-card rounded-lg border border-border p-6">
@@ -127,9 +127,9 @@ function UsageContent() {
                   <p className="text-sm text-muted-foreground">Tokens Used</p>
                   <p className="text-2xl font-bold text-foreground">{(totals.tokens / 1000).toFixed(0)}K</p>
                 </div>
-                <BarChart3 className="h-8 w-8 text-purple-500" />
+                <BarChart3 className="h-8 w-8 text-[color:var(--green)]" />
               </div>
-              <p className="text-sm text-green-600 mt-2">+8% from last period</p>
+              <p className="text-sm text-[color:var(--green)] mt-2">+8% from last period</p>
             </div>
 
             <div className="bg-card rounded-lg border border-border p-6">

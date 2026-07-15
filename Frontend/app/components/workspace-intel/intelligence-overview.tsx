@@ -54,7 +54,7 @@ export function IntelligenceOverview({ data }: { data: SummaryData | null }) {
         <Card className="border bg-card">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1">
-              <AlertTriangle className={`h-4 w-4 ${data.active_incidents > 0 ? 'text-red-500' : 'text-muted-foreground'}`} />
+              <AlertTriangle className={`h-4 w-4 ${data.active_incidents > 0 ? 'text-[color:var(--red)]' : 'text-muted-foreground'}`} />
             </div>
             <p className="text-2xl font-semibold tabular-nums text-foreground">{data.active_incidents}</p>
             <p className="text-xs text-muted-foreground">active incidents</p>
@@ -92,9 +92,9 @@ export function IntelligenceOverview({ data }: { data: SummaryData | null }) {
             <div className="space-y-2">
               {[
                 { label: 'Total events', value: data.recent_events_7d, color: 'bg-muted-foreground' },
-                { label: 'Critical events', value: data.critical_events_7d, color: 'bg-red-500' },
+                { label: 'Critical events', value: data.critical_events_7d, color: 'bg-[color:var(--red)]' },
                 { label: 'Deployments', value: data.recent_deployments_7d, color: 'bg-primary' },
-                { label: 'Failed deploys', value: data.failed_deployments_7d, color: 'bg-red-500' },
+                { label: 'Failed deploys', value: data.failed_deployments_7d, color: 'bg-[color:var(--red)]' },
               ].map(stat => {
                 const max = Math.max(data.recent_events_7d, 1)
                 return (
@@ -118,7 +118,7 @@ export function IntelligenceOverview({ data }: { data: SummaryData | null }) {
           <CardContent>
             {data.active_incidents > 0 ? (
               <div className="flex items-center gap-4">
-                <span className="text-4xl font-bold tabular-nums text-red-500">{data.active_incidents}</span>
+                <span className="text-4xl font-bold tabular-nums text-[color:var(--red)]">{data.active_incidents}</span>
                 <div>
                   <p className="text-sm text-foreground">Requiring attention</p>
                   <p className="text-xs text-muted-foreground">{data.member_count} team members monitoring</p>
@@ -126,7 +126,7 @@ export function IntelligenceOverview({ data }: { data: SummaryData | null }) {
               </div>
             ) : (
               <div className="flex items-center gap-3 py-2">
-                <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                <div className="h-2.5 w-2.5 rounded-full bg-[color:var(--green)]" />
                 <p className="text-sm text-muted-foreground">No active incidents. All clear.</p>
               </div>
             )}

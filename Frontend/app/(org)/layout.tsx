@@ -144,7 +144,7 @@ export default function OrgDashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   return (
-    <div className="min-h-screen bg-gradient-warm">
+    <div className="min-h-screen bg-[color:var(--paper)]">
       {/* Mobile sidebar toggle */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <Button
@@ -162,7 +162,7 @@ export default function OrgDashboardLayout({
         initial={false}
         animate={{ width: sidebarOpen ? 260 : 0 }}
         className={cn(
-          "fixed left-0 top-0 bottom-0 z-40 bg-card border-r border-border",
+          "fixed left-0 top-0 bottom-0 z-40 bg-[color:var(--paper-raised)] border-r border-[color:var(--line)]",
           "overflow-hidden transition-all duration-300 ease-in-out",
           !sidebarOpen && "lg:w-20"
         )}

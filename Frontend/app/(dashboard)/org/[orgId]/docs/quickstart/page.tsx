@@ -159,7 +159,7 @@ console.log('Flags:', result.flags);`;
                       currentStep === step.id
                         ? "bg-primary text-primary-foreground"
                         : currentStep > step.id
-                        ? "bg-green-600 text-primary-foreground"
+                        ? "bg-[color:var(--green)] text-primary-foreground"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -296,7 +296,7 @@ console.log('Flags:', result.flags);`;
                 {/* Node.js */}
                 <div className="mb-6">
                   <div className="flex items-center space-x-2 mb-3">
-                    <FileCode className="h-5 w-5 text-green-600" />
+                    <FileCode className="h-5 w-5 text-[color:var(--green)]" />
                     <h3 className="text-lg font-semibold text-foreground">Node.js</h3>
                     <Badge variant="secondary">14+</Badge>
                   </div>
@@ -343,7 +343,7 @@ console.log('Flags:', result.flags);`;
             {currentStep === 3 && (
               <div className="bg-card rounded-lg shadow-sm border border-border p-6">
                 <div className="flex items-center space-x-3 mb-6">
-                  <div className="h-10 w-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-lg bg-[color:var(--green-bg)] text-[color:var(--green)] flex items-center justify-center">
                     <Play className="h-5 w-5" />
                   </div>
                   <div>
@@ -428,7 +428,7 @@ console.log('Flags:', result.flags);`;
             {currentStep === 4 && (
               <div className="bg-card rounded-lg shadow-sm border border-border p-6">
                 <div className="flex items-center space-x-3 mb-6">
-                  <div className="h-10 w-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-lg bg-[color:var(--green-bg)] text-[color:var(--green)] flex items-center justify-center">
                     <CheckCircle className="h-5 w-5" />
                   </div>
                   <div>
@@ -438,17 +438,17 @@ console.log('Flags:', result.flags);`;
                 </div>
 
                 <div className="space-y-4 mb-6">
-                  <div className="flex items-center space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <span className="text-green-800">API key is configured correctly</span>
+                  <div className="flex items-center space-x-3 p-4 bg-[color:var(--green-bg)] border border-[color:var(--green-soft)] rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-[color:var(--green)]" />
+                    <span className="text-[color:var(--green)]">API key is configured correctly</span>
                   </div>
-                  <div className="flex items-center space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <span className="text-green-800">SDK installed successfully</span>
+                  <div className="flex items-center space-x-3 p-4 bg-[color:var(--green-bg)] border border-[color:var(--green-soft)] rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-[color:var(--green)]" />
+                    <span className="text-[color:var(--green)]">SDK installed successfully</span>
                   </div>
-                  <div className="flex items-center space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <span className="text-green-800">First API call returned 200 OK</span>
+                  <div className="flex items-center space-x-3 p-4 bg-[color:var(--green-bg)] border border-[color:var(--green-soft)] rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-[color:var(--green)]" />
+                    <span className="text-[color:var(--green)]">First API call returned 200 OK</span>
                   </div>
                 </div>
 

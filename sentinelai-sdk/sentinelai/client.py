@@ -215,6 +215,372 @@ class SentinelAIClient:
             logger.error(f"Failed to get settings: {e}")
             return {}
 
+    # ── Organization Management ──────────────────────────────────────
+
+    def create_organization(
+        self,
+        name: str,
+        slug: Optional[str] = None,
+        email: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a new organization.
+
+        The org is created via Clerk's organization system first,
+        then synced to SentinelAI. Use the returned clerk_org_id
+        for all subsequent org-scoped API calls.
+
+        Args:
+            name: Organization name
+            slug: URL-friendly slug (auto-generated from name if omitted)
+            email: Company email for domain verification
+
+        Returns:
+            Created organization with id, clerk_org_id, name, slug, plan_tier
+
+        Example:
+            >>> org = client.create_organization(
+            ...     name="Acme Corp",
+            ...     email="security@acme.com"
+            ... )
+            >>> print(org['id'], org['clerk_org_id'])
+        """
+        payload: Dict[str, Any] = {"name": name}
+        if slug:
+            payload["slug"] = slug
+        if email:
+            payload["email"] = email
+
+        try:
+            return self._make_request('POST', '/api/orgs', json=payload)
+        except SentinelAIError as e:
+            logger.error(f"Failed to create organization: {e}")
+            raise
+
+    def list_organizations(self) -> List[Dict[str, Any]]:
+        """
+        List all organizations the authenticated user belongs to.
+
+        Returns:
+            List of organizations with id, clerk_org_id, name, slug, plan_tier
+        """
+        try:
+            return self._make_request('GET', '/api/orgs')
+        except SentinelAIError as e:
+            logger.error(f"Failed to list organizations: {e}")
+            return []
+
+    def get_organization(self, org_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a single organization by ID, slug, or clerk_org_id.
+
+        Args:
+            org_id: Organization ID (numeric, slug, or Clerk org ID)
+
+        Returns:
+            Organization details or None if not found
+        """
+        try:
+            return self._make_request('GET', f'/api/orgs/{org_id}')
+        except SentinelAIError as e:
+            logger.error(f"Failed to get organization {org_id}: {e}")
+            return None
+
+    # ── Member Management ───────────────────────────────────────────
+
+    def list_members(self, org_id: str) -> List[Dict[str, Any]]:
+        """
+        List all members of an organization.
+
+        Args:
+            org_id: Organization ID
+
+        Returns:
+            List of members with user_id, name, email, role, joined_at
+        """
+        try:
+            return self._make_request('GET', f'/api/orgs/{org_id}/members')
+        except SentinelAIError as e:
+            logger.error(f"Failed to list members for org {org_id}: {e}")
+            return []
+
+    def invite_member(
+        self,
+        org_id: str,
+        email: str,
+        role: str = "MEMBER",
+    ) -> Dict[str, Any]:
+        """
+        Invite a new member to an organization.
+
+        Args:
+            org_id: Organization ID
+            email: Email address of the invitee
+            role: Role to assign (MEMBER, ADMIN, DEVELOPER, VIEWER)
+
+        Returns:
+            Invite record with id, email, role, status, token
+
+        Example:
+            >>> invite = client.invite_member(
+            ...     org_id="org_abc123",
+            ...     email="engineer@acme.com",
+            ...     role="DEVELOPER"
+            ... )
+        """
+        try:
+            return self._make_request(
+                'POST',
+                f'/api/orgs/{org_id}/members/invite',
+                json={"email": email, "role": role},
+            )
+        except SentinelAIError as e:
+            logger.error(f"Failed to invite member to org {org_id}: {e}")
+            raise
+
+    def update_member_role(
+        self,
+        org_id: str,
+        user_id: int,
+        role: str,
+    ) -> Dict[str, Any]:
+        """
+        Change a member's role within an organization.
+
+        Args:
+            org_id: Organization ID
+            user_id: User ID of the member
+            role: New role name (OWNER, ADMIN, DEVELOPER, VIEWER)
+
+        Returns:
+            Updated membership record
+        """
+        try:
+            return self._make_request(
+                'PATCH',
+                f'/api/orgs/{org_id}/members/{user_id}',
+                json={"role": role},
+            )
+        except SentinelAIError as e:
+            logger.error(f"Failed to update member role: {e}")
+            raise
+
+    def remove_member(self, org_id: str, user_id: int) -> bool:
+        """
+        Remove a member from an organization.
+
+        Args:
+            org_id: Organization ID
+            user_id: User ID of the member to remove
+
+        Returns:
+            True if removed successfully, False otherwise
+        """
+        try:
+            self._make_request('DELETE', f'/api/orgs/{org_id}/members/{user_id}')
+            return True
+        except SentinelAIError as e:
+            logger.error(f"Failed to remove member from org {org_id}: {e}")
+            return False
+
+    # ── API Key Management ──────────────────────────────────────────
+
+    def list_api_keys(self, org_id: str) -> List[Dict[str, Any]]:
+        """
+        List all API keys for an organization.
+
+        Args:
+            org_id: Organization ID
+
+        Returns:
+            List of API keys with id, name, prefix, status, created_at
+        """
+        try:
+            return self._make_request('GET', f'/api/orgs/{org_id}/api-keys')
+        except SentinelAIError as e:
+            logger.error(f"Failed to list API keys for org {org_id}: {e}")
+            return []
+
+    def create_api_key(self, org_id: str, name: str) -> Dict[str, Any]:
+        """
+        Create a new API key for an organization.
+
+        Args:
+            org_id: Organization ID
+            name: Human-readable name for the key
+
+        Returns:
+            Created API key with id, name, prefix, key (full key shown once)
+
+        Example:
+            >>> key = client.create_api_key("org_abc123", "Production")
+            >>> print(key['key'])  # Save this — shown only once
+        """
+        try:
+            return self._make_request(
+                'POST',
+                f'/api/orgs/{org_id}/api-keys',
+                json={"name": name},
+            )
+        except SentinelAIError as e:
+            logger.error(f"Failed to create API key: {e}")
+            raise
+
+    def revoke_api_key(self, org_id: str, key_id: int) -> bool:
+        """
+        Revoke an API key immediately.
+
+        Args:
+            org_id: Organization ID
+            key_id: API key ID
+
+        Returns:
+            True if revoked successfully, False otherwise
+        """
+        try:
+            self._make_request(
+                'POST',
+                f'/api/orgs/{org_id}/api-keys/{key_id}/revoke',
+            )
+            return True
+        except SentinelAIError as e:
+            logger.error(f"Failed to revoke API key {key_id}: {e}")
+            return False
+
+    def rotate_api_key(self, org_id: str, key_id: int) -> Dict[str, Any]:
+        """
+        Rotate an API key (revoke existing + issue new one).
+
+        Args:
+            org_id: Organization ID
+            key_id: API key ID
+
+        Returns:
+            New API key details with fresh key value
+        """
+        try:
+            return self._make_request(
+                'POST',
+                f'/api/orgs/{org_id}/api-keys/{key_id}/rotate',
+            )
+        except SentinelAIError as e:
+            logger.error(f"Failed to rotate API key {key_id}: {e}")
+            raise
+
+    # ── Usage & Stats ───────────────────────────────────────────────
+
+    def get_usage(self, org_id: str) -> List[Dict[str, Any]]:
+        """
+        Get usage log entries for an organization.
+
+        Args:
+            org_id: Organization ID
+
+        Returns:
+            List of usage entries with endpoint, timestamp, risk_score, latency_ms
+        """
+        try:
+            return self._make_request('GET', f'/api/orgs/{org_id}/usage')
+        except SentinelAIError as e:
+            logger.error(f"Failed to get usage for org {org_id}: {e}")
+            return []
+
+    def get_usage_stats(self, org_id: str) -> Dict[str, Any]:
+        """
+        Get dashboard usage statistics for an organization.
+
+        Args:
+            org_id: Organization ID
+
+        Returns:
+            Dashboard stats including total requests, risk distribution, trends
+        """
+        try:
+            return self._make_request('GET', f'/api/orgs/{org_id}/usage/stats')
+        except SentinelAIError as e:
+            logger.error(f"Failed to get usage stats for org {org_id}: {e}")
+            return {}
+
+    # ── Risk Baselines ──────────────────────────────────────────────
+
+    def get_baselines(self, org_id: str) -> Dict[str, Any]:
+        """
+        Get risk baseline configuration for an organization.
+
+        Args:
+            org_id: Organization ID
+
+        Returns:
+            Baseline config with risk thresholds and model sensitivity
+        """
+        try:
+            return self._make_request('GET', f'/api/orgs/{org_id}/baselines')
+        except SentinelAIError as e:
+            logger.error(f"Failed to get baselines for org {org_id}: {e}")
+            return {}
+
+    def update_baselines(self, org_id: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Update risk baseline configuration for an organization.
+
+        Args:
+            org_id: Organization ID
+            config: Baseline configuration dict (thresholds, sensitivity, alerts)
+
+        Returns:
+            Updated baseline config
+
+        Example:
+            >>> client.update_baselines("org_abc123", {
+            ...     "risk_threshold_medium": 50.0,
+            ...     "risk_threshold_high": 80.0,
+            ...     "model_sensitivity": "high",
+            ... })
+        """
+        try:
+            return self._make_request(
+                'POST',
+                f'/api/orgs/{org_id}/baselines',
+                json=config,
+            )
+        except SentinelAIError as e:
+            logger.error(f"Failed to update baselines for org {org_id}: {e}")
+            raise
+
+    # ── Workspace Management ────────────────────────────────────────
+
+    def list_workspaces(self) -> List[Dict[str, Any]]:
+        """
+        List workspaces in the currently active organization.
+
+        Requires an active org context (set via X-Org-Id header or
+        the current Clerk org session).
+
+        Returns:
+            List of workspaces with id, name, slug, is_default, member_count
+        """
+        try:
+            return self._make_request('GET', '/api/workspaces')
+        except SentinelAIError as e:
+            logger.error(f"Failed to list workspaces: {e}")
+            return []
+
+    # ── User Info ───────────────────────────────────────────────────
+
+    def get_current_user(self) -> Optional[Dict[str, Any]]:
+        """
+        Get the currently authenticated user's profile and org memberships.
+
+        Returns:
+            User details with id, clerk_user_id, email, name,
+            onboarding_completed, and memberships list
+        """
+        try:
+            return self._make_request('GET', '/api/me')
+        except SentinelAIError as e:
+            logger.error(f"Failed to get current user: {e}")
+            return None
+
 
 class ConversationTracker:
     """
@@ -236,6 +602,11 @@ class ConversationTracker:
         self.turns = []
         self.start_time = datetime.utcnow()
     
+    @property
+    def conversation_turns(self) -> List[Dict[str, Any]]:
+        """Alias for self.turns for API compatibility."""
+        return self.turns
+
     def add_turn(
         self,
         prompt: str,
@@ -271,13 +642,17 @@ class ConversationTracker:
             client_metadata=metadata
         )
         
-        self.turns.append({
+        turn = {
             "turn_number": turn_number,
             "prompt": prompt,
             "response": response,
             "analysis": result,
             "timestamp": datetime.utcnow().isoformat()
-        })
+        }
+        if user_id:
+            turn["user_id"] = user_id
+        
+        self.turns.append(turn)
         
         return result
     
@@ -289,7 +664,22 @@ class ConversationTracker:
             Conversation summary and analytics
         """
         if not self.turns:
-            return {"message": "No turns recorded"}
+            return {
+                "session_id": self.session_id,
+                "total_turns": 0,
+                "duration_minutes": 0.0,
+                "risk_statistics": {
+                    "average_risk_score": 0.0,
+                    "max_risk_score": 0.0,
+                    "min_risk_score": 0.0,
+                    "decision_counts": {
+                        "allow": 0, "warn": 0, "block": 0, "escalate": 0
+                    }
+                },
+                "turns": [],
+                "conversation_turns": [],
+                "message": "No turns recorded"
+            }
         
         risk_scores = [turn["analysis"].get("final_risk_score", 0) for turn in self.turns]
         decisions = [turn["analysis"].get("decision", "unknown") for turn in self.turns]
@@ -309,5 +699,70 @@ class ConversationTracker:
                     "escalate": decisions.count("escalate")
                 }
             },
-            "turns": self.turns
+            "turns": self.turns,
+            "conversation_turns": self.turns,
         }
+    
+    def analyze_conversation(self) -> List[Dict[str, Any]]:
+        """
+        Re-analyze all conversation turns and return results.
+        
+        Returns:
+            List of analysis results for each turn
+        """
+        return [turn["analysis"] for turn in self.turns]
+
+    def get_risk_statistics(self) -> Dict[str, Any]:
+        """
+        Get risk statistics for the conversation.
+        
+        Returns:
+            Dict with average_risk_score, max_risk_score, min_risk_score, total_turns
+        """
+        if not self.turns:
+            return {
+                "average_risk_score": 0.0,
+                "max_risk_score": 0.0,
+                "min_risk_score": 0.0,
+                "total_turns": 0
+            }
+        
+        risk_scores = [turn["analysis"].get("final_risk_score", 0) for turn in self.turns]
+        return {
+            "average_risk_score": sum(risk_scores) / len(risk_scores),
+            "max_risk_score": max(risk_scores),
+            "min_risk_score": min(risk_scores),
+            "total_turns": len(self.turns)
+        }
+
+    def clear_conversation(self) -> None:
+        """Clear all conversation turns."""
+        self.turns.clear()
+
+    def export_conversation(self) -> Dict[str, Any]:
+        """
+        Export conversation data as a dict.
+        
+        Returns:
+            Dict with session_id, conversation_turns, and export_timestamp
+        """
+        return {
+            "session_id": self.session_id,
+            "conversation_turns": self.turns.copy(),
+            "export_timestamp": datetime.utcnow().isoformat()
+        }
+
+    def get_high_risk_turns(self, threshold: float = 0.7) -> List[Dict[str, Any]]:
+        """
+        Get turns with risk score above the threshold.
+        
+        Args:
+            threshold: Risk score threshold (default 0.7)
+            
+        Returns:
+            List of turns with risk score > threshold
+        """
+        return [
+            turn for turn in self.turns
+            if turn["analysis"].get("final_risk_score", 0) > threshold
+        ]

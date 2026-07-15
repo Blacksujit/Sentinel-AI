@@ -57,11 +57,11 @@ export default function OrgUsagePage() {
   }, [data])
 
   const metrics = useMemo(() => [
-    { label: 'Total Requests', value: data?.total_requests, icon: Activity, color: 'text-primary' },
-    { label: 'Requests (24h)', value: data?.requests_24h, icon: TrendingUp, color: 'text-emerald-500' },
-    { label: 'Success Rate', value: data?.success_rate != null ? `${Math.round(data.success_rate)}%` : null, icon: CheckCircle2, color: 'text-emerald-500' },
-    { label: 'Error Rate', value: data?.error_rate != null ? `${data.error_rate.toFixed(1)}%` : null, icon: AlertTriangle, color: 'text-destructive' },
-    { label: 'Avg Latency', value: data?.avg_latency_ms != null ? `${Math.round(data.avg_latency_ms)}ms` : null, icon: Clock, color: 'text-amber-500' },
+    { label: 'Total Requests', value: data?.total_requests, icon: Activity, color: 'text-[color:var(--red)]' },
+    { label: 'Requests (24h)', value: data?.requests_24h, icon: TrendingUp, color: 'text-[color:var(--green)]' },
+    { label: 'Success Rate', value: data?.success_rate != null ? `${Math.round(data.success_rate)}%` : null, icon: CheckCircle2, color: 'text-[color:var(--green)]' },
+    { label: 'Error Rate', value: data?.error_rate != null ? `${data.error_rate.toFixed(1)}%` : null, icon: AlertTriangle, color: 'text-[color:var(--red)]' },
+    { label: 'Avg Latency', value: data?.avg_latency_ms != null ? `${Math.round(data.avg_latency_ms)}ms` : null, icon: Clock, color: 'text-[color:var(--amber)]' },
   ], [data])
 
   const hasTrend = trendData.length > 0
@@ -86,7 +86,7 @@ export default function OrgUsagePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 + i * 0.03 }}
           >
-            <Card className="card-premium border-border">
+            <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs flex items-center gap-1.5 text-muted-foreground font-normal">
                   <m.icon className={`h-3.5 w-3.5 ${m.color}`} />
@@ -113,7 +113,7 @@ export default function OrgUsagePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
         >
-          <Card className="card-premium border-border">
+          <Card>
             <CardHeader>
               <CardTitle className="text-sm text-foreground flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-primary" />
@@ -123,13 +123,13 @@ export default function OrgUsagePage() {
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#9CA3AF" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="var(--ink-soft)" />
                   <Tooltip
                     content={({ active, payload, label }) => {
                       if (active && payload?.length) {
                         return (
-                          <div className="card-premium border border-border p-2 shadow-premium">
+                          <div className="bg-[color:var(--paper-raised)] border border-[color:var(--line)] p-2 rounded-lg shadow-sm">
                             <p className="text-sm font-medium text-foreground">{label}</p>
                             <p className="text-xs text-muted-foreground">
                               Requests: {(payload[0] as any).value}

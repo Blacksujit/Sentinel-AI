@@ -58,10 +58,10 @@ function EventIcon({ eventType }: { eventType: string }) {
 function SeverityDot({ severity }: { severity: TimelineSeverity }) {
   const colors = {
     INFO: 'bg-muted-foreground',
-    LOW: 'bg-emerald-400',
-    MEDIUM: 'bg-amber-400',
-    HIGH: 'bg-orange-400',
-    CRITICAL: 'bg-rose-400',
+    LOW: 'bg-[color:var(--green)]',
+    MEDIUM: 'bg-[color:var(--amber)]',
+    HIGH: 'bg-[color:var(--amber)]',
+    CRITICAL: 'bg-[color:var(--red)]',
   }
   return <div className={`w-2 h-2 rounded-full shrink-0 ${colors[severity]}`} />
 }
@@ -141,13 +141,13 @@ export function TimelineView({
 
           {/* Time indicator dot */}
           <div className={`absolute left-0 top-2 w-[15px] h-[15px] rounded-full border-2 flex items-center justify-center ${
-            group.max_severity === 'CRITICAL' ? 'border-rose-500 bg-rose-500/20' :
-            group.max_severity === 'HIGH' ? 'border-orange-500 bg-orange-500/20' :
+            group.max_severity === 'CRITICAL' ? 'border-[color:var(--red)] bg-[color:var(--red-bg)]' :
+            group.max_severity === 'HIGH' ? 'border-[color:var(--amber)] bg-[color:var(--amber-bg)]' :
             'border-border bg-card'
           }`}>
             <div className={`w-1.5 h-1.5 rounded-full ${
-              group.max_severity === 'CRITICAL' ? 'bg-rose-400' :
-              group.max_severity === 'HIGH' ? 'bg-orange-400' :
+              group.max_severity === 'CRITICAL' ? 'bg-[color:var(--red)]' :
+              group.max_severity === 'HIGH' ? 'bg-[color:var(--amber)]' :
               'bg-muted-foreground/10'
             }`} />
           </div>
@@ -160,8 +160,8 @@ export function TimelineView({
             </span>
             {group.max_severity !== 'INFO' && (
               <Badge variant="outline" className={`text-[10px] px-1 py-0 ${
-                group.max_severity === 'CRITICAL' ? 'text-rose-400 border-rose-500/30' :
-                group.max_severity === 'HIGH' || group.max_severity === 'MEDIUM' ? 'text-amber-400 border-amber-500/30' :
+                group.max_severity === 'CRITICAL' ? 'text-[color:var(--red)] border-[color:var(--red)]' :
+                group.max_severity === 'HIGH' || group.max_severity === 'MEDIUM' ? 'text-[color:var(--amber)] border-[color:var(--amber)]' :
                 'text-muted-foreground border-muted-foreground/30'
               }`}>
                 {group.max_severity}

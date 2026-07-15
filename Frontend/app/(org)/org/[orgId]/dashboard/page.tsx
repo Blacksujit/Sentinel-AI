@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Badge } from '@/components/ui'
+import { Badge } from '@/components/ui/Badge'
 import { HealthGauge } from '@/components/ui/health-gauge'
 import { apiGet } from '@/lib/api-client'
 import { useAuth } from '@clerk/nextjs'
@@ -90,7 +90,7 @@ export default function OrgDashboardPage() {
       subtitle: `${stats?.error_rate?.toFixed(1) || 0}% error rate`,
       icon: CheckCircle2,
       trend: 'stable' as const,
-      color: 'text-green-400'
+      color: 'text-[color:var(--green)]'
     },
     {
       title: 'Avg Latency',
@@ -116,7 +116,7 @@ export default function OrgDashboardPage() {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold text-foreground">Organization Overview</h1>
-            <Badge className={statusBadge === 'destructive' ? 'badge-risk' : 'badge-premium'}>
+            <Badge variant={statusBadge}>
               {statusLabel}
             </Badge>
           </div>
@@ -133,7 +133,7 @@ export default function OrgDashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0 }}
         >
-          <Card className="card-premium border-border">
+          <Card>
             <CardContent className="p-6">
               <HealthGauge
                 score={isLoadingLogs ? 0 : Math.round((1 - riskMetrics.avgRisk) * 100)}
@@ -155,7 +155,7 @@ export default function OrgDashboardPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: (index + 1) * 0.1 }}
           >
-            <Card className="card-premium border-border">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
@@ -190,14 +190,14 @@ export default function OrgDashboardPage() {
             icon={Shield}
             title="View Risk Logs"
             description={`${riskMetrics.criticalAlerts} critical alerts to review`}
-            color="text-destructive"
+            color="text-[color:var(--red)]"
           />
           <QuickActionCard
             href={`/org/${orgId}/dashboard/baselines`}
             icon={Users}
             title="Adjust Baselines"
             description="Configure risk thresholds"
-            color="text-amber-400"
+            color="text-[color:var(--amber)]"
           />
           <QuickActionCard
             href={`/org/${orgId}/dashboard/api-keys`}

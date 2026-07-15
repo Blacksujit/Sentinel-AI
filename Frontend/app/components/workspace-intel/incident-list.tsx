@@ -6,15 +6,15 @@ import { Badge } from '@/components/ui/Badge'
 import type { Incident as IncidentType } from '@/lib/workspace-intel/types'
 
 function IncidentBadge({ severity }: { severity: string }) {
-  const map: Record<string, { variant: 'destructive' | 'default' | 'secondary' | 'outline'; className: string }> = {
+  const map: Record<string, { variant: 'destructive' | 'default' | 'secondary' | 'outline' | 'warning' | 'success'; className: string }> = {
     CRITICAL: { variant: 'destructive', className: '' },
-    HIGH: { variant: 'default', className: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
-    MEDIUM: { variant: 'secondary', className: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
-    LOW: { variant: 'outline', className: 'text-success border-success/30' },
+    HIGH: { variant: 'warning', className: '' },
+    MEDIUM: { variant: 'secondary', className: 'text-[color:var(--amber)]' },
+    LOW: { variant: 'success', className: '' },
   }
   const config = map[severity] || map.LOW
   return (
-    <Badge variant={config.variant as 'destructive' | 'default' | 'secondary' | 'outline'} className={config.className}>
+    <Badge variant={config.variant as 'destructive' | 'default' | 'secondary' | 'outline' | 'warning' | 'success'} className={config.className}>
       {severity}
     </Badge>
   )
@@ -22,10 +22,10 @@ function IncidentBadge({ severity }: { severity: string }) {
 
 function StatusDot({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    DETECTED: 'bg-rose-500',
-    INVESTIGATING: 'bg-amber-500',
+    DETECTED: 'bg-[color:var(--red)]',
+    INVESTIGATING: 'bg-[color:var(--amber)]',
     MITIGATING: 'bg-primary',
-    RESOLVED: 'bg-emerald-500',
+    RESOLVED: 'bg-[color:var(--green)]',
     POSTMORTEM: 'bg-muted-foreground',
   }
   return <div className={`w-2 h-2 rounded-full ${colors[status] || 'bg-muted-foreground'}`} />
@@ -116,10 +116,10 @@ export function IncidentList({
             </div>
           </div>
           <span className={`rounded-full px-2 py-0.5 text-xs ${
-            incident.status === 'DETECTED' ? 'bg-rose-500/20 text-rose-300' :
-            incident.status === 'INVESTIGATING' ? 'bg-amber-500/20 text-amber-300' :
+            incident.status === 'DETECTED' ? 'bg-[color:var(--red-bg)] text-[color:var(--red)]' :
+            incident.status === 'INVESTIGATING' ? 'bg-[color:var(--amber-bg)] text-[color:var(--amber)]' :
             incident.status === 'MITIGATING' ? 'bg-primary/20 text-primary' :
-            incident.status === 'RESOLVED' ? 'bg-emerald-500/20 text-emerald-300' :
+            incident.status === 'RESOLVED' ? 'bg-[color:var(--green-bg)] text-[color:var(--green)]' :
             'bg-purple-500/20 text-purple-300'
           }`}>
             {incident.status}

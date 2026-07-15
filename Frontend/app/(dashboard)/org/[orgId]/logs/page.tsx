@@ -101,9 +101,9 @@ function LogsContent() {
     switch (severity) {
       case "critical":
       case "error":
-        return <AlertTriangle className="h-5 w-5 text-red-500" />;
+        return <AlertTriangle className="h-5 w-5 text-[color:var(--red)]" />;
       case "warning":
-        return <AlertCircle className="h-5 w-5 text-amber-500" />;
+        return <AlertCircle className="h-5 w-5 text-[color:var(--amber)]" />;
       default:
         return <Info className="h-5 w-5 text-muted-foreground" />;
     }
@@ -112,9 +112,9 @@ function LogsContent() {
   const getSeverityBadgeClass = (severity: string) => {
     const classes = {
       info: "bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20",
-      warning: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-      error: "bg-red-500/15 text-red-600 border-red-500/20",
-      critical: "bg-red-500/25 text-red-700 border-red-500/30",
+      warning: "bg-[color:var(--amber-bg)] text-[color:var(--amber)] border-[color:var(--amber-soft)]",
+      error: "bg-[color:var(--red-bg)] text-[color:var(--red)] border-[color:var(--red-soft)]",
+      critical: "bg-[color:var(--red-bg)] text-[color:var(--red)] border-[color:var(--red-soft)]",
     };
     return classes[severity as keyof typeof classes] || "bg-muted-foreground/10 text-muted-foreground border-border";
   };
@@ -207,8 +207,8 @@ function LogsContent() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {log.riskScore !== undefined ? (
                         <span className={`font-medium ${
-                          log.riskScore > 75 ? "text-red-500" :
-                          log.riskScore > 50 ? "text-amber-500" : "text-emerald-500"
+                          log.riskScore > 75 ? "text-[color:var(--red)]" :
+                          log.riskScore > 50 ? "text-[color:var(--amber)]" : "text-[color:var(--green)]"
                         }`}>
                           {log.riskScore}
                         </span>

@@ -113,8 +113,8 @@ function BaselinesContent() {
   const getAlertColor = (level: string) => {
     const colors: Record<string, string> = {
       low: "bg-success/10 text-success",
-      medium: "bg-yellow-100 text-yellow-700",
-      high: "bg-red-100 text-red-700",
+      medium: "bg-[color:var(--amber-bg)] text-[color:var(--amber)]",
+      high: "bg-[color:var(--red-bg)] text-[color:var(--red)]",
     };
     return colors[level] || "bg-muted text-muted-foreground";
   };

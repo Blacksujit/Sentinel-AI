@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Building2, Users, Plus, Settings, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/input';
 import { apiPost } from '@/lib/api-client';
 import { useAuth } from '@clerk/nextjs';
 import { useParams, useRouter } from 'next/navigation';
@@ -108,7 +109,7 @@ export default function WorkspacesPage() {
                     {workspace.member_count || 0} members
                   </span>
                   {workspace.is_default && (
-                    <span className="ml-2 px-2 py-1 bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 text-xs rounded-full">
+                    <span className="ml-2 px-2 py-1 bg-[color:var(--green-bg)] text-[color:var(--green)] border border-[color:var(--green-soft)] text-xs rounded-full">
                       Default
                     </span>
                   )}
@@ -133,9 +134,9 @@ export default function WorkspacesPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-background/80 flex items-center justify-center z-50 p-6"
+          className="fixed inset-0 bg-[color:var(--paper)]/80 flex items-center justify-center z-50 p-6"
         >
-          <div className="bg-background text-foreground border border-border rounded-lg p-6 max-w-md w-full">
+          <div className="bg-[color:var(--paper-raised)] text-ink border border-[color:var(--line)] rounded-lg p-6 max-w-md w-full shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-foreground">Create New Workspace</h2>
             <form onSubmit={handleCreateWorkspace}>
               <div className="space-y-4">
@@ -143,11 +144,10 @@ export default function WorkspacesPage() {
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Workspace Name
                   </label>
-                  <input
+                  <Input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
                     placeholder="Enter workspace name"
                     required
                   />
@@ -159,7 +159,7 @@ export default function WorkspacesPage() {
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
+                    className="w-full px-3 py-2 bg-[color:var(--paper-raised)] border border-[color:var(--line)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[color:var(--red)]/20 focus:border-[color:var(--red)] text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] text-sm shadow-sm"
                     placeholder="Enter workspace description"
                     rows={3}
                   />

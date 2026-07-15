@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useEffect, useState } from 'react'
-import { useAuth, useUser } from '@clerk/nextjs'
+import { useOrganizationList } from '@clerk/nextjs'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -13,17 +13,15 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 
 function OrgOnboardingPageContent() {
-  const { getToken, isLoaded, isSignedIn } = useAuth()
-  const { user } = useUser()
+  const { createOrganization, isLoaded: orgListLoaded } = useOrganizationList()
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [orgName, setOrgName] = useState('')
   const [companyEmail, setCompanyEmail] = useState('')
-  const [createdOrg, setCreatedOrg] = useState<any>(null)
-  const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(false)
+  const [createdOrgId, setCreatedOrgId] = useState<string | null>(null)
 
   const [onboardingData, setOnboardingData] = useState<Record<string, any> | null>(null)
 
@@ -41,13 +39,6 @@ function OrgOnboardingPageContent() {
     }
   }, [searchParams])
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      router.push('/auth/sign-in')
-    }
-  }, [isLoaded, isSignedIn, router])
-
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   }
@@ -64,97 +55,46 @@ function OrgOnboardingPageContent() {
 
     setIsSubmitting(true)
     try {
-      const token = await getToken()
-      const orgPayload: Record<string, any> = {
-        name: orgName,
-        email: companyEmail,
-      }
-      if (onboardingData) {
-        orgPayload.onboarding_data = onboardingData
-        orgPayload.industry = onboardingData.industry
-        orgPayload.company_size = onboardingData.companySize
-        orgPayload.ai_models = onboardingData.aiModels
-        orgPayload.use_cases = onboardingData.useCases
-        orgPayload.compliance_frameworks = onboardingData.complianceFrameworks
-        orgPayload.security_requirements = onboardingData.securityRequirements
-        orgPayload.data_retention = onboardingData.dataRetention
-        orgPayload.team_size = onboardingData.teamSize
-        orgPayload.integrations = onboardingData.integrations
-        orgPayload.selected_plan = onboardingData.selectedPlan
-      }
-      const res = await fetch('/api/orgs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(orgPayload),
+      // Step 1: Create org in Clerk — generates a real clerk_org_id
+      const slug = orgName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      const org = await createOrganization!({
+        name: orgName.trim(),
+        slug,
       })
 
-      if (!res.ok) {
-        const errText = await res.text()
-        throw new Error(errText)
+      // Step 2: Send onboarding data to backend (company email, industry, etc.)
+      // The backend will sync via Clerk webhook, but we also push the extra data here
+      try {
+        await fetch(`/api/orgs/${org.id}/onboarding`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_email: companyEmail,
+            onboarding_data: onboardingData || undefined,
+          }),
+        })
+      } catch (err) {
+        console.warn('Onboarding data sync failed (will retry via webhook):', err)
       }
 
-      const response = await res.json()
-      
-      setCreatedOrg(response)
+      setCreatedOrgId(org.id)
       toast.success('Organization created successfully!')
       setStep(2)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create organization:', error)
-      toast.error('Failed to create organization. Please try again.')
+      toast.error(error.errors?.[0]?.message || 'Failed to create organization. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // When an org is created, poll for workspaces then redirect to dashboard
-  useEffect(() => {
-    let mounted = true
-    if (!createdOrg?.id) return
-
-    setIsLoadingWorkspace(true)
-    const poll = async () => {
-      const maxAttempts = 5
-      const delay = 500 // ms
-      for (let i = 0; i < maxAttempts && mounted; i++) {
-        try {
-          const res = await fetch(`/api/workspaces?org_id=${createdOrg.id}`)
-          if (res.ok) {
-            const data = await res.json()
-            if (Array.isArray(data) && data.length > 0) {
-              // Found workspace(s); navigate to org dashboard
-              if (mounted) router.push(`/org/${createdOrg.id}/dashboard`)
-              return
-            }
-          }
-        } catch (e) {
-          // ignore and retry
-          console.debug('Workspace poll attempt', i + 1, ':', e)
-        }
-        await new Promise((r) => setTimeout(r, delay))
-      }
-      // If still not found after polling, navigate anyway (dashboard will handle empty state)
-      if (mounted) {
-        setIsLoadingWorkspace(false)
-        toast.info('Ready to proceed to dashboard')
-      }
-    }
-
-    poll()
-    return () => {
-      mounted = false
-    }
-  }, [createdOrg, router])
-
   const handleGoToDashboard = () => {
-    if (createdOrg?.id) {
-      router.push(`/org/${createdOrg.id}/dashboard`)
+    if (createdOrgId) {
+      router.push(`/org/${createdOrgId}/dashboard`)
     }
   }
 
-  if (!isLoaded) {
+  if (!orgListLoaded) {
     return (
       <div className="min-h-screen bg-gradient-warm flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -207,7 +147,7 @@ function OrgOnboardingPageContent() {
                       className="bg-background/50 border-border"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="company-email">Company Email</Label>
                     <Input
@@ -256,7 +196,7 @@ function OrgOnboardingPageContent() {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 mb-2">
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <h3 className="text-xl font-semibold text-foreground">
                       Organization Created!
@@ -269,11 +209,11 @@ function OrgOnboardingPageContent() {
                   <div className="bg-muted/30 rounded-lg p-4 text-left space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Organization ID</span>
-                      <span className="font-mono text-foreground">{createdOrg?.id}</span>
+                      <span className="font-mono text-foreground">{createdOrgId}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Plan</span>
-                      <span className="text-foreground capitalize">{createdOrg?.plan_tier || 'Free'}</span>
+                      <span className="text-foreground capitalize">Free</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Role</span>
@@ -281,31 +221,14 @@ function OrgOnboardingPageContent() {
                     </div>
                   </div>
 
-                  {isLoadingWorkspace && (
-                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-left text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="animate-spin">⏳</span>
-                        <span className="text-muted-foreground">Preparing workspace...</span>
-                      </div>
-                    </div>
-                  )}
-
                   <Button
                     onClick={handleGoToDashboard}
-                    disabled={isLoadingWorkspace}
                     className="w-full"
                   >
-                    {isLoadingWorkspace ? (
-                      <span className="flex items-center gap-2">
-                        <span className="animate-spin">⏳</span>
-                        Setting up workspace...
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        Go to Dashboard
-                        <ArrowRight className="w-4 h-4" />
-                      </span>
-                    )}
+                    <span className="flex items-center gap-2">
+                      Go to Dashboard
+                      <ArrowRight className="w-4 h-4" />
+                    </span>
                   </Button>
                 </CardContent>
               </Card>

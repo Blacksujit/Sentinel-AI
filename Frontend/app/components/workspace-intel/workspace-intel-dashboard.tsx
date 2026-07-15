@@ -132,8 +132,8 @@ export function WorkspaceIntelDashboard({
             <GitPullRequest className="w-4 h-4 mr-1" />
             Log Deployment
           </Button>
-          <Badge variant="outline" className="border-emerald-500/30 text-emerald-400">
-            <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <Badge variant="success">
+            <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--green)]" />
             Live
           </Badge>
         </div>
@@ -150,7 +150,7 @@ export function WorkspaceIntelDashboard({
             <AlertTriangle className="w-4 h-4 mr-1.5" />
             Incidents
             {activeIncidents.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-rose-500/20 px-1.5 py-0.5 text-[10px] text-rose-400">
+              <span className="ml-1.5 rounded-full bg-[color:var(--red-bg)] px-1.5 py-0.5 text-[10px] text-[color:var(--red)]">
                 {activeIncidents.length}
               </span>
             )}
@@ -236,7 +236,7 @@ export function WorkspaceIntelDashboard({
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg text-card-foreground">Operational Timeline</CardTitle>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" /> Real-time
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--green)]" /> Real-time
               </div>
             </CardHeader>
             <CardContent className="max-h-[600px] overflow-y-auto">

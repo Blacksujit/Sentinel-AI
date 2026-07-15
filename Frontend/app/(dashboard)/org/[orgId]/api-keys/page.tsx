@@ -197,7 +197,7 @@ function ApiKeysContent() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                         {copiedId === key.id && (
-                          <span className="ml-2 text-xs text-green-600">Copied!</span>
+                          <span className="ml-2 text-xs text-[color:var(--green)]">Copied!</span>
                         )}
                       </td>
                     </tr>

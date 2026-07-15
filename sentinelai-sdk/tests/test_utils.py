@@ -36,8 +36,7 @@ class TestUtils:
         assert result["decision"] == "allow"
         assert result["final_risk_score"] == 0.3
         mock_client_class.assert_called_once_with(
-            base_url="https://test.sentinelai.com",
-            source="quick-analyze"
+            "https://test.sentinelai.com", None, "quick-integration"
         )
         mock_client.analyze.assert_called_once()
 
@@ -61,9 +60,7 @@ class TestUtils:
         )
 
         mock_client_class.assert_called_once_with(
-            base_url="https://test.com",
-            api_key="test-key",
-            source="quick-analyze"
+            "https://test.com", "test-key", "quick-integration"
         )
 
     @patch('sentinelai.utils.SentinelAIClient')

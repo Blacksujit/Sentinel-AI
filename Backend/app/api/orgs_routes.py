@@ -13,6 +13,7 @@ from app.rbac.enforce import require_permission, require_permission_from_path
 from app.services.audit_service import AuditService
 from app.services.usage_service import UsageService
 from app.services.workspace_service import WorkspaceService
+from app.services.org_sync_service import OrganizationSyncService
 from app.storage.org_models import Organization, OrgMembership
 from app.storage.user_models import User
 from app.storage.rbac_models import RbacRole
@@ -44,6 +45,7 @@ class OrgCreate(BaseModel):
     name: str
     slug: Optional[str] = None
     email: Optional[str] = None  # Company email for domain verification
+    clerk_org_id: Optional[str] = None  # Real Clerk org ID (from Clerk createOrganization())
 
 class OrgResponse(BaseModel):
     id: int
@@ -114,14 +116,40 @@ async def create_org(
     user: User = Depends(require_authenticated_user),
     db: Session = Depends(get_db),
 ):
+    """Create an organization synced with Clerk.
+
+    The caller should first create the org via Clerk's createOrganization(),
+    then pass the resulting clerk_org_id here. This ensures Clerk knows
+    about the org (for org-scoped auth) and we sync it to our DB.
+    """
+    clerk_org_id = payload.clerk_org_id or ""
+    if not clerk_org_id:
+        raise HTTPException(
+            status_code=400,
+            detail="clerk_org_id is required. Create the org via Clerk's createOrganization() first.",
+        )
+
+    # Check if already synced via webhook
+    existing = OrganizationSyncService.get_organization_by_clerk_id(clerk_org_id, db)
+    if existing:
+        return OrgResponse(
+            id=existing.id,
+            clerk_org_id=existing.clerk_org_id,
+            name=existing.name,
+            slug=existing.slug,
+            owner_user_id=existing.owner_user_id,
+            plan_tier=existing.plan_tier.value,
+            created_at=existing.created_at,
+        )
+
     requested_slug = payload.slug or payload.name
     unique_slug = _ensure_unique_org_slug(db, requested_slug)
 
     org = Organization(
-        clerk_org_id=str(uuid4()),
+        clerk_org_id=clerk_org_id,
         name=payload.name,
         slug=unique_slug,
-        company_email=payload.email,  # Save company email
+        company_email=payload.email,
         owner_user_id=user.id,
     )
     db.add(org)
@@ -333,6 +361,75 @@ async def get_org_baselines(
         "alert_on_high_risk": True,
         "alert_on_critical": True
     }
+
+
+class OnboardingData(BaseModel):
+    company_email: Optional[str] = None
+    onboarding_data: Optional[dict] = None
+
+@router.post("/orgs/{org_id}/onboarding")
+async def set_org_onboarding(
+    org_id: str,
+    payload: OnboardingData,
+    user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    """Set onboarding metadata for an org created via Clerk.
+
+    This runs AFTER Clerk's createOrganization() so the org may not yet
+    exist in the DB (webhook is async). We upsert via OrganizationSyncService.
+    """
+    clerk_org_id = org_id  # org_id here is the Clerk org ID from the URL
+
+    org = OrganizationSyncService.get_organization_by_clerk_id(clerk_org_id, db)
+
+    if org:
+        # Org already synced via webhook — just update company email
+        org.company_email = payload.company_email or org.company_email
+        db.commit()
+    else:
+        # Webhook hasn't fired yet — create org directly with real clerk_org_id
+        org = Organization(
+            clerk_org_id=clerk_org_id,
+            name=f"Organization {clerk_org_id[:8]}",
+            slug=f"org-{clerk_org_id[:8]}",
+            company_email=payload.company_email,
+            owner_user_id=user.id,
+        )
+        db.add(org)
+        db.flush()
+
+        # Assign OWNER role
+        owner_role = (
+            db.query(RbacRole)
+            .filter(RbacRole.name == "OWNER", RbacRole.org_id.is_(None))
+            .first()
+        )
+        if owner_role:
+            db.add(OrgMembership(user_id=user.id, org_id=org.id, role_id=owner_role.id))
+
+    # Only create workspace if this is truly the first creation
+    from app.storage.workspace_models import Workspace
+    existing_workspace = db.query(Workspace).filter(Workspace.org_id == org.id).first()
+    if not existing_workspace:
+        default_workspace = WorkspaceService.create_workspace(
+            db=db, org_id=org.id, name="Default Workspace", created_by_user_id=user.id
+        )
+        default_workspace.is_default = True
+        WorkspaceService.create_default_workspace_roles(db, default_workspace.id)
+
+    AuditService.log(
+        db,
+        org_id=org.id,
+        actor_user_id=user.id,
+        actor_type="user",
+        action="org.onboarding_completed",
+        target_type="organization",
+        target_id=org.id,
+        event_metadata={"onboarding_data": payload.onboarding_data} if payload.onboarding_data else None,
+    )
+    db.commit()
+    return {"status": "ok", "org_id": org.id, "clerk_org_id": clerk_org_id}
 
 
 @router.post("/orgs/{org_id}/baselines")
