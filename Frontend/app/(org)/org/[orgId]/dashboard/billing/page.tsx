@@ -14,6 +14,10 @@ import {
   ExternalLink,
   Loader2,
   ArrowUpCircle,
+  Wallet,
+  Coins,
+  Plus,
+  History,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
@@ -21,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui'
 import { apiGet, apiPost } from '@/lib/api-client'
+import { getStripe } from '@/lib/stripe'
 import { useAuth } from '@clerk/nextjs'
 
 interface BillingConfig {
@@ -59,6 +64,37 @@ interface UsageData {
   plan: string
   remaining: number
 }
+
+interface WalletData {
+  balance_credits: number
+  total_purchased: number
+  total_consumed: number
+}
+
+interface CreditPack {
+  id: string
+  credits: number
+  amount_cents: number
+  label: string
+}
+
+interface TokenUsageItem {
+  id: number
+  model: string
+  input_tokens: number
+  output_tokens: number
+  total_tokens: number
+  cost_credits: number
+  source: string
+  created_at: string
+}
+
+const CREDIT_PACKS = [
+  { id: 'credits_1000', credits: 1000, amount_cents: 1000, label: '1,000 Credits' },
+  { id: 'credits_5000', credits: 5000, amount_cents: 5000, label: '5,000 Credits' },
+  { id: 'credits_10000', credits: 10000, amount_cents: 10000, label: '10,000 Credits' },
+  { id: 'credits_25000', credits: 25000, amount_cents: 25000, label: '25,000 Credits' },
+]
 
 const PLANS = [
   {
@@ -172,6 +208,8 @@ export default function BillingPage() {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
   const [invoices, setInvoices] = useState<InvoiceData[]>([])
   const [usage, setUsage] = useState<UsageData | null>(null)
+  const [wallet, setWallet] = useState<WalletData | null>(null)
+  const [tokenUsage, setTokenUsage] = useState<TokenUsageItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
@@ -179,16 +217,20 @@ export default function BillingPage() {
     if (!orgId) return
     try {
       const token = await getToken()
-      const [cfg, sub, inv, usg] = await Promise.all([
+      const [cfg, sub, inv, usg, wlt, tok] = await Promise.all([
         apiGet<BillingConfig>('/api/billing/config', token),
         apiGet<SubscriptionData>(`/api/billing/subscription?org_id=${orgId}`, token),
         apiGet<InvoiceData[]>(`/api/billing/invoices?org_id=${orgId}&limit=12`, token),
         apiGet<UsageData>(`/api/billing/usage?org_id=${orgId}`, token),
+        apiGet<WalletData>(`/api/billing/wallet?org_id=${orgId}`, token),
+        apiGet<TokenUsageItem[]>(`/api/billing/token-usage?org_id=${orgId}&limit=10`, token),
       ])
       setConfig(cfg)
       setSubscription(sub)
       setInvoices(inv)
       setUsage(usg)
+      setWallet(wlt)
+      setTokenUsage(tok)
     } catch (error) {
       console.error('Failed to load billing data:', error)
       toast.error('Failed to load billing data')
@@ -238,6 +280,35 @@ export default function BillingPage() {
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to open billing portal')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleBuyCredits = async (credits: number, amountCents: number) => {
+    setActionLoading(`credits_${credits}`)
+    try {
+      const token = await getToken()
+      const res = await apiPost<{ clientSecret?: string; error?: string }>(
+        '/api/billing/create-topup-intent',
+        { org_id: parseInt(orgId), credits, amount_cents: amountCents },
+        token,
+      )
+      if (res.clientSecret && config?.stripe_publishable_key) {
+        const stripe = await getStripe(config.stripe_publishable_key)
+        if (!stripe) { toast.error('Stripe failed to load'); return }
+        const { error } = await stripe.confirmCardPayment(res.clientSecret)
+        if (error) {
+          toast.error(error.message || 'Payment failed')
+        } else {
+          toast.success(`${credits.toLocaleString()} credits added!`)
+          loadData()
+        }
+      } else {
+        toast.error(res.error || 'Failed to create payment')
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Payment failed')
     } finally {
       setActionLoading(null)
     }
@@ -396,27 +467,164 @@ export default function BillingPage() {
           </CardContent>
         </Card>
 
-        {/* Quick info card */}
+        {/* Wallet Balance card */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <Building2 className="h-5 w-5 text-primary" />
-              <CardTitle>Organization</CardTitle>
+              <Wallet className="h-5 w-5 text-primary" />
+              <CardTitle>Credits Wallet</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div>
-              <span className="text-muted-foreground">Plan</span>
-              <p className="font-medium capitalize">{currentPlan}</p>
+          <CardContent className="space-y-4">
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-3 w-full" />
+              </div>
+            ) : wallet ? (
+              <>
+                <div className="text-center py-2">
+                  <div className="text-3xl font-bold tabular-nums text-primary">
+                    {wallet.balance_credits.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Available Credits</div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-[color:var(--paper-sunken)] rounded-lg p-3 text-center">
+                    <div className="text-lg font-semibold tabular-nums text-[color:var(--green)]">
+                      {wallet.total_purchased.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Purchased</div>
+                  </div>
+                  <div className="bg-[color:var(--paper-sunken)] rounded-lg p-3 text-center">
+                    <div className="text-lg font-semibold tabular-nums text-[color:var(--amber)]">
+                      {wallet.total_consumed.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Consumed</div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-4 text-sm text-muted-foreground">
+                Wallet not available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Buy Credits */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Coins className="h-5 w-5 text-primary" />
+              <CardTitle>Buy Credits</CardTitle>
             </div>
-            <div>
-              <span className="text-muted-foreground">Monthly calls</span>
-              <p className="font-medium">{PLANS.find((p) => p.tier === currentPlan)?.calls || '1,000'}</p>
+            <CardDescription>Purchase credit packs to continue using AI-powered analysis</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {CREDIT_PACKS.map((pack) => {
+                const loading = actionLoading === pack.id
+                return (
+                  <Card key={pack.id} variant="default" className="flex flex-col">
+                    <CardHeader className="text-center pb-3">
+                      <div className="text-2xl font-bold">{pack.credits.toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground">credits</div>
+                    </CardHeader>
+                    <CardContent className="text-center pt-0 flex-1 flex flex-col">
+                      <div className="text-lg font-semibold mb-3">
+                        ${(pack.amount_cents / 100).toFixed(0)}
+                      </div>
+                      <div className="mt-auto">
+                        <Button
+                          variant="default"
+                          className="w-full"
+                          onClick={() => handleBuyCredits(pack.credits, pack.amount_cents)}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Plus className="h-4 w-4" />
+                          )}
+                          Buy
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
-            {usage && (
-              <div>
-                <span className="text-muted-foreground">Used this period</span>
-                <p className="font-medium tabular-nums">{usage.used.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Token Usage History */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+      >
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <History className="h-5 w-5 text-primary" />
+              <CardTitle>Token Usage History</CardTitle>
+            </div>
+            <CardDescription>AI analysis credit consumption per request</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : tokenUsage.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No token usage yet</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-muted-foreground border-b border-[color:var(--border-color)]">
+                      <th className="pb-2 font-medium">Model</th>
+                      <th className="pb-2 font-medium text-right">Input</th>
+                      <th className="pb-2 font-medium text-right">Output</th>
+                      <th className="pb-2 font-medium text-right">Total</th>
+                      <th className="pb-2 font-medium text-right">Cost</th>
+                      <th className="pb-2 font-medium">Source</th>
+                      <th className="pb-2 font-medium text-right">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tokenUsage.map((item) => (
+                      <tr key={item.id} className="border-b border-[color:var(--border-color)]/50">
+                        <td className="py-2.5 pr-4">
+                          <Badge variant="secondary" className="text-xs font-mono">
+                            {item.model}
+                          </Badge>
+                        </td>
+                        <td className="py-2.5 px-2 text-right tabular-nums">{item.input_tokens.toLocaleString()}</td>
+                        <td className="py-2.5 px-2 text-right tabular-nums">{item.output_tokens.toLocaleString()}</td>
+                        <td className="py-2.5 px-2 text-right tabular-nums font-medium">{item.total_tokens.toLocaleString()}</td>
+                        <td className="py-2.5 px-2 text-right tabular-nums text-[color:var(--amber)]">{item.cost_credits}</td>
+                        <td className="py-2.5 px-2 text-xs text-muted-foreground capitalize">{item.source}</td>
+                        <td className="py-2.5 pl-2 text-right text-xs text-muted-foreground">
+                          {formatDate(item.created_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>

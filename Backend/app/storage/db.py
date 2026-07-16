@@ -195,6 +195,7 @@ def init_db():
     from app.storage import invite_models as _invite_models  # noqa: F401
     from app.storage import workspace_models as _workspace_models  # noqa: F401
     from app.learning import models as _learning_models  # noqa: F401
+    from app.storage import wallet_models as _wallet_models  # noqa: F401
 
     eng = get_engine()
     Base.metadata.create_all(bind=eng)

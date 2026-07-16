@@ -92,6 +92,10 @@ const nextConfig = {
         source: '/api/debug',
         destination: `${destinationBase}/debug`,
       },
+      {
+        source: '/api/billing/:path*',
+        destination: `${destinationBase}/billing/:path*`,
+      },
     ]
   },
   typescript: {

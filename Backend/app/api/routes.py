@@ -41,22 +41,25 @@ from app.actions.executor import ActionExecutor
 from app.monitors.jailbreak_rag import detect_jailbreak_rag
 from app.learning.compliance_monitor import ResponseComplianceMonitor
 from app.learning.feedback_service import FeedbackService
+from app.services.llm_service import analyze_with_llm, estimate_tokens
+from app.services.wallet_service import (
+    ensure_wallet, deduct_credits, calculate_call_cost,
+    record_token_usage, has_sufficient_credits,
+)
+from app.storage.org_models import Organization, PlanTier
 
-# Create router instance
 router = APIRouter()
 
-# Create and configure signal registry
 signal_registry = SignalRegistry()
 signal_registry.register("prompt_anomaly", detect_prompt_anomaly, "prompt")
 signal_registry.register("jailbreak_rag", detect_jailbreak_rag, "prompt")
 signal_registry.register("output_risk", score_output_risk, "output")
 
-# Create agentic pipeline components
 risk_reasoner = RiskReasoner()
 policy_engine = PolicyEngine()
 action_executor = ActionExecutor()
 compliance_monitor = ResponseComplianceMonitor()
-feedback_service = None  # Initialized per-request with DB session
+feedback_service = None
 
 
 def get_db():
@@ -70,118 +73,102 @@ def get_db():
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze_interaction(
-    request: AnalyzeRequest, 
+    request: AnalyzeRequest,
     db: Session = Depends(get_db),
     user = Depends(require_authenticated_user)
 ) -> AnalyzeResponse:
-    """
-    Analyze AI interaction for potential risks and anomalies.
-    
-    This endpoint performs comprehensive risk analysis by:
-    1. Detecting prompt anomalies using similarity analysis
-    2. Scoring output risk using rule-based heuristics  
-    3. Aggregating signals into a unified risk assessment
-    
-    Args:
-        request: Analysis request containing prompt and response
-        
-    Returns:
-        Analysis results with final risk score and triggered flags
-    """
-    # Reload settings if changed
     settings_service.reload_settings()
-    
-    # Get current settings version for logging
     settings_version = settings_service.get_settings_version()
-    # Step 1: Run prompt signal detectors
-    prompt_signals = signal_registry.run_detectors("prompt", prompt=request.prompt)
-    
-    # Step 2: Run output signal detectors
-    output_signals = signal_registry.run_detectors("output", text=request.response)
-    
-    logger.debug("prompt_signals=%s output_signals=%s", prompt_signals, output_signals)
-    
-    # Step 3: Normalize detector outputs into stable signal envelope
-    # Create normalized structure before calling aggregate_risk_signals
-    prompt_anomaly_result = prompt_signals.get("prompt_anomaly", {})
-    jailbreak_result = prompt_signals.get("jailbreak_rag", {})
-    output_risk_result = output_signals.get("output_risk", {})
-    
-    normalized_prompt = {
-        "present": prompt_anomaly_result.get("is_anomalous") is True
-    }
-    
-    normalized_jailbreak = {
-        "present": jailbreak_result.get("jailbreak_detected") is True
-    }
-    
-    normalized_output = {
-        "present": "unsafe_output" in output_risk_result.get("flags", []),
-        "flags": output_risk_result.get("flags", [])
-    }
-    
-    # Step 4: Use aggregator with normalized signal envelope
-    aggregated_result = aggregate_risk_signals(
-        prompt_signals=normalized_prompt,
-        jailbreak_signals=normalized_jailbreak,
-        output_signals=normalized_output
-    )
-    
-    logger.debug("merged flags = %s", aggregated_result.get("flags"))
-    
-    # Step 4: Use risk reasoner to analyze aggregated results
-    risk_summary = risk_reasoner.analyze_aggregated_result(
-        final_risk_score=aggregated_result["final_score"],
-        flags=aggregated_result["flags"],
-        confidence=aggregated_result.get("confidence", 1.0)
-    )
-    
-    # Step 5: Use policy engine to make decision
-    policy_decision = policy_engine.evaluate(risk_summary)
-    
-    # Step 6: Use action executor to carry out decision
-    action_result = action_executor.execute(policy_decision)
-    
-    # Step 7: Align final_risk_score with decision if needed
-    # This ensures score-decision consistency for edge cases where signals produce 0/None
-    # Final score alignment happens here because this is the orchestration layer that
-    # has access to both the aggregated score and the final policy decision
-    aligned_final_score = aggregated_result["final_score"]
-    if aligned_final_score <= 0:
-        # Apply decision-based alignment using centralized thresholds
-        # These scores represent the midpoint of each decision range for consistency
-        decision_scores = {
-            "allow": ALLOW_MAX,                                    # 0.1 - max allow score
-            "warn": (WARN_MIN + BLOCK_MIN) / 2,                   # 0.45 - midpoint of warn range
-            "block": (BLOCK_MIN + ESCALATE_MIN) / 2,              # 0.725 - midpoint of block range  
-            "escalate": ESCALATE_MIN                               # 0.85 - min escalate score
-        }
-        aligned_final_score = decision_scores.get(policy_decision.action.value.lower(), ALLOW_MAX)
-    
-    # Step 8: Log the analysis result to database (non-blocking)
-    # Audit log for post-hoc safety analysis - NOW WITH USER ID
+
+    try:
+        user_org = db.query(Organization).filter(
+            Organization.owner_user_id == user.id
+        ).first()
+        plan_tier = user_org.plan_tier.value if user_org else "free"
+        org_id = user_org.id if user_org else None
+    except Exception:
+        plan_tier = "free"
+        org_id = None
+
+    llm_result = analyze_with_llm(request.prompt, request.response, plan_tier)
+
+    if llm_result and llm_result.model != "fallback":
+        final_risk_score = llm_result.risk_score / 100.0
+        flags = llm_result.flags
+        confidence = llm_result.confidence
+        decision = llm_result.decision
+        decision_reason = llm_result.decision_reason
+        input_tokens = llm_result.input_tokens
+        output_tokens = llm_result.output_tokens
+    else:
+        prompt_signals = signal_registry.run_detectors("prompt", prompt=request.prompt)
+        output_signals = signal_registry.run_detectors("output", text=request.response)
+
+        prompt_anomaly_result = prompt_signals.get("prompt_anomaly", {})
+        jailbreak_result = prompt_signals.get("jailbreak_rag", {})
+        output_risk_result = output_signals.get("output_risk", {})
+
+        aggregated_result = aggregate_risk_signals(
+            prompt_signals={"present": prompt_anomaly_result.get("is_anomalous") is True},
+            jailbreak_signals={"present": jailbreak_result.get("jailbreak_detected") is True},
+            output_signals={"present": "unsafe_output" in output_risk_result.get("flags", []), "flags": output_risk_result.get("flags", [])},
+        )
+
+        risk_summary = risk_reasoner.analyze_aggregated_result(
+            final_risk_score=aggregated_result["final_score"],
+            flags=aggregated_result["flags"],
+            confidence=aggregated_result.get("confidence", 1.0),
+        )
+
+        policy_decision = policy_engine.evaluate(risk_summary)
+        action_result = action_executor.execute(policy_decision)
+
+        final_risk_score = aggregated_result["final_score"]
+        if final_risk_score <= 0:
+            decision_scores = {"allow": ALLOW_MAX, "warn": (WARN_MIN + BLOCK_MIN) / 2, "block": (BLOCK_MIN + ESCALATE_MIN) / 2, "escalate": ESCALATE_MIN}
+            final_risk_score = decision_scores.get(policy_decision.action.value.lower(), ALLOW_MAX)
+
+        flags = aggregated_result["flags"]
+        confidence = aggregated_result.get("confidence", 1.0)
+        decision = policy_decision.action.value
+        decision_reason = policy_decision.explanation
+        input_tokens = estimate_tokens(request.prompt)
+        output_tokens = estimate_tokens(request.response)
+
+    if org_id:
+        cost_credits = calculate_call_cost(input_tokens, output_tokens)
+        has_credits = has_sufficient_credits(org_id, cost_credits, db)
+        if has_credits:
+            deduct_credits(org_id, cost_credits, db)
+        record_token_usage(
+            org_id=org_id,
+            model=llm_result.model if llm_result else "fallback",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_credits=cost_credits if has_credits else 0,
+            source="playground",
+            db=db,
+        )
+
     try:
         log_risk_event(
             db=db,
             prompt=request.prompt,
             response=request.response,
-            final_risk_score=aligned_final_score,
-            flags=aggregated_result["flags"],  # Legacy flags field
-            confidence=aggregated_result.get("confidence"),
-            decision=policy_decision.action.value,  # Audit field
-            decision_reason=policy_decision.explanation,  # Audit field
-            signals=aggregated_result["flags"],  # Audit field - store flags as signals
-            settings_version=settings_version,  # Traceability field
-            thresholds_applied=settings_service.get_thresholds(),  # Traceability field
-            user_id=user.clerk_user_id,  # User-specific tracking
-            source="web_playground"  # Source identification
+            final_risk_score=final_risk_score,
+            flags=flags,
+            confidence=confidence,
+            decision=decision,
+            decision_reason=decision_reason,
+            signals=flags,
+            settings_version=settings_version,
+            thresholds_applied=settings_service.get_thresholds(),
+            user_id=user.clerk_user_id,
+            source="web_playground",
         )
     except Exception as e:
-        # Logging failure should not affect API response
         logger.error("Failed to log risk event: %s", e)
-        # Continue with API response - logging failures are non-blocking
-    
-    # Step 8.5: Log to detection logs for learning loop
+
     log_id = None
     try:
         feedback_svc = FeedbackService(db)
@@ -189,49 +176,38 @@ async def analyze_interaction(
             user_id=user.clerk_user_id,
             prompt=request.prompt,
             response=request.response,
-            detection_score=aggregated_result["final_score"],
-            final_risk_score=aligned_final_score,
-            flags=aggregated_result["flags"],
-            action_taken=action_result.action.value,
-            processing_time_ms=0.0,  # TODO: Track actual timing
+            detection_score=final_risk_score,
+            final_risk_score=final_risk_score,
+            flags=flags,
+            action_taken=decision,
+            processing_time_ms=0.0,
             conversation_id=None,
-            model_version="1.0"
+            model_version="1.0",
         )
     except Exception as e:
-        logger.error("Failed to log detection for learning: %s", e)
-    
-    # Step 8.6: Check for compliance issues in the response
-    # This helps detect if the prompt was a jailbreak that slipped through
-    if aligned_final_score < 0.7:  # Only check if not already flagged as high risk
-        compliance_result = compliance_monitor.check_compliance(
-            prompt=request.prompt,
-            response=request.response,
-            risk_score=aligned_final_score
-        )
-        
-        if compliance_result.is_complying and compliance_result.level.value in ['medium', 'high']:
-            logger.warning("Compliance issue detected: %s", compliance_result.explanation)
-            # Auto-report this as potential missed detection
-            try:
+        logger.error("Failed to log detection: %s", e)
+
+    if final_risk_score < 0.7:
+        try:
+            compliance_result = compliance_monitor.check_compliance(
+                prompt=request.prompt, response=request.response, risk_score=final_risk_score,
+            )
+            if compliance_result.is_complying and compliance_result.level.value in ["medium", "high"]:
                 feedback_svc = FeedbackService(db)
-                feedback_svc.report_compliance_issue(
-                    log_id=str(log_id) if log_id else None,
-                    user_id="system_auto_detect"
-                )
-            except Exception as e:
-                logger.error("Failed to auto-report compliance issue: %s", e)
-    
-    # Step 9: Return final analysis results with decision and action
+                feedback_svc.report_compliance_issue(log_id=str(log_id) if log_id else None, user_id="system_auto_detect")
+        except Exception as e:
+            logger.error("Compliance check failed: %s", e)
+
     return AnalyzeResponse(
-        final_risk_score=aligned_final_score,
-        flags=aggregated_result["flags"],
-        confidence=aggregated_result.get("confidence"),
-        decision=policy_decision.action.value,
-        action_taken=action_result.action.value,
-        decision_reason=policy_decision.explanation,
+        final_risk_score=final_risk_score,
+        flags=flags,
+        confidence=confidence,
+        decision=decision,
+        action_taken=decision,
+        decision_reason=decision_reason,
         settings_version=settings_version,
         thresholds_applied=settings_service.get_thresholds(),
-        log_id=str(log_id) if log_id else None
+        log_id=str(log_id) if log_id else None,
     )
 
 
@@ -335,102 +311,87 @@ async def get_risk_log_detail(
 
 @router.post("/analyze/external", response_model=ExternalAnalyzeResponse)
 async def analyze_external_interaction(
-    request: ExternalAnalyzeRequest, 
+    request: ExternalAnalyzeRequest,
     db: Session = Depends(get_db),
     api_key_ctx: dict = Depends(get_api_key_dependency()),
 ) -> ExternalAnalyzeResponse:
-    """
-    External API endpoint for client applications to analyze AI interactions in real-time.
-    
-    This endpoint allows external client applications (like customer support chatbots)
-    to send prompt/response pairs for real-time risk analysis and monitoring.
-    
-    Features:
-    - Real-time risk analysis with same engine as internal analysis
-    - Source identification for tracking which client application sent the data
-    - User and session tracking for comprehensive monitoring
-    - Client metadata support for custom application data
-    - Immediate response with risk assessment and recommended actions
-    
-    Args:
-        request: External analysis request with prompt, response, and metadata
-        db: Database session for logging
-        
-    Returns:
-        Real-time analysis results with risk scores, flags, and recommendations
-    """
     logger.info("External API call: source=%s user=%s session=%s key_prefix=%s",
                  request.source, request.user_id, request.session_id, api_key_ctx.get("prefix"))
-    logger.debug("API key context: org_id=%s api_key_id=%s",
-                 api_key_ctx.get("org_id"), api_key_ctx.get("api_key_id"))
-    
-    # Reload settings if changed
+
     settings_service.reload_settings()
-    
-    # Get current settings version for logging
     settings_version = settings_service.get_settings_version()
-    
-    # Step 1: Run prompt signal detectors (same as internal analysis)
-    prompt_signals = signal_registry.run_detectors("prompt", prompt=request.prompt)
-    
-    # Step 2: Run output signal detectors
-    output_signals = signal_registry.run_detectors("output", text=request.response)
-    
-    logger.debug("External prompt_signals=%s output_signals=%s", prompt_signals, output_signals)
-    
-    # Step 3: Normalize detector outputs into stable signal envelope
-    prompt_anomaly_result = prompt_signals.get("prompt_anomaly", {})
-    jailbreak_result = prompt_signals.get("jailbreak_rag", {})
-    output_risk_result = output_signals.get("output_risk", {})
-    
-    normalized_prompt = {
-        "present": prompt_anomaly_result.get("is_anomalous") is True
-    }
-    
-    normalized_jailbreak = {
-        "present": jailbreak_result.get("jailbreak_detected") is True
-    }
-    
-    normalized_output = {
-        "present": "unsafe_output" in output_risk_result.get("flags", []),
-        "flags": output_risk_result.get("flags", [])
-    }
-    
-    # Step 4: Use aggregator with normalized signal envelope
-    aggregated_result = aggregate_risk_signals(
-        prompt_signals=normalized_prompt,
-        jailbreak_signals=normalized_jailbreak,
-        output_signals=normalized_output
-    )
-    
-    # Step 5: Use risk reasoner to analyze aggregated results
-    risk_summary = risk_reasoner.analyze_aggregated_result(
-        final_risk_score=aggregated_result["final_score"],
-        flags=aggregated_result["flags"],
-        confidence=aggregated_result.get("confidence", 1.0)
-    )
-    
-    # Step 6: Use policy engine to make decision
-    policy_decision = policy_engine.evaluate(risk_summary)
-    
-    # Step 7: Use action executor to carry out decision
-    action_result = action_executor.execute(policy_decision)
-    
-    # Step 8: Align final_risk_score with decision if needed
-    aligned_final_score = aggregated_result["final_score"]
-    if aligned_final_score <= 0:
-        decision_scores = {
-            "allow": ALLOW_MAX,
-            "warn": (WARN_MIN + BLOCK_MIN) / 2,
-            "block": (BLOCK_MIN + ESCALATE_MIN) / 2,
-            "escalate": ESCALATE_MIN
-        }
-        aligned_final_score = decision_scores.get(policy_decision.action.value.lower(), ALLOW_MAX)
-    
-    # Step 9: Log the analysis result to database with external source information
+
+    org_id = api_key_ctx.get("org_id")
+    plan_tier = "free"
+    if org_id is not None:
+        org = db.query(Organization).filter(Organization.id == int(org_id)).first()
+        if org:
+            plan_tier = org.plan_tier.value
+
+    llm_result = analyze_with_llm(request.prompt, request.response, plan_tier)
+
+    if llm_result and llm_result.model != "fallback":
+        final_risk_score = llm_result.risk_score / 100.0
+        flags = llm_result.flags
+        confidence = llm_result.confidence
+        decision = llm_result.decision
+        decision_reason = llm_result.decision_reason
+        input_tokens = llm_result.input_tokens
+        output_tokens = llm_result.output_tokens
+    else:
+        prompt_signals = signal_registry.run_detectors("prompt", prompt=request.prompt)
+        output_signals = signal_registry.run_detectors("output", text=request.response)
+
+        prompt_anomaly_result = prompt_signals.get("prompt_anomaly", {})
+        jailbreak_result = prompt_signals.get("jailbreak_rag", {})
+        output_risk_result = output_signals.get("output_risk", {})
+
+        aggregated_result = aggregate_risk_signals(
+            prompt_signals={"present": prompt_anomaly_result.get("is_anomalous") is True},
+            jailbreak_signals={"present": jailbreak_result.get("jailbreak_detected") is True},
+            output_signals={"present": "unsafe_output" in output_risk_result.get("flags", []), "flags": output_risk_result.get("flags", [])},
+        )
+
+        risk_summary = risk_reasoner.analyze_aggregated_result(
+            final_risk_score=aggregated_result["final_score"],
+            flags=aggregated_result["flags"],
+            confidence=aggregated_result.get("confidence", 1.0),
+        )
+
+        policy_decision = policy_engine.evaluate(risk_summary)
+        action_result = action_executor.execute(policy_decision)
+
+        final_risk_score = aggregated_result["final_score"]
+        if final_risk_score <= 0:
+            decision_scores = {"allow": ALLOW_MAX, "warn": (WARN_MIN + BLOCK_MIN) / 2, "block": (BLOCK_MIN + ESCALATE_MIN) / 2, "escalate": ESCALATE_MIN}
+            final_risk_score = decision_scores.get(policy_decision.action.value.lower(), ALLOW_MAX)
+
+        flags = aggregated_result["flags"]
+        confidence = aggregated_result.get("confidence", 1.0)
+        decision = policy_decision.action.value
+        decision_reason = policy_decision.explanation
+        input_tokens = estimate_tokens(request.prompt)
+        output_tokens = estimate_tokens(request.response)
+
+    if org_id is not None:
+        cost_credits = calculate_call_cost(input_tokens, output_tokens)
+        has_credits = has_sufficient_credits(int(org_id), cost_credits, db)
+        if has_credits:
+            deduct_credits(int(org_id), cost_credits, db)
+        record_token_usage(
+            org_id=int(org_id),
+            model=llm_result.model if llm_result else "fallback",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_credits=cost_credits if has_credits else 0,
+            source="api",
+            usage_event_id=None,
+            api_key_id=api_key_ctx.get("api_key_id"),
+            db=db,
+        )
+
     analysis_id = None
     try:
-        org_id = api_key_ctx.get("org_id")
         workspace_id = None
         if org_id is not None:
             default_ws = (
@@ -443,59 +404,51 @@ async def analyze_external_interaction(
             if default_ws:
                 workspace_id = default_ws.id
 
-        # Create enhanced log entry with external source information
         logged_event = log_risk_event(
             db=db,
             prompt=request.prompt,
             response=request.response,
-            final_risk_score=aligned_final_score,
-            flags=aggregated_result["flags"],
-            confidence=aggregated_result.get("confidence"),
-            decision=policy_decision.action.value,
-            decision_reason=policy_decision.explanation,
-            signals=aggregated_result["flags"],
+            final_risk_score=final_risk_score,
+            flags=flags,
+            confidence=confidence,
+            decision=decision,
+            decision_reason=decision_reason,
+            signals=flags,
             settings_version=settings_version,
             thresholds_applied=settings_service.get_thresholds(),
-            source=request.source,  # New: External source identification
-            user_id=request.user_id,  # New: User tracking
-            session_id=request.session_id,  # New: Session tracking
-            client_metadata=request.client_metadata,  # New: Client metadata
+            source=request.source,
+            user_id=request.user_id,
+            session_id=request.session_id,
+            client_metadata=request.client_metadata,
             org_id=org_id,
             workspace_id=workspace_id,
         )
         analysis_id = logged_event.id if logged_event else None
-        
-        # Record usage event for org analytics
+
         from app.services.usage_service import UsageService
         UsageService.record_event(
             db=db,
             org_id=api_key_ctx["org_id"],
             endpoint="/analyze/external",
             api_key_id=api_key_ctx["api_key_id"],
-            initiator_user_id=None,  # external API call, not user-initiated
-            latency_ms=None,  # TODO: measure actual latency
-            risk_score=int(aligned_final_score * 100),
+            initiator_user_id=None,
+            latency_ms=None,
+            risk_score=int(final_risk_score * 100),
             success=True,
         )
-        
     except Exception as e:
         logger.error("Failed to log external risk event: %s", e)
-        # Continue with API response - logging failures are non-blocking
-    
-    # Step 10: Return final analysis results for real-time client response
-    logger.info("External analysis complete: score=%.3f decision=%s id=%s",
-                aligned_final_score, policy_decision.action.value, analysis_id)
-    
+
     return ExternalAnalyzeResponse(
-        final_risk_score=aligned_final_score,
-        flags=aggregated_result["flags"],
-        confidence=aggregated_result.get("confidence"),
-        decision=policy_decision.action.value,
-        action_taken=action_result.action.value,
-        decision_reason=policy_decision.explanation,
+        final_risk_score=final_risk_score,
+        flags=flags,
+        confidence=confidence,
+        decision=decision,
+        action_taken=decision,
+        decision_reason=decision_reason,
         settings_version=settings_version,
         thresholds_applied=settings_service.get_thresholds(),
         analysis_id=analysis_id,
-        timestamp=datetime.utcnow()
+        timestamp=datetime.utcnow(),
     )
 
