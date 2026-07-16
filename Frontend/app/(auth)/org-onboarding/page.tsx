@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useEffect, useState } from 'react'
-import { useOrganizationList } from '@clerk/nextjs'
+import { useAuth, useOrganizationList } from '@clerk/nextjs'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 function OrgOnboardingPageContent() {
   const { createOrganization, isLoaded: orgListLoaded } = useOrganizationList()
+  const { getToken } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -61,18 +62,23 @@ function OrgOnboardingPageContent() {
       })
 
       // Step 2: Send onboarding data to backend (company email, industry, etc.)
-      // The backend will sync via Clerk webhook, but we also push the extra data here
-      try {
-        await fetch(`/api/orgs/${org.id}/onboarding`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            company_email: companyEmail,
-            onboarding_data: onboardingData || undefined,
-          }),
-        })
-      } catch (err) {
-        console.warn('Onboarding data sync failed (will retry via webhook):', err)
+      // Include Clerk JWT so require_authenticated_user passes
+      const token = await getToken()
+      const syncResult = await fetch(`/api/orgs/${org.id}/onboarding`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          company_email: companyEmail,
+          onboarding_data: onboardingData || undefined,
+        }),
+      })
+      if (!syncResult.ok) {
+        const errBody = await syncResult.text()
+        console.warn('Onboarding sync returned', syncResult.status, errBody)
+        throw new Error(`Org sync failed: ${syncResult.status}`)
       }
 
       setCreatedOrgId(org.id)

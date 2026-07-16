@@ -81,11 +81,13 @@ async def analyze_interaction(
     settings_version = settings_service.get_settings_version()
 
     try:
-        user_org = db.query(Organization).filter(
-            Organization.owner_user_id == user.id
+        from app.storage.org_models import OrgMembership
+        membership = db.query(OrgMembership).filter(
+            OrgMembership.user_id == user.id
         ).first()
+        org_id = membership.org_id if membership else None
+        user_org = db.query(Organization).filter(Organization.id == org_id).first() if org_id else None
         plan_tier = user_org.plan_tier.value if user_org else "free"
-        org_id = user_org.id if user_org else None
     except Exception:
         plan_tier = "free"
         org_id = None
@@ -168,6 +170,22 @@ async def analyze_interaction(
         )
     except Exception as e:
         logger.error("Failed to log risk event: %s", e)
+
+    if org_id:
+        from app.services.usage_service import UsageService
+        try:
+            UsageService.record_event(
+                db=db,
+                org_id=org_id,
+                endpoint="/analyze",
+                api_key_id=None,
+                initiator_user_id=user.id,
+                latency_ms=None,
+                risk_score=int(final_risk_score * 100),
+                success=True,
+            )
+        except Exception as e:
+            logger.error("Failed to record usage event: %s", e)
 
     log_id = None
     try:

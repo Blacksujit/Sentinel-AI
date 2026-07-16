@@ -367,6 +367,65 @@ class OnboardingData(BaseModel):
     company_email: Optional[str] = None
     onboarding_data: Optional[dict] = None
 
+class OrgSyncRequest(BaseModel):
+    clerk_org_id: str
+    org_name: Optional[str] = None
+
+@router.post("/dev/sync-org")
+async def dev_sync_org(
+    payload: OrgSyncRequest,
+    user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    """Dev-only: Manually sync a Clerk org to the DB without waiting for webhooks.
+
+    This creates or resolves an organization by its Clerk org ID and
+    adds the requesting user as an OWNER member if not already.
+    """
+    clerk_org_id = payload.clerk_org_id
+    org = OrganizationSyncService.get_organization_by_clerk_id(clerk_org_id, db)
+
+    if not org:
+        org = Organization(
+            clerk_org_id=clerk_org_id,
+            name=payload.org_name or f"Organization {clerk_org_id[:8]}",
+            slug=_ensure_unique_org_slug(db, payload.org_name or f"org-{clerk_org_id[:8]}"),
+            owner_user_id=user.id,
+        )
+        db.add(org)
+        db.flush()
+
+        owner_role = (
+            db.query(RbacRole)
+            .filter(RbacRole.name == "OWNER", RbacRole.org_id.is_(None))
+            .first()
+        )
+        if owner_role:
+            existing_member = db.query(OrgMembership).filter(
+                OrgMembership.user_id == user.id,
+                OrgMembership.org_id == org.id,
+            ).first()
+            if not existing_member:
+                db.add(OrgMembership(user_id=user.id, org_id=org.id, role_id=owner_role.id))
+
+        from app.storage.workspace_models import Workspace
+        existing_workspace = db.query(Workspace).filter(Workspace.org_id == org.id).first()
+        if not existing_workspace:
+            default_workspace = WorkspaceService.create_workspace(
+                db=db, org_id=org.id, name="Default Workspace", created_by_user_id=user.id
+            )
+            default_workspace.is_default = True
+            WorkspaceService.create_default_workspace_roles(db, default_workspace.id)
+
+        AuditService.log(
+            db, org_id=org.id, actor_user_id=user.id, actor_type="user",
+            action="org.dev_sync", target_type="organization", target_id=org.id,
+        )
+        db.commit()
+
+    return {"status": "ok", "org_id": org.id, "clerk_org_id": org.clerk_org_id}
+
+
 @router.post("/orgs/{org_id}/onboarding")
 async def set_org_onboarding(
     org_id: str,

@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session as DBSession
 
 from app.auth.dependencies import require_authenticated_user
 from app.storage.db import get_db
-from app.storage.org_models import Organization, PlanTier
+from app.storage.org_models import Organization, PlanTier, OrgMembership
+from app.tenancy.org_context import resolve_org as resolve_org_shared
 from app.storage.billing_models import Subscription, SubscriptionStatus, Invoice, InvoiceStatus
 from app.billing.stripe_service import (
     create_checkout_session as stripe_create_checkout,
@@ -220,11 +221,8 @@ async def stripe_webhook(request: Request, db: DBSession = Depends(get_db)):
 
 
 def _resolve_org(org_id: str, db: DBSession) -> Organization:
-    """Resolve a Clerk org ID string to an Organization row."""
-    org = db.query(Organization).filter(Organization.clerk_org_id == org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
-    return org
+    """Resolve org by clerk_org_id, numeric ID, or slug."""
+    return resolve_org_shared(db, org_id)
 
 
 @router.get("/subscription", response_model=SubscriptionResponse)

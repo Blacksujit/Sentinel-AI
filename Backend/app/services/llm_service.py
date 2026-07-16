@@ -1,7 +1,8 @@
 import os
 import json
 import logging
-from typing import Optional
+import httpx
+from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -69,8 +70,6 @@ def analyze_with_claude(prompt: str, response: str, model: str = "claude-3-haiku
         return None
 
     try:
-        import httpx
-
         full_prompt = AI_SECURITY_EVAL_PROMPT + prompt + RESPONSE_SUFFIX + response
 
         api_url = "https://api.anthropic.com/v1/messages"
@@ -91,9 +90,19 @@ def analyze_with_claude(prompt: str, response: str, model: str = "claude-3-haiku
 
         input_tokens = data.get("usage", {}).get("input_tokens", 0)
         output_tokens = data.get("usage", {}).get("output_tokens", 0)
-        content = data.get("content", [{}])[0].get("text", "")
 
-        parsed = json.loads(content)
+        content_blocks = data.get("content", [])
+        content = ""
+        for block in content_blocks:
+            if block.get("type") == "text":
+                content = block.get("text", "")
+                break
+
+        parsed = _extract_json(content)
+        if not parsed:
+            logger.error("Claude returned non-JSON response: %.200s", content)
+            return None
+
         risk_score = parsed.get("risk_score", 50)
         flags = parsed.get("flags", [])
         confidence = parsed.get("confidence", 0.5)
@@ -122,8 +131,6 @@ def analyze_with_openai(prompt: str, response: str, model: str = "gpt-4o-mini") 
         return None
 
     try:
-        import httpx
-
         full_prompt = AI_SECURITY_EVAL_PROMPT + prompt + RESPONSE_SUFFIX + response
 
         api_url = "https://api.openai.com/v1/chat/completions"
@@ -134,6 +141,7 @@ def analyze_with_openai(prompt: str, response: str, model: str = "gpt-4o-mini") 
         body = {
             "model": model,
             "max_tokens": 1024,
+            "response_format": {"type": "json_object"},
             "messages": [{"role": "user", "content": full_prompt}],
         }
 
@@ -145,7 +153,11 @@ def analyze_with_openai(prompt: str, response: str, model: str = "gpt-4o-mini") 
         output_tokens = data.get("usage", {}).get("completion_tokens", 0)
         content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
-        parsed = json.loads(content)
+        parsed = _extract_json(content)
+        if not parsed:
+            logger.error("OpenAI returned non-JSON response: %.200s", content)
+            return None
+
         risk_score = parsed.get("risk_score", 50)
         flags = parsed.get("flags", [])
         confidence = parsed.get("confidence", 0.5)
@@ -168,6 +180,32 @@ def analyze_with_openai(prompt: str, response: str, model: str = "gpt-4o-mini") 
         return None
 
 
+def _extract_json(text: str) -> Optional[Dict[str, Any]]:
+    """Extract JSON from LLM response, handling markdown code blocks."""
+    text = text.strip()
+    json_match = text
+    if "```json" in text:
+        json_match = text.split("```json", 1)[1]
+        if "```" in json_match:
+            json_match = json_match.split("```", 1)[0]
+    elif "```" in text:
+        json_match = text.split("```", 1)[1]
+        if "```" in json_match:
+            json_match = json_match.split("```", 1)[0]
+
+    json_match = json_match.strip()
+    for start_delim in ("{", "[", '"'):
+        idx = json_match.find(start_delim)
+        if idx >= 0:
+            json_match = json_match[idx:]
+            break
+
+    try:
+        return json.loads(json_match)
+    except json.JSONDecodeError:
+        return None
+
+
 def estimate_tokens(text: str) -> int:
     import math
     words = len(text.split())
@@ -176,12 +214,12 @@ def estimate_tokens(text: str) -> int:
 
 def choose_model(plan_tier: str) -> str:
     mapping = {
-        "free": "claude-3-haiku",
-        "pro": "claude-3-sonnet",
-        "team": "claude-3-sonnet",
-        "enterprise": "claude-3-opus",
+        "free": "claude-sonnet-4-20250514",
+        "pro": "claude-sonnet-4-20250514",
+        "team": "claude-sonnet-4-20250514",
+        "enterprise": "claude-opus-4-20250514",
     }
-    return mapping.get(plan_tier, "claude-3-haiku")
+    return mapping.get(plan_tier, "claude-sonnet-4-20250514")
 
 
 def analyze_with_llm(prompt: str, response: str, plan_tier: str = "free") -> LLMAnalysisResult:
