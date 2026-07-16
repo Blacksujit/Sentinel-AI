@@ -9,7 +9,6 @@ import {
   Check,
   X as XIcon,
   Zap,
-  Building2,
   FileText,
   ExternalLink,
   Loader2,
@@ -285,13 +284,13 @@ export default function BillingPage() {
     }
   }
 
-  const handleBuyCredits = async (credits: number, amountCents: number) => {
-    setActionLoading(`credits_${credits}`)
+  const handleBuyCredits = async (packId: string) => {
+    setActionLoading(packId)
     try {
       const token = await getToken()
-      const res = await apiPost<{ clientSecret?: string; error?: string }>(
+      const res = await apiPost<{ clientSecret?: string; credits?: number; error?: string }>(
         '/api/billing/create-topup-intent',
-        { org_id: parseInt(orgId), credits, amount_cents: amountCents },
+        { org_id: parseInt(orgId), pack_id: packId },
         token,
       )
       if (res.clientSecret && config?.stripe_publishable_key) {
@@ -301,7 +300,7 @@ export default function BillingPage() {
         if (error) {
           toast.error(error.message || 'Payment failed')
         } else {
-          toast.success(`${credits.toLocaleString()} credits added!`)
+          toast.success(`${(res.credits || 0).toLocaleString()} credits added!`)
           loadData()
         }
       } else {
@@ -545,7 +544,7 @@ export default function BillingPage() {
                         <Button
                           variant="default"
                           className="w-full"
-                          onClick={() => handleBuyCredits(pack.credits, pack.amount_cents)}
+                          onClick={() => handleBuyCredits(pack.id)}
                           disabled={loading}
                         >
                           {loading ? (

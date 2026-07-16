@@ -8,3 +8,4 @@ export function getStripe(publishableKey: string): Promise<Stripe | null> {
   }
   return stripePromise
 }
+
