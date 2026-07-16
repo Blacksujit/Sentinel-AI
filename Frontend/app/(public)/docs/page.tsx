@@ -163,7 +163,7 @@ export default function DocsPage() {
               code={`npm install sentinal-ai-sdk
 
 import { SentinalAI } from "sentinal-ai-sdk";
-const sentinalAI = new SentinalAI({ apiKey: process.env.SENTINAL_AI_KEY });
+const sentinalAI = new SentinalAI({ apiKey: process.env.SENTINELAI_API_KEY });
 
 const result = await sentinalAI.verify({ prompt, response });`}
             />

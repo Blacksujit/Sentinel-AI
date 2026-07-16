@@ -41,6 +41,8 @@ else:
 ## 📋 Features
 
 - ✅ **Real-time AI Safety Analysis** - Analyze prompt/response pairs instantly
+- ✅ **One-shot Verification** - Verify and correct responses with a single call
+- ✅ **Hallucination Detection** - Score (0-100), claims, and auto-correction
 - ✅ **Risk-based Decision Making** - Get allow/warn/block/escalate decisions
 - ✅ **Multi-turn Conversation Tracking** - Track entire conversations
 - ✅ **Production-ready** - Built-in retries, timeouts, and error handling
@@ -102,7 +104,9 @@ The SDK automatically connects to these Render backend endpoints:
 
 | Endpoint | Purpose | SDK Method |
 |----------|---------|------------|
-| `POST /api/analyze` | Analyze prompt/response pairs | `client.analyze()` |
+| `POST /api/analyze/external` | Analyze prompt/response pairs | `client.analyze()` |
+| `POST /api/analyze/external` | One-shot verify (score 0-100, status, claims) | `client.verify()` |
+| `POST /api/analyze/external` | Verify and return corrected text | `client.correct()` |
 | `GET /api/health` | Check backend health | `client.health_check()` |
 | `GET /api/logs` | Retrieve risk logs | `client.get_risk_logs()` |
 | `GET /api/settings` | Get current settings | `client.get_settings()` |
@@ -139,6 +143,62 @@ elif decision == 'escalate':
     # High priority escalation
     notify_administrators(result)
     return emergency_fallback_response()
+```
+
+## ✅ One-Shot Verification
+
+The `verify()` method provides a simplified, single-call interface that returns a score (0-100), status classification, detected claims, and a corrected version.
+
+```python
+# Verify a response for accuracy and safety
+result = client.verify(
+    prompt="Who won the Nobel Prize in Physics in 2019?",
+    response="It was awarded entirely to Stephen Hawking for his work on black holes.",
+)
+
+# Check result
+print(result['score'])        # 0-100 risk score
+print(result['status'])       # 'trusted', 'needs_review', or 'hallucinated'
+print(result['corrected'])    # Corrected text if hallucinated, otherwise None
+print(result['claims'])       # List of flagged claims with detector info
+```
+
+### Verify Response Format
+
+```python
+{
+    "score": 91,                    # Risk score (0-100)
+    "status": "hallucinated",       # 'trusted', 'needs_review', or 'hallucinated'
+    "decision": "block",            # Backend decision
+    "action_taken": "block",        # Action taken
+    "claims": [                      # Detected issues
+        {
+            "detector": "Unsafe Output",
+            "text": "Stephen Hawking won it...",
+            "severity": "high",
+            "source": "response",
+            "note": "Flagged by Unsafe Output detector"
+        }
+    ],
+    "corrected": "The 2019 Nobel Prize in Physics...",        # Auto-corrected text
+    "meta": {
+        "claims_checked": 1,
+        "detectors_run": 6,
+        "verified_at": "2026-07-16T12:00:00Z"
+    }
+}
+```
+
+### Correct Method
+
+For cases where you only want the corrected response:
+
+```python
+corrected = client.correct(
+    prompt="Who won the 2019 Nobel Prize?",
+    response="Stephen Hawking won it posthumously.",
+)
+# Returns corrected text if needed, otherwise the original response
 ```
 
 ## 📊 Risk Assessment
@@ -359,9 +419,14 @@ MIT License - see LICENSE file for details.
 
 ## 🔄 Changelog
 
+### v1.1.0
+- One-shot `verify()` method - simplified API with score (0-100), status (trusted/needs_review/hallucinated), claims[], and corrected text
+- `correct()` method - returns corrected response directly
+- Fixed Python 3.14 deprecation warnings (datetime.utcnow → datetime.now(timezone.utc))
+
 ### v1.0.0
 - Initial release
-- Real-time AI safety analysis
+- Real-time AI safety analysis (analyze method)
 - Conversation tracking
 - Production-ready error handling
 - Comprehensive documentation

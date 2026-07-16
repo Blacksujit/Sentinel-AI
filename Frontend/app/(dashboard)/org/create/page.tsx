@@ -36,7 +36,6 @@ export default function CreateOrganizationPage() {
     try {
       const org = await createOrganization!({
         name: name.trim(),
-        slug: slug.trim(),
       })
 
       router.push(`/org/${org.id}/dashboard`)

@@ -232,7 +232,7 @@ export default function Home() {
             </div>
             <pre className="code-block"><code>{`import { SentinalAI } from "sentinal-ai-sdk";
 
-const sentinalAI = new SentinalAI({ apiKey: process.env.SENTINAL_AI_KEY });
+const sentinalAI = new SentinalAI({ apiKey: process.env.SENTINELAI_API_KEY });
 
 const result = await sentinalAI.verify({
   prompt: userMessage,

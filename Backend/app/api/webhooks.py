@@ -32,8 +32,12 @@ def verify_svix_webhook(payload: bytes, headers: dict) -> bool:
     """
     secret = CLERK_WEBHOOK_SECRET
     if not secret:
-        logger.warning("CLERK_WEBHOOK_SECRET not configured, skipping webhook verification")
-        return True  # Allow in dev without secret configured
+        env = os.getenv("ENVIRONMENT", "development")
+        if env != "development":
+            logger.error("CLERK_WEBHOOK_SECRET not configured — rejecting webhook in production")
+            return False
+        logger.warning("CLERK_WEBHOOK_SECRET not configured, allowing webhook in dev only")
+        return True
 
     svix_id = headers.get("svix-id")
     svix_timestamp = headers.get("svix-timestamp")

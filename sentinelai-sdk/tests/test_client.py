@@ -26,7 +26,10 @@ class TestSentinelAIClient:
         assert self.client.api_key == "test-key"
         assert self.client.source == "test-app"
         assert self.client.timeout == 10
-        assert self.client.max_retries == 3
+        assert self.client.retry_policy["max_retries"] == 3
+        assert self.client.retry_policy["backoff_factor"] == 1.0
+        assert self.client.retry_policy["max_backoff"] == 60.0
+        assert self.client.retry_policy["retry_on_status"] == [429, 500, 502, 503, 504]
 
     def test_client_initialization_without_api_key(self):
         """Test client initialization without API key"""
@@ -152,4 +155,170 @@ class TestSentinelAIClient:
         result = self.client.analyze("prompt", "response", "user123", "session456")
         assert result.get("fallback") is True
         # max_retries=3 means max_retries+1 = 4 total attempts
-        assert mock_request.call_count == self.client.max_retries + 1
+        assert mock_request.call_count == self.client.retry_policy["max_retries"] + 1
+
+    @patch.object(requests.Session, 'request')
+    def test_verify_trusted(self, mock_request):
+        """Test verify returns trusted for low risk scores"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "final_risk_score": 0.1,
+            "decision": "allow",
+            "flags": [],
+            "action_taken": "allow",
+        }
+        mock_request.return_value = mock_response
+
+        result = self.client.verify(
+            prompt="What is the capital of France?",
+            response="Paris is the capital of France.",
+        )
+        assert result["score"] == 10
+        assert result["status"] == "trusted"
+        assert len(result["claims"]) == 0
+        assert result["corrected"] is None
+
+    @patch.object(requests.Session, 'request')
+    def test_verify_hallucinated(self, mock_request):
+        """Test verify returns hallucinated for high risk scores"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "final_risk_score": 0.91,
+            "decision": "block",
+            "flags": ["unsafe_output"],
+            "action_taken": "block",
+        }
+        mock_request.return_value = mock_response
+
+        result = self.client.verify(
+            prompt="Who won the 2019 Nobel Prize?",
+            response="Stephen Hawking won it posthumously.",
+        )
+        assert result["status"] == "hallucinated"
+        assert result["score"] == 91
+        assert len(result["claims"]) > 0
+        assert result["corrected"] is not None
+
+    @patch.object(requests.Session, 'request')
+    def test_correct_returns_original_when_trusted(self, mock_request):
+        """Test correct returns original response when trusted"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "final_risk_score": 0.1,
+            "decision": "allow",
+            "flags": [],
+            "action_taken": "allow",
+        }
+        mock_request.return_value = mock_response
+
+        original = "Paris is the capital of France."
+        result = self.client.correct(
+            prompt="What is the capital of France?",
+            response=original,
+        )
+        assert result == original
+
+    @patch.object(requests.Session, 'request')
+    def test_verify_returns_claims_list(self, mock_request):
+        """Test verify returns claims list consistently"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "final_risk_score": 0.91,
+            "decision": "block",
+            "flags": ["low_truthfulness"],
+            "action_taken": "none",
+        }
+        mock_request.return_value = mock_response
+
+        result = self.client.verify(
+            prompt="Who won the 2019 Nobel Prize?",
+            response="Stephen Hawking won it posthumously.",
+        )
+        assert result["score"] == 91
+        assert result["status"] == "hallucinated"
+        assert isinstance(result["claims"], list)
+
+    @patch.object(requests.Session, 'request')
+    def test_analyze_batch(self, mock_request):
+        """Test batch analysis"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "final_risk_score": 0.1,
+            "decision": "allow",
+            "flags": [],
+            "action_taken": "allow",
+        }
+        mock_request.return_value = mock_response
+
+        items = [
+            {"prompt": "What is 2+2?", "response": "4"},
+            {"prompt": "What is the capital of France?", "response": "Paris"},
+        ]
+        results = self.client.analyze_batch(items)
+        assert len(results) == 2
+        assert all(r["decision"] == "allow" for r in results)
+
+    @patch.object(requests.Session, 'request')
+    def test_batch_three_items(self, mock_request):
+        """Test batch with three items"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "final_risk_score": 0.1,
+            "decision": "allow",
+            "flags": [],
+            "action_taken": "allow",
+        }
+        mock_request.return_value = mock_response
+
+        items = [
+            {"prompt": "P1", "response": "R1"},
+            {"prompt": "P2", "response": "R2"},
+            {"prompt": "P3", "response": "R3"},
+        ]
+        results = self.client.analyze_batch(items)
+        assert len(results) == 3
+
+    @patch.object(requests.Session, 'request')
+    def test_list_webhooks(self, mock_request):
+        """Test list webhooks returns list on success"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [
+            {"id": "wh_1", "url": "https://example.com/hook", "events": ["analysis.completed"], "created_at": "2024-01-01T00:00:00Z"}
+        ]
+        mock_request.return_value = mock_response
+
+        result = self.client.list_webhooks("org_1")
+        assert len(result) == 1
+        assert result[0]["id"] == "wh_1"
+
+    @patch.object(requests.Session, 'request')
+    def test_list_webhooks_error_returns_empty(self, mock_request):
+        """Test list webhooks returns empty list on error"""
+        mock_response = Mock()
+        mock_response.status_code = 500
+        mock_request.return_value = mock_response
+
+        result = self.client.list_webhooks("org_1")
+        assert result == []
+
+    @patch.object(requests.Session, 'request')
+    def test_billing_config(self, mock_request):
+        """Test billing config"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "stripe_publishable_key": "pk_test_xxx",
+            "prices": {"pro": "price_pro", "team": "price_team", "enterprise": "price_ent"},
+        }
+        mock_request.return_value = mock_response
+
+        result = self.client.get_billing_config()
+        assert result["stripe_publishable_key"] == "pk_test_xxx"
+        assert "pro" in result["prices"]

@@ -1,0 +1,39 @@
+{
+  "name": "@sentinelai/sdk",
+  "version": "1.0.0",
+  "description": "Official SentinelAI TypeScript SDK — AI safety analysis for your LLM applications",
+  "keywords": ["sentinelai", "ai-safety", "llm", "guardrails", "moderation"],
+  "homepage": "https://sentinelaihq.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sentinelai/sentinelai-sdk"
+  },
+  "license": "MIT",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "tsup": "^8.0.0",
+    "vitest": "^1.0.0",
+    "eslint": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

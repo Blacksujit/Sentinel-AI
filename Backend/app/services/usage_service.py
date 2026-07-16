@@ -5,6 +5,7 @@ from sqlalchemy import func
 import uuid
 
 from app.storage.usage_models import UsageEvent
+from app.storage.billing_models import Subscription, SubscriptionStatus
 from app.storage.api_key_models import ApiKey
 
 
@@ -192,3 +193,31 @@ class UsageService:
             query = query.filter(UsageEvent.timestamp <= end_time)
         
         return query.order_by(UsageEvent.timestamp.desc()).limit(limit).offset(offset).all()
+
+    @staticmethod
+    def get_monthly_count(
+        db: Session,
+        org_id: int,
+    ) -> int:
+        """Get usage count for the current billing period (monthly)."""
+        sub = db.query(Subscription).filter(
+            Subscription.org_id == org_id,
+            Subscription.status.in_([
+                SubscriptionStatus.ACTIVE,
+                SubscriptionStatus.PAST_DUE,
+                SubscriptionStatus.TRIALING,
+            ]),
+        ).first()
+
+        if sub and sub.current_period_start:
+            period_start = sub.current_period_start
+        else:
+            now = datetime.now(timezone.utc)
+            period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        count = db.query(UsageEvent).filter(
+            UsageEvent.org_id == org_id,
+            UsageEvent.timestamp >= period_start,
+        ).count()
+
+        return count

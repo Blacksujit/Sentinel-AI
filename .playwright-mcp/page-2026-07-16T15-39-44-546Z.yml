@@ -1,0 +1,62 @@
+- generic [ref=e1]:
+  - generic [ref=e5]:
+    - link [ref=e9] [cursor=pointer]:
+      - /url: https://stripe.com/
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - main [ref=e21]:
+          - generic [ref=e23]:
+            - generic [ref=e24]: Sign in to your account
+            - generic [ref=e27]:
+              - generic:
+                - generic:
+                  - generic [ref=e28]:
+                    - generic:
+                      - generic:
+                        - generic [ref=e29]: Email
+                        - textbox "email input" [active] [ref=e37]:
+                          - /placeholder: ""
+                  - generic [ref=e40]:
+                    - generic [ref=e42]:
+                      - generic:
+                        - generic:
+                          - generic [ref=e45] [cursor=pointer]:
+                            - generic:
+                              - generic:
+                                - generic [ref=e46]: Password
+                                - link "Forgot your password?" [ref=e48]:
+                                  - /url: /reset
+                          - textbox "password input" [ref=e56]:
+                            - /placeholder: ""
+                    - generic [ref=e62]:
+                      - generic [ref=e63]: Remember me on this device
+                      - checkbox "Remember me on this device" [checked] [ref=e66] [cursor=pointer]
+                  - button "Sign in" [disabled] [ref=e73]
+                  - generic [ref=e79]:
+                    - generic [ref=e80]:
+                      - separator [ref=e81]
+                      - generic [ref=e82]: Or
+                    - generic [ref=e83]:
+                      - generic:
+                        - generic:
+                          - button "Sign in with Google" [ref=e86] [cursor=pointer]
+                          - button "Sign in with passkey" [ref=e94] [cursor=pointer]
+                          - button "Sign in with SSO" [ref=e96] [cursor=pointer]
+        - generic [ref=e97]:
+          - text: New to Stripe?
+          - link "Create account" [ref=e98] [cursor=pointer]:
+            - /url: /register?redirect=%2Fauth_stripecli
+      - generic [ref=e99]: Never share your Stripe credentials. If multiple people need access to your account, invite them as team members in settings.
+    - generic [ref=e111]:
+      - generic:
+        - generic:
+          - link "© Stripe" [ref=e113] [cursor=pointer]:
+            - /url: https://stripe.com/
+          - link "Privacy & terms" [ref=e116] [cursor=pointer]:
+            - /url: https://stripe.com/privacy
+  - generic:
+    - iframe
+  - generic:
+    - iframe
+  - generic:
+    - iframe

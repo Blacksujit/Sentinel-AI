@@ -9,7 +9,6 @@ from typing import Callable, Awaitable
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from dotenv import load_dotenv
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, REGISTRY
@@ -41,8 +40,11 @@ from app.api.learning_routes import router as learning_router
 from app.api.workspace_routes import router as workspace_router
 from app.api.workspace_intel_routes import router as workspace_intel_router
 from app.api.webhooks import router as webhooks_router
+from app.api.billing_routes import router as billing_router
 from app.storage.db import init_db
 from app.middleware.request_id import RequestIDMiddleware
+from app.middleware.rate_limiter import RateLimitMiddleware
+from app.middleware.plan_enforcer import PlanEnforcerMiddleware
 
 logger = get_logger(__name__)
 
@@ -50,6 +52,26 @@ SERVICE_NAME = os.getenv("SERVICE_NAME", "sentinelai-api")
 LOG_FORMAT = os.getenv("LOG_FORMAT", "json")
 
 setup_logging()
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        env = os.getenv("ENVIRONMENT", "development")
+        if env == "production":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self' data:; "
+            "connect-src 'self'"
+        )
+        return response
 
 
 class MetricsMiddleware(BaseHTTPMiddleware):
@@ -119,7 +141,10 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+app.add_middleware(PlanEnforcerMiddleware)
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestIDMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(StructuredLoggingMiddleware)
 app.add_middleware(MetricsMiddleware)
 app.add_middleware(
@@ -133,7 +158,14 @@ app.add_middleware(
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["*"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "X-API-Key",
+        "X-Request-ID",
+        "X-Clerk-Auth-Token",
+        "User-Agent",
+    ],
 )
 
 
@@ -162,6 +194,7 @@ app.include_router(learning_router, prefix="/api")
 app.include_router(workspace_router, prefix="/api")
 app.include_router(workspace_intel_router, prefix="/api")
 app.include_router(webhooks_router, prefix="/api")
+app.include_router(billing_router, prefix="/api")
 
 
 # ── Health & Observability Endpoints ──────────────────────────────
@@ -205,6 +238,10 @@ async def circuit_breaker_states():
 async def send_test_email(request: Request):
     from fastapi import HTTPException
 
+    env = os.getenv("ENVIRONMENT", "development")
+    if env == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+
     try:
         body = await request.json()
     except ValueError:
@@ -231,10 +268,7 @@ async def send_test_email(request: Request):
 
     expected = os.getenv("DEBUG_ADMIN_TOKEN")
     if not expected:
-        if os.getenv("ENVIRONMENT", "development") == "development":
-            expected = "debug-token-example"
-        else:
-            raise HTTPException(status_code=500, detail="DEBUG_ADMIN_TOKEN is not configured")
+        raise HTTPException(status_code=500, detail="DEBUG_ADMIN_TOKEN is not configured")
 
     if token != expected:
         raise HTTPException(status_code=403, detail="Forbidden: invalid debug token")
@@ -253,5 +287,5 @@ if __name__ == "__main__":
         log_level=os.getenv("LOG_LEVEL", "info").lower(),
         workers=int(os.getenv("UVICORN_WORKERS", "1")),
         proxy_headers=True,
-        forwarded_allow_ips="*",
+        forwarded_allow_ips=os.getenv("FORWARDED_ALLOW_IPS", ""),
     )

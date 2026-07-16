@@ -7,6 +7,7 @@ import enum
 class PlanTier(str, enum.Enum):
     FREE = "free"
     PRO = "pro"
+    TEAM = "team"
     ENTERPRISE = "enterprise"
 
 class Organization(Base):

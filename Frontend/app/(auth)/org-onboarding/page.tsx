@@ -56,10 +56,8 @@ function OrgOnboardingPageContent() {
     setIsSubmitting(true)
     try {
       // Step 1: Create org in Clerk — generates a real clerk_org_id
-      const slug = orgName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
       const org = await createOrganization!({
         name: orgName.trim(),
-        slug,
       })
 
       // Step 2: Send onboarding data to backend (company email, industry, etc.)

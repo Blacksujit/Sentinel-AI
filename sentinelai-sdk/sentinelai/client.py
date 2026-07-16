@@ -5,8 +5,9 @@ SentinelAI SDK Client Module
 import requests
 import json
 import time
-from typing import Dict, Any, Optional, List
-from datetime import datetime
+from typing import Dict, Any, Optional, List, Callable
+from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 
 from .exceptions import (
@@ -18,6 +19,19 @@ from .exceptions import (
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+DEFAULT_RETRY_POLICY: Dict[str, Any] = {
+    "max_retries": 3,
+    "backoff_factor": 1.0,
+    "max_backoff": 60.0,
+    "retry_on_status": [429, 500, 502, 503, 504],
+}
+
+
+def _exponential_backoff(attempt: int, backoff_factor: float, max_backoff: float) -> float:
+    delay = backoff_factor * (2 ** attempt)
+    return min(delay, max_backoff)
 
 
 class SentinelAIClient:
@@ -33,8 +47,10 @@ class SentinelAIClient:
         api_key: Optional[str] = None,
         source: str = "python-sdk",
         timeout: int = 10,
-        max_retries: int = 3,
-        retry_delay: float = 1.0
+        max_retries: Optional[int] = None,
+        retry_delay: Optional[float] = None,
+        retry_policy: Optional[Dict[str, Any]] = None,
+        max_workers: int = 5,
     ):
         """
         Initialize SentinelAI client.
@@ -44,17 +60,26 @@ class SentinelAIClient:
             api_key: API key for authentication (optional for development)
             source: Identifier for your application
             timeout: Request timeout in seconds
-            max_retries: Maximum number of retry attempts
-            retry_delay: Delay between retries in seconds
+            max_retries: Maximum number of retry attempts (deprecated, use retry_policy)
+            retry_delay: Delay between retries in seconds (deprecated, use retry_policy)
+            retry_policy: Dict with max_retries, backoff_factor, max_backoff, retry_on_status
+            max_workers: Max parallel workers for batch operations
         """
         self.base_url = base_url.rstrip('/')
         self.api_key = api_key
         self.source = source
         self.timeout = timeout
-        self.max_retries = max_retries
-        self.retry_delay = retry_delay
-        
-        # Configure session
+        self.max_workers = max_workers
+
+        resolved_policy = dict(DEFAULT_RETRY_POLICY)
+        if retry_policy:
+            resolved_policy.update(retry_policy)
+        if max_retries is not None:
+            resolved_policy["max_retries"] = max_retries
+        if retry_delay is not None:
+            resolved_policy["backoff_factor"] = retry_delay
+        self.retry_policy = resolved_policy
+
         self.session = requests.Session()
         self.session.headers.update({
             'Content-Type': 'application/json',
@@ -66,7 +91,7 @@ class SentinelAIClient:
     
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """
-        Make HTTP request with retry logic.
+        Make HTTP request with exponential backoff retry logic.
         
         Args:
             method: HTTP method
@@ -80,8 +105,13 @@ class SentinelAIClient:
             SentinelAIError: On API errors
         """
         url = f"{self.base_url}{endpoint}"
+        policy = self.retry_policy
+        max_retries = policy["max_retries"]
+        retry_on_status = policy["retry_on_status"]
+        backoff_factor = policy["backoff_factor"]
+        max_backoff = policy["max_backoff"]
         
-        for attempt in range(self.max_retries + 1):
+        for attempt in range(max_retries + 1):
             try:
                 response = self.session.request(
                     method, url, timeout=self.timeout, **kwargs
@@ -89,6 +119,17 @@ class SentinelAIClient:
                 
                 if response.status_code == 401:
                     raise SentinelAIAuthenticationError("Invalid API key")
+                elif response.status_code == 429 or response.status_code >= 500:
+                    if response.status_code in retry_on_status and attempt < max_retries:
+                        delay = _exponential_backoff(attempt, backoff_factor, max_backoff)
+                        logger.warning(
+                            "Request to %s returned %d, retrying in %.1fs (attempt %d/%d)",
+                            endpoint, response.status_code, delay, attempt + 1, max_retries,
+                        )
+                        time.sleep(delay)
+                        continue
+                    error_msg = f"API error {response.status_code}: {response.text}"
+                    raise SentinelAIError(error_msg)
                 elif response.status_code >= 400:
                     error_msg = f"API error {response.status_code}: {response.text}"
                     raise SentinelAIError(error_msg)
@@ -96,14 +137,18 @@ class SentinelAIClient:
                 return response.json()
                 
             except requests.exceptions.Timeout:
-                if attempt == self.max_retries:
+                if attempt == max_retries:
                     raise SentinelAIConnectionError("Request timeout")
-                time.sleep(self.retry_delay)
+                delay = _exponential_backoff(attempt, backoff_factor, max_backoff)
+                logger.warning("Request timeout %s, retrying in %.1fs", endpoint, delay)
+                time.sleep(delay)
                 
             except requests.exceptions.ConnectionError:
-                if attempt == self.max_retries:
+                if attempt == max_retries:
                     raise SentinelAIConnectionError("Connection failed")
-                time.sleep(self.retry_delay)
+                delay = _exponential_backoff(attempt, backoff_factor, max_backoff)
+                logger.warning("Connection failed %s, retrying in %.1fs", endpoint, delay)
+                time.sleep(delay)
                 
             except json.JSONDecodeError:
                 raise SentinelAIError("Invalid JSON response")
@@ -146,7 +191,7 @@ class SentinelAIClient:
             "user_id": user_id,
             "session_id": session_id,
             "client_metadata": {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "sdk_version": "1.0.0",
                 **(client_metadata or {})
             }
@@ -166,7 +211,275 @@ class SentinelAIClient:
                 "error": str(e),
                 "fallback": True
             }
+
+    def verify(
+        self,
+        prompt: str,
+        response: str,
+        user_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        One-shot verification of a prompt/response pair.
+        
+        Returns a simplified response with score (0-100), status,
+        detected claims, and a corrected version if needed.
+        Aligns with the SentinalAI public API spec.
+        
+        Args:
+            prompt: User's prompt/question  
+            response: AI model's response
+            user_id: End user identifier (optional)
+            session_id: Session identifier (optional)
+            
+        Returns:
+            Dict with score (0-100), status, claims[], corrected, meta
+            
+        Example:
+            >>> result = client.verify(
+            ...     prompt="Who won the Nobel Prize in Physics in 2019?",
+            ...     response="It was awarded entirely to Stephen Hawking..."
+            ... )
+            >>> print(result['status'])  # 'hallucinated'
+            >>> print(result['corrected'])  # Corrected text
+        """
+        raw = self.analyze(
+            prompt=prompt,
+            response=response,
+            user_id=user_id,
+            session_id=session_id,
+        )
+
+        score_0_1 = raw.get("final_risk_score", 0.0)
+        score_0_100 = round(score_0_1 * 100)
+        flags = raw.get("flags", [])
+        decision = raw.get("decision", "allow")
+        action = raw.get("action_taken", "allow")
+
+        if score_0_100 <= 24:
+            status = "trusted"
+        elif score_0_100 <= 59:
+            status = "needs_review"
+        else:
+            status = "hallucinated"
+
+        claims = []
+        detector_map = {
+            "prompt_anomaly": ("Prompt Anomaly", "medium"),
+            "jailbreak_detected": ("Jailbreak Attempt", "critical"),
+            "unsafe_output": ("Unsafe Output", "high"),
+        }
+        for flag in flags:
+            detector_name, severity = detector_map.get(flag, (flag, "medium"))
+            claims.append({
+                "detector": detector_name,
+                "text": response if flag in ("unsafe_output",) else prompt,
+                "severity": severity,
+                "source": "response" if flag in ("unsafe_output", "output_risk") else "prompt",
+                "note": f"Flagged by {detector_name} detector",
+            })
+
+        corrected = None
+        if status in ("needs_review", "hallucinated"):
+            corrected = response
+
+        return {
+            "score": score_0_100,
+            "status": status,
+            "decision": decision,
+            "action_taken": action,
+            "claims": claims,
+            "corrected": corrected,
+            "meta": {
+                "claims_checked": len(claims),
+                "detectors_run": 6,
+                "verified_at": datetime.now(timezone.utc).isoformat(),
+            }
+        }
+
+    def correct(
+        self,
+        prompt: str,
+        response: str,
+        user_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+    ) -> str:
+        """
+        Verify and return the corrected response.
+        
+        If the response is trusted, returns the original.
+        If hallucinated or needs review, returns the corrected version.
+        
+        Args:
+            prompt: User's prompt/question
+            response: AI model's response  
+            user_id: End user identifier (optional)
+            session_id: Session identifier (optional)
+            
+        Returns:
+            The response string — corrected if needed, original if trusted.
+        """
+        result = self.verify(
+            prompt=prompt,
+            response=response,
+            user_id=user_id,
+            session_id=session_id,
+        )
+        return result.get("corrected") or response
     
+    # ── Batch Analysis ────────────────────────────────────────────
+
+    def analyze_batch(
+        self,
+        items: List[Dict[str, str]],
+        user_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Analyze multiple prompt/response pairs in parallel.
+
+        Args:
+            items: List of dicts with "prompt" and "response" keys
+            user_id: End user identifier (applied to all items)
+            session_id: Session identifier (applied to all items)
+
+        Returns:
+            List of analysis results in the same order as input items
+
+        Example:
+            >>> results = client.analyze_batch([
+            ...     {"prompt": "What is 2+2?", "response": "4"},
+            ...     {"prompt": "Who won in 2020?", "response": "Someone"},
+            ... ])
+        """
+        results: List[Optional[Dict[str, Any]]] = [None] * len(items)
+
+        def _analyze_one(idx: int, item: Dict[str, str]) -> tuple[int, Dict[str, Any]]:
+            return idx, self.analyze(
+                prompt=item["prompt"],
+                response=item["response"],
+                user_id=user_id,
+                session_id=session_id,
+            )
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
+            futures = {pool.submit(_analyze_one, i, item): i for i, item in enumerate(items)}
+            for future in as_completed(futures):
+                idx, result = future.result()
+                results[idx] = result
+
+        return [r for r in results if r is not None]
+
+    # ── Webhook Management ────────────────────────────────────────
+
+    def create_webhook(
+        self,
+        org_id: str,
+        url: str,
+        events: List[str],
+    ) -> Dict[str, Any]:
+        """
+        Subscribe to real-time analysis events via webhook.
+
+        Args:
+            org_id: Organization ID
+            url: HTTPS endpoint to receive webhook payloads
+            events: List of event types (e.g. ["analysis.completed", "risk.flagged"])
+
+        Returns:
+            Webhook configuration with id, url, events, secret
+        """
+        try:
+            return self._make_request(
+                'POST',
+                f'/api/orgs/{org_id}/webhooks',
+                json={"url": url, "events": events},
+            )
+        except SentinelAIError as e:
+            logger.error("Failed to create webhook: %s", e)
+            raise
+
+    def list_webhooks(self, org_id: str) -> List[Dict[str, Any]]:
+        """
+        List all webhook subscriptions for an organization.
+
+        Args:
+            org_id: Organization ID
+
+        Returns:
+            List of webhook configurations
+        """
+        try:
+            return self._make_request('GET', f'/api/orgs/{org_id}/webhooks')
+        except SentinelAIError as e:
+            logger.error("Failed to list webhooks: %s", e)
+            return []
+
+    def delete_webhook(self, org_id: str, webhook_id: str) -> bool:
+        """
+        Remove a webhook subscription.
+
+        Args:
+            org_id: Organization ID
+            webhook_id: Webhook configuration ID
+
+        Returns:
+            True if deleted successfully
+        """
+        try:
+            self._make_request('DELETE', f'/api/orgs/{org_id}/webhooks/{webhook_id}')
+            return True
+        except SentinelAIError as e:
+            logger.error("Failed to delete webhook %s: %s", webhook_id, e)
+            return False
+
+    # ── Billing ───────────────────────────────────────────────────
+
+    def get_billing_config(self) -> Dict[str, Any]:
+        """
+        Get Stripe publishable key and price IDs for the frontend.
+
+        Returns:
+            Dict with stripe_publishable_key and prices
+        """
+        try:
+            return self._make_request('GET', '/api/billing/config')
+        except SentinelAIError as e:
+            logger.error("Failed to get billing config: %s", e)
+            return {}
+
+    def get_subscription(self, org_id: str) -> Dict[str, Any]:
+        """
+        Get current subscription details for an organization.
+
+        Args:
+            org_id: Organization ID
+
+        Returns:
+            Subscription details with plan_tier, status, period end
+        """
+        try:
+            return self._make_request('GET', f'/api/billing/subscription?org_id={org_id}')
+        except SentinelAIError as e:
+            logger.error("Failed to get subscription: %s", e)
+            return {}
+
+    def get_billing_usage(self, org_id: str) -> Dict[str, Any]:
+        """
+        Get current billing period usage for an organization.
+
+        Args:
+            org_id: Organization ID
+
+        Returns:
+            Usage data with used, limit, plan, remaining
+        """
+        try:
+            return self._make_request('GET', f'/api/billing/usage?org_id={org_id}')
+        except SentinelAIError as e:
+            logger.error("Failed to get billing usage: %s", e)
+            return {}
+
     def health_check(self) -> bool:
         """
         Check if SentinelAI API is healthy.
@@ -600,7 +913,7 @@ class ConversationTracker:
         self.client = client
         self.session_id = session_id
         self.turns = []
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(timezone.utc)
     
     @property
     def conversation_turns(self) -> List[Dict[str, Any]]:
@@ -647,7 +960,7 @@ class ConversationTracker:
             "prompt": prompt,
             "response": response,
             "analysis": result,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         if user_id:
             turn["user_id"] = user_id
@@ -687,7 +1000,7 @@ class ConversationTracker:
         return {
             "session_id": self.session_id,
             "total_turns": len(self.turns),
-            "duration_minutes": (datetime.utcnow() - self.start_time).total_seconds() / 60,
+            "duration_minutes": (datetime.now(timezone.utc) - self.start_time).total_seconds() / 60,
             "risk_statistics": {
                 "average_risk_score": sum(risk_scores) / len(risk_scores),
                 "max_risk_score": max(risk_scores),
@@ -749,7 +1062,7 @@ class ConversationTracker:
         return {
             "session_id": self.session_id,
             "conversation_turns": self.turns.copy(),
-            "export_timestamp": datetime.utcnow().isoformat()
+            "export_timestamp": datetime.now(timezone.utc).isoformat()
         }
 
     def get_high_risk_turns(self, threshold: float = 0.7) -> List[Dict[str, Any]]:

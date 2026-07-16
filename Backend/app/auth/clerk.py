@@ -34,7 +34,8 @@ def decode_clerk_token(token: str) -> Dict[str, Any]:
                 token,
                 jwt_public_key,
                 algorithms=["RS256"],
-                options={"verify_aud": False},
+                audience=os.getenv("CLERK_JWT_AUDIENCE"),
+                options={"verify_aud": bool(os.getenv("CLERK_JWT_AUDIENCE"))},
             )
             return payload
         except jwt.ExpiredSignatureError:
@@ -63,7 +64,8 @@ def decode_clerk_token(token: str) -> Dict[str, Any]:
     try:
         decoded = jwt.decode(
             token,
-            options={"verify_signature": False, "verify_aud": False},
+            options={"verify_signature": False},
+            audience=os.getenv("CLERK_JWT_AUDIENCE"),
         )
         return decoded
     except Exception as e:

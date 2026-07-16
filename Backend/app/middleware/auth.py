@@ -38,10 +38,6 @@ def get_api_key_from_request(request: Request) -> Optional[str]:
     if api_key_header:
         return api_key_header
 
-    api_key_param = request.query_params.get("api_key")
-    if api_key_param:
-        return api_key_param
-
     return None
 
 
@@ -57,7 +53,7 @@ def verify_api_key(request: Request) -> Optional[Dict]:
     if not api_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API key required. Provide API key in Authorization header, X-API-Key header, or api_key query parameter.",
+            detail="API key required. Provide API key in Authorization header or X-API-Key header.",
         )
 
     if API_KEYS and api_key not in API_KEYS:
