@@ -73,9 +73,10 @@ export function useIncidents(workspaceId: string, params?: { status?: string; se
 
 export function useCreateIncident(workspaceId: string) {
   const queryClient = useQueryClient()
+  const { getToken } = useToken()
   return useMutation({
     mutationFn: async (req: CreateIncidentRequest) => {
-      const token = await useToken().getToken()
+      const token = await getToken()
       return apiPost(`/api/workspaces/${workspaceId}/intel/incidents`, req, token) as Promise<Incident>
     },
     onSuccess: () => {
@@ -87,9 +88,10 @@ export function useCreateIncident(workspaceId: string) {
 
 export function useUpdateIncident(workspaceId: string) {
   const queryClient = useQueryClient()
+  const { getToken } = useToken()
   return useMutation({
     mutationFn: async ({ id, ...req }: UpdateIncidentRequest & { id: number }) => {
-      const token = await useToken().getToken()
+      const token = await getToken()
       return apiPatch(`/api/workspaces/${workspaceId}/intel/incidents/${id}`, req, token) as Promise<Incident>
     },
     onSuccess: () => {
@@ -114,9 +116,10 @@ export function useDeployments(workspaceId: string, serviceName?: string) {
 
 export function useCreateDeployment(workspaceId: string) {
   const queryClient = useQueryClient()
+  const { getToken } = useToken()
   return useMutation({
     mutationFn: async (req: CreateDeploymentRequest) => {
-      const token = await useToken().getToken()
+      const token = await getToken()
       return apiPost(`/api/workspaces/${workspaceId}/intel/deployments`, req, token) as Promise<Deployment>
     },
     onSuccess: () => {
@@ -128,9 +131,10 @@ export function useCreateDeployment(workspaceId: string) {
 
 export function useUpdateDeployment(workspaceId: string) {
   const queryClient = useQueryClient()
+  const { getToken } = useToken()
   return useMutation({
     mutationFn: async ({ id, ...req }: UpdateDeploymentRequest & { id: number }) => {
-      const token = await useToken().getToken()
+      const token = await getToken()
       return apiPatch(`/api/workspaces/${workspaceId}/intel/deployments/${id}`, req, token) as Promise<Deployment>
     },
     onSuccess: () => {
@@ -216,9 +220,10 @@ export function useMemories(workspaceId: string, params?: { memory_type?: string
 
 export function useStoreMemory(workspaceId: string) {
   const queryClient = useQueryClient()
+  const { getToken } = useToken()
   return useMutation({
     mutationFn: async (req: StoreMemoryRequest) => {
-      const token = await useToken().getToken()
+      const token = await getToken()
       return apiPost(`/api/workspaces/${workspaceId}/intel/memory`, req, token) as Promise<AIMemory>
     },
     onSuccess: () => {
@@ -271,9 +276,10 @@ export function usePostmortem(workspaceId: string, incidentId: number) {
 
 export function useCreatePostmortem(workspaceId: string) {
   const queryClient = useQueryClient()
+  const { getToken } = useToken()
   return useMutation({
     mutationFn: async (incidentId: number) => {
-      const token = await useToken().getToken()
+      const token = await getToken()
       return apiPost(
         `/api/workspaces/${workspaceId}/intel/incidents/${incidentId}/postmortem`,
         {},

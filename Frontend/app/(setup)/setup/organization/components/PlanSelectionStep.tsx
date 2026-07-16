@@ -25,7 +25,7 @@ export function PlanSelectionStep({ data, onChange, onNext, onBack }: Props) {
         <CardHeader>
           <CardTitle className="text-xl text-foreground">Choose Your Plan</CardTitle>
           <CardDescription>
-            Select the plan that best fits your organization's needs. Upgrade anytime.
+            Select the plan that best fits your organization&apos;s needs. Upgrade anytime.
           </CardDescription>
         </CardHeader>
         <CardContent>

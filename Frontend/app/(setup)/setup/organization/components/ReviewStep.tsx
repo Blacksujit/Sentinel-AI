@@ -122,7 +122,7 @@ export function ReviewStep({ data, onEdit, onComplete, onBack, isSubmitting }: P
 
           <div className="bg-primary/10 rounded-lg p-4 mt-4">
             <p className="text-sm text-foreground text-center">
-              You're all set! Creating your account will save all of the above configuration.
+              You&apos;re all set! Creating your account will save all of the above configuration.
             </p>
           </div>
 

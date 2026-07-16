@@ -396,7 +396,7 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
                 No logs match the selected filters.
               </Text>
               <Text color="ink.soft" fontSize="sm" textAlign="center" maxW="400px">
-                Try adjusting your search terms or filter criteria to find the logs you're looking for.
+                Try adjusting your search terms or filter criteria to find the logs you&apos;re looking for.
               </Text>
               <Button 
                 variant="outline" 

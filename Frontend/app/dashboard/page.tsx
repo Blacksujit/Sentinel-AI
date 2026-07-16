@@ -40,17 +40,6 @@ export default function DashboardPageModern() {
     error,
   } = useRiskLogs({ limit: 200 })
 
-  // Show loading while checking org status
-  if (isChecking) {
-    return (
-      <AppLayout>
-        <div className="flex items-center justify-center py-20">
-          <div className="text-muted-foreground">Checking organization...</div>
-        </div>
-      </AppLayout>
-    )
-  }
-
   const { kpis, trendData, topFlags, recentLogs, deltas, actionQueue } = useMemo(() => {
     const safeLogs = Array.isArray(logs) ? logs : []
 
@@ -278,6 +267,17 @@ export default function DashboardPageModern() {
     const high = safe.filter((l: any) => typeof l?._risk === 'number' && l._risk >= 0.7)
     return (high.length ? high : safe).slice(0, 6)
   }, [recentLogs])
+
+  // Show loading while checking org status
+  if (isChecking) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-muted-foreground">Checking organization...</div>
+        </div>
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout>

@@ -248,7 +248,7 @@ export default function BillingPage() {
       const token = await getToken()
       const res = await apiPost<{ url?: string; error?: string }>(
         '/api/billing/create-checkout',
-        { org_id: parseInt(orgId), price_id: priceId },
+        { org_id: orgId, price_id: priceId },
         token,
       )
       if (res.url) {
@@ -269,7 +269,7 @@ export default function BillingPage() {
       const token = await getToken()
       const res = await apiPost<{ url?: string; error?: string }>(
         '/api/billing/create-portal',
-        { org_id: parseInt(orgId) },
+        { org_id: orgId },
         token,
       )
       if (res.url) {
@@ -290,7 +290,7 @@ export default function BillingPage() {
       const token = await getToken()
       const res = await apiPost<{ clientSecret?: string; credits?: number; error?: string }>(
         '/api/billing/create-topup-intent',
-        { org_id: parseInt(orgId), pack_id: packId },
+        { org_id: orgId, pack_id: packId },
         token,
       )
       if (res.clientSecret && config?.stripe_publishable_key) {

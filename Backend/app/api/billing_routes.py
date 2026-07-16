@@ -51,7 +51,7 @@ async def billing_config():
 
 
 class CreateCheckoutRequest(BaseModel):
-    org_id: int
+    org_id: str
     price_id: str
     success_url: Optional[str] = None
     cancel_url: Optional[str] = None
@@ -63,7 +63,7 @@ class CreateCheckoutResponse(BaseModel):
 
 
 class CreatePortalRequest(BaseModel):
-    org_id: int
+    org_id: str
     return_url: Optional[str] = None
 
 
@@ -146,9 +146,7 @@ async def create_checkout(
     db: DBSession = Depends(get_db),
     user=Depends(require_authenticated_user),
 ):
-    org = db.query(Organization).filter(Organization.id == req.org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = _resolve_org(req.org_id, db)
 
     customer_id = get_or_create_customer(org, db)
 
@@ -172,8 +170,9 @@ async def create_portal(
     db: DBSession = Depends(get_db),
     user=Depends(require_authenticated_user),
 ):
+    org = _resolve_org(req.org_id, db)
     sub = db.query(Subscription).filter(
-        Subscription.org_id == req.org_id,
+        Subscription.org_id == org.id,
         Subscription.status == SubscriptionStatus.ACTIVE,
     ).first()
 
@@ -220,14 +219,23 @@ async def stripe_webhook(request: Request, db: DBSession = Depends(get_db)):
     return {"received": True}
 
 
+def _resolve_org(org_id: str, db: DBSession) -> Organization:
+    """Resolve a Clerk org ID string to an Organization row."""
+    org = db.query(Organization).filter(Organization.clerk_org_id == org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return org
+
+
 @router.get("/subscription", response_model=SubscriptionResponse)
 async def get_subscription(
-    org_id: int,
+    org_id: str,
     db: DBSession = Depends(get_db),
     user=Depends(require_authenticated_user),
 ):
+    org = _resolve_org(org_id, db)
     sub = db.query(Subscription).filter(
-        Subscription.org_id == org_id,
+        Subscription.org_id == org.id,
         Subscription.status.in_([
             SubscriptionStatus.ACTIVE,
             SubscriptionStatus.PAST_DUE,
@@ -236,9 +244,8 @@ async def get_subscription(
     ).first()
 
     if not sub:
-        org = db.query(Organization).filter(Organization.id == org_id).first()
         return SubscriptionResponse(
-            plan_tier=org.plan_tier.value if org else "free",
+            plan_tier=org.plan_tier.value,
             status="none",
         )
 
@@ -253,13 +260,14 @@ async def get_subscription(
 
 @router.get("/invoices", response_model=list[InvoiceResponse])
 async def list_invoices(
-    org_id: int,
+    org_id: str,
     limit: int = 12,
     db: DBSession = Depends(get_db),
     user=Depends(require_authenticated_user),
 ):
+    org = _resolve_org(org_id, db)
     invoices = db.query(Invoice).filter(
-        Invoice.org_id == org_id,
+        Invoice.org_id == org.id,
     ).order_by(Invoice.created_at.desc()).limit(limit).all()
 
     return [
@@ -281,17 +289,15 @@ async def list_invoices(
 
 @router.get("/usage", response_model=UsageResponse)
 async def get_usage(
-    org_id: int,
+    org_id: str,
     db: DBSession = Depends(get_db),
     user=Depends(require_authenticated_user),
 ):
     from app.services.usage_service import UsageService
 
-    org = db.query(Organization).filter(Organization.id == org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = _resolve_org(org_id, db)
 
-    used = UsageService.get_monthly_count(db, org_id)
+    used = UsageService.get_monthly_count(db, org.id)
     limit = PLAN_LIMITS.get(org.plan_tier, 1000)
 
     return UsageResponse(
@@ -304,15 +310,12 @@ async def get_usage(
 
 @router.get("/wallet", response_model=WalletResponse)
 async def get_wallet_balance(
-    org_id: int,
+    org_id: str,
     db: DBSession = Depends(get_db),
     user=Depends(require_authenticated_user),
 ):
-    org = db.query(Organization).filter(Organization.id == org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
-
-    wallet = ensure_wallet(org_id, db)
+    org = _resolve_org(org_id, db)
+    wallet = ensure_wallet(org.id, db)
     return WalletResponse(
         balance_credits=wallet.balance_credits,
         total_purchased=wallet.total_purchased,
@@ -321,7 +324,7 @@ async def get_wallet_balance(
 
 
 class CreateTopUpRequest(BaseModel):
-    org_id: int
+    org_id: str
     pack_id: str
 
 
@@ -331,21 +334,19 @@ async def create_topup_intent(
     db: DBSession = Depends(get_db),
     user=Depends(require_authenticated_user),
 ):
-    org = db.query(Organization).filter(Organization.id == req.org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = _resolve_org(req.org_id, db)
 
     from app.billing.stripe_service import _ensure_stripe
     _ensure_stripe()
 
     from app.storage.billing_models import Subscription as SubModel
     sub = db.query(SubModel).filter(
-        SubModel.org_id == req.org_id,
+        SubModel.org_id == org.id,
         SubModel.status == SubscriptionStatus.ACTIVE,
     ).first()
     customer_id = sub.stripe_customer_id if sub else None
 
-    result = create_topup_payment_intent(req.org_id, req.pack_id, customer_id=customer_id)
+    result = create_topup_payment_intent(org.id, req.pack_id, customer_id=customer_id)
     if not result:
         raise HTTPException(status_code=400, detail="Failed to create payment intent")
 
@@ -354,17 +355,14 @@ async def create_topup_intent(
 
 @router.get("/token-usage", response_model=list[TokenUsageResponse])
 async def list_token_usage(
-    org_id: int,
+    org_id: str,
     limit: int = 50,
     offset: int = 0,
     db: DBSession = Depends(get_db),
     user=Depends(require_authenticated_user),
 ):
-    org = db.query(Organization).filter(Organization.id == org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
-
-    records = get_org_token_usage(org_id, db, limit=limit, offset=offset)
+    org = _resolve_org(org_id, db)
+    records = get_org_token_usage(org.id, db, limit=limit, offset=offset)
     return [
         TokenUsageResponse(
             id=r.id,

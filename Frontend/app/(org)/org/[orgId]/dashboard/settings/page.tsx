@@ -1,6 +1,4 @@
-'use client'
-
-import { SettingsPageContent } from '@/settings/page'
+import SettingsPageContent from '@/settings/SettingsPageContent'
 
 export default function OrgSettingsPage() {
   return <SettingsPageContent />

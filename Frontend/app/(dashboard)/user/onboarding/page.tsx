@@ -76,7 +76,7 @@ export default function UserOnboardingPage() {
           className="text-center mb-8"
         >
           <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to SentinelAI</h1>
-          <p className="text-muted-foreground">Let's personalize your experience</p>
+          <p className="text-muted-foreground">Let&apos;s personalize your experience</p>
         </motion.div>
 
         <Card className="card-premium p-8">
@@ -85,7 +85,7 @@ export default function UserOnboardingPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <h2 className="text-xl font-semibold text-foreground mb-6">What's your role?</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-6">What&apos;s your role?</h2>
               <div className="grid grid-cols-2 gap-4">
                 {roles.map((role) => (
                   <button
