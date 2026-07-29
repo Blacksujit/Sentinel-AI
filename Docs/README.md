@@ -1,5 +1,7 @@
 # SentinelAI
 
+![SentinelAI Product Overview](product-images/image.png)
+
 > AI risk monitoring and observability for production LLM applications. Catch hallucinations, jailbreak attempts, prompt injections, and unsafe outputs before they reach your users.
 
 SentinelAI sits between your application and your AI model, analyzing every prompt and response pair in real-time. It detects fabricated claims, numeric inconsistencies, entity confusion, prompt injections, and adversarial inputs — then returns a **trust score**, an **explainable decision**, and optionally a **corrected response** you can serve immediately.
