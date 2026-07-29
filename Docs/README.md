@@ -80,53 +80,54 @@ print(result.corrected)   # corrected version if hallucinations found
 
 ## How It Works
 
-```
-User → Your App → AI Model → Response → SentinelAI → Decision → User
-                  ↑                          |
-                  └──── Verification ─────────┘
+### Request Flow
+
+```mermaid
+flowchart LR
+    User[User] --> Prompt[Prompt]
+    Prompt --> App[Your App]
+    App --> AI[AI Model]
+    AI --> Response[Response]
+    Response --> SentinelAI[SentinelAI]
+    App -.->|Verify in parallel| SentinelAI
+    SentinelAI --> Decision{Decision}
+    Decision -->|Trusted| User
+    Decision -->|Corrected Response| User
+    Decision -->|Block| App
+
+    style SentinelAI fill:#2B42F5,color:#fff
+    style Decision fill:#f59e0b,color:#fff
 ```
 
 ### Agentic Detection Pipeline
 
-SentinelAI uses a four-layer architecture to transform raw prompt/response pairs into actionable decisions:
+```mermaid
+flowchart TD
+    Client[Client Application] --> API[SentinelAI API]
 
-```
-                    ┌──────────────────────┐
-                    │   Client Application  │
-                    └──────┬───────────────┘
-                           │
-                    ┌──────▼───────────────┐
-                    │    SentinelAI API     │
-                    └──┬───────────────┬───┘
-                       │               │
-           ┌───────────▼───┐   ┌───────▼───────────┐
-           │ Prompt        │   │ Output            │
-           │ Anomaly       │   │ Risk              │
-           │ Detector      │   │ Scorer            │
-           └───────┬───────┘   └───────┬───────────┘
-                   │                   │
-                   └───────┬───────────┘
-                           │
-                    ┌──────▼───────────────┐
-                    │   Signal Registry    │  ◄── Signal Detection Layer
-                    └──────┬───────────────┘
-                           │
-                    ┌──────▼───────────────┐
-                    │   Risk Reasoner      │  ◄── Agentic Reasoning Layer
-                    │   (Agent)            │
-                    └──────┬───────────────┘
-                           │
-                    ┌──────▼───────────────┐
-                    │   Policy Engine      │  ◄── Policy & Action Layer
-                    └──────┬───────────────┘
-                           │
-                    ┌──────▼───────────────┐
-                    │   Action Executor    │
-                    └──┬───────────────┬───┘
-                       │               │
-               ┌───────▼────┐   ┌──────▼────────┐
-               │  Risk Logs  │   │  Action Logs   │
-               └────────────┘   └───────────────┘
+    subgraph SignalDetection[Signal Detection Layer]
+        direction LR
+        PAD[Prompt Anomaly Detector] --> SR[Signal Registry]
+        ORS[Output Risk Scorer] --> SR
+    end
+
+    subgraph Reasoning[Agentic Reasoning Layer]
+        RR[Risk Reasoner Agent]
+    end
+
+    subgraph Policy[Policy & Action Layer]
+        PE[Policy Engine] --> AE[Action Executor]
+    end
+
+    API --> PAD
+    API --> ORS
+    SR --> RR
+    RR --> PE
+    AE --> RL[(Risk Logs)]
+    AE --> AL[(Action Logs)]
+
+    classDef layer fill:#e8edff,stroke:#2B42F5,stroke-width:2px
+    class SignalDetection,Reasoning,Policy layer
 ```
 
 | Layer | Component | Responsibility |
@@ -158,7 +159,27 @@ Each detector runs in parallel. The Risk Reasoner Agent aggregates results into 
 
 ### Multi-Turn Conversation Tracking
 
-SentinelAI tracks context across exchanges for conversation-aware analysis:
+```mermaid
+sequenceDiagram
+    participant User
+    participant App as Your App
+    participant S as SentinelAI
+    participant AI as AI Model
+
+    User->>App: Turn 1: "What is Q1 revenue?"
+    App->>AI: prompt
+    AI-->>App: "Q1 revenue was $12.4B"
+    App->>S: verify(turn1)
+    S-->>App: score: 0, status: trusted
+    App-->>User: "Q1 revenue was $12.4B"
+
+    User->>App: Turn 2: "How does that compare to last year?"
+    App->>AI: prompt + history
+    AI-->>App: "That's up 22% from $10.2B"
+    App->>S: verify(turn1 + turn2)
+    S-->>App: context-aware score
+    App-->>User: verified response
+```
 
 ```python
 from sentinelai import ConversationTracker
@@ -175,7 +196,24 @@ result = tracker.analyze_turn(
 
 ## Understanding Results
 
-SentinelAI returns three outcomes:
+### Score Bands
+
+```mermaid
+flowchart LR
+    Score[Risk Score 0-100] -->|0-24| Trusted[Trusted ✅]
+    Score -->|25-59| Review[Needs Review ⚠️]
+    Score -->|60-100| Hallucinated[Hallucinated 🚫]
+
+    Trusted --> Serve[Serve as-is]
+    Review --> Correct[Auto-correct or flag]
+    Review --> Human[Human review]
+    Hallucinated --> Block[Block response]
+    Hallucinated --> ServeCorrected[Serve corrected version]
+
+    style Trusted fill:#22c55e,color:#fff
+    style Review fill:#f59e0b,color:#fff
+    style Hallucinated fill:#ef4444,color:#fff
+```
 
 | Band | Score | What to Do |
 |------|-------|------------|
@@ -316,12 +354,32 @@ The web dashboard at [sentinelaihq.com](https://sentinelaihq.com) provides an en
 
 ### Persona-Adaptive Views
 
-| Persona | Default View |
-|---------|-------------|
-| **Maya (AI Engineer)** | Alert feed + model list with active critical alerts |
-| **Priya (Security Analyst)** | Alert inbox + kill-chain summary |
-| **David (Compliance Officer)** | Compliance score + framework checklist |
-| **Marcus (CTO/VP Eng)** | Health score + trends + top 3 risks |
+```mermaid
+flowchart TD
+    subgraph Personas[Personas]
+        Maya[Maya - AI Engineer]
+        Priya[Priya - Security Analyst]
+        David[David - Compliance Officer]
+        Marcus[Marcus - CTO/VP Eng]
+    end
+
+    subgraph Views[Default Dashboard View]
+        V1[Alert feed + model list]
+        V2[Alert inbox + kill-chain]
+        V3[Compliance score + checklist]
+        V4[Health score + trends]
+    end
+
+    Maya --> V1
+    Priya --> V2
+    David --> V3
+    Marcus --> V4
+
+    classDef persona fill:#e8edff,stroke:#2B42F5
+    classDef view fill:#f0fdf4,stroke:#22c55e
+    class Maya,Priya,David,Marcus persona
+    class V1,V2,V3,V4 view
+```
 
 ### Design System
 
@@ -339,14 +397,37 @@ The dashboard follows an authoritative, high-information-density design language
 
 ### Production Stack
 
-```
-Backend (FastAPI)     Frontend (Next.js 15)   SDK (Python/TS)
-     │                     │                     │
-     └──────────┬──────────┘─────────────────────┘
-                │
-         ┌──────┴──────┐
-         │  PostgreSQL  │
-         └─────────────┘
+```mermaid
+flowchart LR
+    subgraph Clients
+        SDK[Python SDK]
+        TSSDK[TypeScript SDK]
+        UI[Next.js Dashboard]
+    end
+
+    subgraph Backend[FastAPI Backend - Render]
+        API[API Layer]
+        Detectors[Detector Pipeline]
+        Reasoner[Risk Reasoner]
+        Engine[Policy Engine]
+    end
+
+    subgraph Storage
+        DB[(PostgreSQL)]
+        AL2[(Audit Logs)]
+    end
+
+    SDK --> API
+    TSSDK --> API
+    UI --> API
+    API --> Detectors
+    Detectors --> Reasoner
+    Reasoner --> Engine
+    Engine --> DB
+    Engine --> AL2
+
+    style Backend fill:#e8edff,stroke:#2B42F5,stroke-width:2px
+    style Storage fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
 ```
 
 **Backend:** Python (FastAPI) with PostgreSQL persistence, modular detector pipeline, and agentic reasoning layer.
@@ -358,6 +439,29 @@ Backend (FastAPI)     Frontend (Next.js 15)   SDK (Python/TS)
 ### Production Docker Stack
 
 For self-hosted deployments, the backend runs as a Docker Compose stack:
+
+```mermaid
+graph TD
+    subgraph Host[Machine - Ports :443 :3000]
+        subgraph Network[Docker Bridge Network]
+            Nginx[Nginx :443]
+            FastAPI[FastAPI :8000]
+            DB[(PostgreSQL 15 :5432)]
+            Mailpit[Mailpit :8025]
+            Prometheus[Prometheus :9090]
+            Grafana[Grafana :3000]
+        end
+    end
+
+    Nginx -->|reverse proxy| FastAPI
+    FastAPI -->|persistence| DB
+    FastAPI -->|email testing| Mailpit
+    Prometheus -->|scrape /metrics| FastAPI
+    Grafana -->|query| Prometheus
+
+    classDef infra fill:#f3e8ff,stroke:#9333ea
+    class Nginx,DB,Mailpit,Prometheus,Grafana infra
+```
 
 | Service | Role |
 |---------|------|
@@ -388,6 +492,28 @@ Organizations can have multiple workspaces with independent settings, API keys, 
 ---
 
 ## Integration Patterns
+
+```mermaid
+flowchart TD
+    subgraph Blocking[Blocking Mode]
+        B1[User Request] --> B2[Your App] --> B3[AI Model]
+        B3 --> B4[SentinelAI Verify]
+        B4 -->|Pass| B5[Response to User]
+        B4 -->|Fail| B6[Corrected / Fallback]
+    end
+
+    subgraph Monitoring[Monitoring Mode]
+        M1[User Request] --> M2[Your App] --> M3[AI Model]
+        M3 --> M4[User]
+        M3 -.->|Async Log| M5[SentinelAI Analyze]
+        M5 -->|Escalate| M6[Notify Team]
+    end
+
+    subgraph Async[Async Mode]
+        A1[High-Volume App] --> A2[SentinelAI]
+        A2 -->|Webhook| A3[Your Callback]
+    end
+```
 
 ### Blocking Mode
 
@@ -424,6 +550,19 @@ Deploy the backend on your own infrastructure. No customer data leaves your netw
 ### Risk Thresholds
 
 Configure per-workspace thresholds in the dashboard under **Settings** or via the API:
+
+```mermaid
+flowchart LR
+    Score[Risk Score] -->|0-24| Allow[Allow ✅]
+    Score -->|25-59| Warn[Warn ⚠️]
+    Score -->|60-84| Block[Block 🚫]
+    Score -->|85-100| Escalate[Escalate 🔔]
+
+    style Allow fill:#22c55e,color:#fff
+    style Warn fill:#f59e0b,color:#fff
+    style Block fill:#ef4444,color:#fff
+    style Escalate fill:#dc2626,color:#fff
+```
 
 | Threshold | Description | Default |
 |-----------|-------------|---------|
@@ -515,6 +654,29 @@ See `Docs/FAILURE_MODES.md` for the full document.
 ---
 
 ## Roadmap
+
+```mermaid
+gantt
+    title SentinelAI Roadmap
+    dateFormat  YYYY-MM
+    axisFormat  %Y Q%q
+
+    section Short-term
+    Prompt drift detection        :2025-10, 2026-01
+    Structured logging            :2025-10, 2026-01
+    Alerting mechanisms           :2025-11, 2026-02
+
+    section Mid-term
+    Feedback-driven calibration   :2026-01, 2026-06
+    Model-specific monitoring     :2026-02, 2026-06
+    CI pipeline integration       :2026-03, 2026-07
+    Plagiarism detection          :2026-03, 2026-08
+
+    section Long-term
+    Automated red-teaming         :2026-07, 2027-01
+    Adaptive threshold learning   :2026-07, 2027-03
+    Compliance reporting          :2026-09, 2027-06
+```
 
 ### Short-term
 - Improve prompt drift detection
