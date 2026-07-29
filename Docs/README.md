@@ -1,6 +1,8 @@
 # SentinelAI
 
-![SentinelAI Product Overview](product-images/image.png)
+<p align="center">
+  <img src="product-images/image.png" alt="SentinelAI" width="600">
+</p>
 
 > AI risk monitoring and observability for production LLM applications. Catch hallucinations, jailbreak attempts, prompt injections, and unsafe outputs before they reach your users.
 
