@@ -1,10 +1,13 @@
 # SentinelAI
 
 <p align="center">
-  <img src="product-images/image.png" alt="SentinelAI" width="600">
+  <img src="logo.svg" alt="SentinelAI" width="400">
+</p>
+<p align="center">
+  <img src="product-images/image.png" alt="SentinelAI Dashboard Preview" width="120">
 </p>
 
-> AI risk monitoring and observability for production LLM applications. Catch hallucinations, jailbreak attempts, prompt injections, and unsafe outputs before they reach your users.
+> **AI risk monitoring and observability for production LLM applications.** Catch hallucinations, jailbreak attempts, prompt injections, and unsafe outputs before they reach your users.
 
 SentinelAI sits between your application and your AI model, analyzing every prompt and response pair in real-time. It detects fabricated claims, numeric inconsistencies, entity confusion, prompt injections, and adversarial inputs — then returns a **trust score**, an **explainable decision**, and optionally a **corrected response** you can serve immediately.
 
