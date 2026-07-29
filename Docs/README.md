@@ -1,8 +1,8 @@
 # SentinelAI
 
-<p align="center">
+<!-- <p align="center">
   <img src="logo.svg" alt="SentinelAI" width="400">
-</p>
+</p> -->
 <p align="center">
   <img src="product-images/image.png" alt="SentinelAI Dashboard Preview" width="120">
 </p>
