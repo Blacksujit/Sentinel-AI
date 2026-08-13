@@ -43,6 +43,18 @@ function InstagramIcon() {
   );
 }
 
+function CoffeeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="icon-sm">
+      <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+      <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+      <line x1="6" x2="6" y1="2" y2="4" />
+      <line x1="10" x2="10" y1="2" y2="4" />
+      <line x1="14" x2="14" y1="2" y2="4" />
+    </svg>
+  );
+}
+
 export default function Footer() {
   return (
     <footer className="footer">
@@ -104,8 +116,9 @@ export default function Footer() {
               <a href={GITHUB_ISSUES} target="_blank" rel="noreferrer">
                 Start contributing
               </a>
-              <a href={SPONSORS} target="_blank" rel="noreferrer">
-                Support us
+              <a href={SPONSORS} target="_blank" rel="noreferrer" className="coffee-link">
+                <CoffeeIcon />
+                Buy us a coffee
               </a>
             </div>
             <div className="footer-col">

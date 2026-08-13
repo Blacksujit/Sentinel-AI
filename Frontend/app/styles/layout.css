@@ -40,5 +40,7 @@
 .footer-socials a { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; color: var(--ink); opacity: 0.8; transition: opacity 0.15s ease, color 0.15s ease; }
 .footer-socials a:hover { opacity: 1; color: var(--red); border-color: var(--red); }
 .footer-socials .icon-sm { width: 16px; height: 16px; }
+.footer-col .coffee-link { display: inline-flex; align-items: center; gap: 6px; }
+.footer-col .coffee-link .icon-sm { width: 15px; height: 15px; }
 .footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 22px; font-size: 12.5px; color: var(--ink-soft); flex-wrap: wrap; gap: 8px; }
 @media (max-width: 640px) { .footer-top { flex-direction: column; } .footer-cols { gap: 32px; } }
