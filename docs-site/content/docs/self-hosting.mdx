@@ -21,14 +21,16 @@ The self-hosted deployment is the same FastAPI service the managed cloud is buil
 | Component | Purpose |
 |-----------|---------|
 | **API service** | `/api/analyze`, `/api/logs`, `/api/settings` |
-| **Detector engine** | The six parallel detectors |
+| **Detector engine** | The three parallel detectors |
 | **Policy engine** | Trust score thresholds and actions |
 
 ## Point the SDK at it
 
 ```python
+from sentinelai import SentinelAIClient
+
 client = SentinelAIClient(
-    api_key="sk_local_...",
+    api_key="sk_sentinel_...",
     base_url="http://localhost:8000",
 )
 ```

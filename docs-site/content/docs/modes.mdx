@@ -23,8 +23,8 @@ The default. Your app sends the prompt/response pair, SentinelAI returns the ver
 ```python
 result = client.verify(prompt=prompt, response=llm_output)
 
-if result.status == "hallucinated":
-    return result.corrected  # serve the fix, not the flaw
+if result["status"] == "hallucinated":
+    return result["corrected"]  # serve the fix, not the flaw
 ```
 
 ## Monitoring
