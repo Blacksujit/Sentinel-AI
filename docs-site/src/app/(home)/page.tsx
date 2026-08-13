@@ -94,7 +94,7 @@ export default function HomePage() {
         <img
           src={assetPath("/logo.svg")}
           alt="SentinelAI"
-          className="mb-8 h-10 w-auto"
+          className="mb-8 h-8 w-auto text-fd-foreground"
         />
 
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">

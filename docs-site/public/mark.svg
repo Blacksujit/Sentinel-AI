@@ -1,12 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" fill="none" role="img" aria-label="SentinelAI">
   <defs>
-    <linearGradient id="mg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2B42F5" />
-      <stop offset="100%" stop-color="#1a2bb5" />
+    <linearGradient id="mg" x1="20" y1="9" x2="20" y2="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B5BFF" />
+      <stop offset="100%" stop-color="#6D28D9" />
     </linearGradient>
   </defs>
 
-  <path d="M8 0 L32 0 Q36 0 36 4 L36 24 Q36 36 20 40 Q4 36 4 24 L4 4 Q4 0 8 0 Z" fill="url(#mg)" />
-  <path d="M11 20 L17 27 L29 13" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
-  <path d="M13 30.5 Q16.5 34 20 30.5 Q23.5 27 27 30.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity="0.55" />
+  <path d="M27.7 16.2 A 10.5 10.5 0 0 1 22.7 19.1" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.9" />
+  <path d="M31.3 19.6 A 15.5 15.5 0 0 1 24 24" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity="0.4" />
+
+  <path d="M20 10 L32 34 L8 34 Z" fill="url(#mg)" />
+
+  <circle cx="20" cy="9" r="3" fill="#fff" />
 </svg>
