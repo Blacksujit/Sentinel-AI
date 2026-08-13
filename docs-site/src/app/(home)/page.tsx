@@ -91,6 +91,12 @@ export default function HomePage() {
   return (
     <div className="flex flex-1 flex-col">
       <section className="flex flex-col items-center text-center px-6 pt-24 pb-16">
+        <img
+          src={assetPath("/logo.svg")}
+          alt="SentinelAI"
+          className="mb-8 h-8 w-auto"
+        />
+
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
           AI risk monitoring
           <br />
@@ -133,12 +139,6 @@ export default function HomePage() {
             FastAPI
           </span>
         </div>
-
-        <img
-          src={assetPath("/product.png")}
-          alt="SentinelAI dashboard"
-          className="mt-16 w-full max-w-4xl rounded-xl border border-fd-border shadow-2xl"
-        />
       </section>
 
       <section className="border-t border-fd-border bg-fd-muted/40">
