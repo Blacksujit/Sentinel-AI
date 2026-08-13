@@ -1,0 +1,122 @@
+---
+title: API Reference
+description: Full reference for the SentinelAI REST API — no external docs needed
+---
+
+# API Reference
+
+The SentinelAI REST API is a FastAPI service. This page is the canonical reference — you do not need to visit any external API docs.
+
+## Base URL
+
+| Deployment | Base URL |
+|------------|----------|
+| Managed cloud | `https://sentinel-ai-dml3.onrender.com` |
+| Self-hosted | `http://localhost:8000` |
+
+Interactive OpenAPI docs remain available at `<base_url>/api/docs` for your instance, but everything you need is documented here.
+
+## Authentication
+
+Every request must include an API key:
+
+```
+Authorization: Bearer sk_...
+```
+
+## Endpoints
+
+### `POST /api/analyze`
+
+The core risk-analysis endpoint.
+
+**Request body**
+
+```json
+{
+  "prompt": "Summarize the Q3 report",
+  "response": "Revenue grew 45% year over year.",
+  "conversation": []
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `prompt` | `string` | yes | The user prompt |
+| `response` | `string` | yes | The model's response to score |
+| `conversation` | `array` | no | Prior turns for conversation-aware scoring |
+
+**Response**
+
+```json
+{
+  "trust_score": 72,
+  "status": "hallucinated",
+  "reasons": [
+    {
+      "detector": "fabricated_citation",
+      "confidence": 0.94,
+      "evidence": "Citation references a DOI that does not exist",
+      "tokens": ["978-1-7281-3277-8"]
+    }
+  ],
+  "corrected": "Revenue grew 4.5% year over year."
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `trust_score` | `float` | 0–100 risk score |
+| `status` | `string` | `trusted` \| `needs_review` \| `hallucinated` |
+| `reasons` | `array` | Detector explanations with confidence, evidence, tokens |
+| `corrected` | `string \| null` | Cleaned response when correction applies |
+
+**Status codes**
+
+| Code | Meaning |
+|------|---------|
+| `200` | Analysis complete |
+| `401` | Missing or invalid API key |
+| `422` | Invalid request body |
+| `429` | Rate limit exceeded |
+| `500` | Internal error — your prompt/response was never served unverified |
+
+### `GET /api/logs`
+
+Full interaction audit trail — every analyzed pair with score and disposition.
+
+### `GET /api/settings`
+
+Current detection rules configuration.
+
+### `POST /api/settings`
+
+Update detection rules. Every change is versioned.
+
+### `GET /api/settings/history`
+
+Version history of your detection policy — see exactly what policy was active when any score was produced.
+
+### `GET /api/baselines` · `POST /api/baselines`
+
+Stored baseline profiles for distribution-shift detection — flag when production traffic drifts from the norm.
+
+## SDK
+
+The Python SDK wraps these endpoints with retries, timeouts, and error handling.
+
+```bash
+pip install sentinelai-sdk
+```
+
+```python
+from sentinelai import SentinelAIClient
+
+client = SentinelAIClient(api_key="sk_...")
+result = client.verify(prompt=prompt, response=llm_output)
+```
+
+<Cards>
+  <Card title="SDK reference" description="Fields, options, conversation context" href="/docs/sdk" />
+  <Card title="Quick start" description="End-to-end in 60 seconds" href="/docs/quickstart" />
+</Cards>

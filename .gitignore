@@ -175,6 +175,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 package-lock.json
+!docs-site/package-lock.json
 yarn.lock
 
 # Next.js
@@ -487,5 +488,3 @@ Backend/client_secret_24649668284-18dh5s1ihdpv99ss3d59p8f406pv9at4.apps.googleus
 
 # supabase-test
 supabase-test/.env
-
-docs-site

@@ -1,0 +1,21 @@
+{
+  "title": "SentinelAI",
+  "pages": [
+    "index",
+    "quickstart",
+    "sdk",
+    "---Concepts---",
+    "trust-score",
+    "detectors",
+    "modes",
+    "---Reference---",
+    "api",
+    "self-hosting",
+    "pricing",
+    "roadmap",
+    "---Community---",
+    "[Live Demo](https://sentinelaihq.com)",
+    "[GitHub](https://github.com/Blacksujit/Sentinel-AI)"
+  ],
+  "defaultOpen": true
+}

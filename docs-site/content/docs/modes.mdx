@@ -1,0 +1,49 @@
+---
+title: Deployment Modes
+description: Blocking, monitoring, async, and self-hosted — pick your risk posture
+---
+
+# Deployment Modes
+
+SentinelAI adapts to your risk posture and throughput.
+
+## The four modes
+
+| Mode | Use case | Behavior |
+|------|----------|----------|
+| **Blocking** | Customer-facing chat, copilots | Verify every response before it hits your user; serve, correct, or block |
+| **Monitoring** | Evaluation, staging, low-risk features | Log everything, review flagged ones later |
+| **Async** | High-throughput pipelines | Fire-and-forget analysis with webhook callbacks |
+| **Self-hosted** | Regulated industries, data residency | Everything runs on your own infrastructure |
+
+## Blocking
+
+The default. Your app sends the prompt/response pair, SentinelAI returns the verdict, and your app acts on it — all before the user sees anything.
+
+```python
+result = client.verify(prompt=prompt, response=llm_output)
+
+if result.status == "hallucinated":
+    return result.corrected  # serve the fix, not the flaw
+```
+
+## Monitoring
+
+Log everything, act later. Perfect for post-hoc analysis, drift detection, and compliance auditing without adding latency to the request path.
+
+## Async
+
+For high-throughput workloads where you can't wait for a verdict inline:
+
+- Fire-and-forget the analysis
+- Receive the result via webhook
+- Store and aggregate at your own pace
+
+## Self-hosted
+
+The open-source core runs entirely on your infrastructure. Data never leaves your network. The same SDK, the same detectors, the same API — just your hardware.
+
+<Callout type="info">
+  Self-hosting is free and open source. The managed cloud adds dashboards,
+  alerting, and settings management on top of the same core.
+</Callout>

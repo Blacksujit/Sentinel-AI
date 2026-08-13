@@ -1,0 +1,51 @@
+---
+title: Quick Start
+description: Get SentinelAI running in under 60 seconds
+---
+
+# Quick Start
+
+Get SentinelAI running in under 60 seconds.
+
+## 1. Install
+
+```bash
+pip install sentinelai-sdk
+```
+
+## 2. Verify a response
+
+```python
+from sentinelai import SentinelAIClient
+
+client = SentinelAIClient(api_key="sk_...")
+
+result = client.verify(prompt=prompt, response=llm_output)
+
+if result.status == "hallucinated":
+    return result.corrected  # serve the fix, not the flaw
+```
+
+That's it. Every response is now scored, explained, and protected.
+
+## 3. What you get back
+
+The `result` object contains:
+
+- **`status`** — `trusted`, `needs_review`, or `hallucinated`
+- **`trust_score`** — a number from 0 (safe) to 100 (critical risk)
+- **`reasons`** — human-readable, token-level explanations for every flag
+- **`corrected`** — the cleaned response, present when auto-correction applies
+
+<Callout type="info">
+  Built-in retries, timeouts, and error handling are included. The SDK never
+  leaves your request hanging.
+</Callout>
+
+## Next steps
+
+<Cards>
+  <Card title="Trust score" description="Understand the 0-100 scale" href="/docs/trust-score" />
+  <Card title="Detectors" description="What the six detectors flag" href="/docs/detectors" />
+  <Card title="Modes" description="Choose blocking, monitoring, or async" href="/docs/modes" />
+</Cards>

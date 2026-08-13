@@ -1,0 +1,56 @@
+---
+title: Overview
+description: What SentinelAI is, why it exists, and what it does
+---
+
+# AI risk monitoring for production LLMs
+
+LLMs are confident. They're also wrong — inventing citations, flipping numbers, and blending entities with zero hesitation. **SentinelAI sits between your app and your LLM**, scoring every prompt/response pair in real time, explaining the risk, and acting on it — before bad output reaches a user.
+
+## What SentinelAI does
+
+- **Scores risk** on a 0–100 trust scale for every prompt/response pair
+- **Explains every score** with token-level reasons — not a black box
+- **Acts on risk** — serve, auto-correct, or block and escalate
+- **Tracks conversations** across multi-turn context
+- **Integrates in 3 lines** with the Python SDK
+
+## The problem
+
+Organizations deploying LLMs face three converging crises:
+
+| Crisis | The numbers | The consequence |
+|--------|-------------|-----------------|
+| **Security** | Prompt injections up 340% YoY (OWASP LLM Top 10) | Data exfiltration, brand damage, unauthorized access |
+| **Observability** | Zero dedicated tools for AI risk monitoring | Teams build custom scripts, miss critical signals |
+| **Compliance** | EU AI Act effective Aug 2026, ISO 42001 certifying | Six-figure fines, blocked market access |
+
+Existing tools are fragmented: ML monitoring platforms show scores without reasons, security tools flag threats without explanation or audit trails, and APM extensions bury AI risk inside infrastructure dashboards.
+
+**SentinelAI connects security detection, explainable investigation, and compliance audit in a single workflow.**
+
+## Architecture
+
+```
+prompt → 6 parallel detectors → risk reasoner → policy engine → action
+```
+
+<Mermaid
+  chart="
+flowchart LR
+    App[Your App] --> API[SentinelAI API]
+    API --> Detectors[6 Parallel Detectors]
+    Detectors --> Reasoner[Risk Reasoner]
+    Reasoner --> Policy[Policy Engine]
+    Policy -->|0-24 Trusted| Serve[Serve as-is]
+    Policy -->|25-59 Review| Fix[Auto-correct]
+    Policy -->|60-100 Block| Block[Block + escalate]
+"
+/>
+
+<Cards>
+  <Card title="Quick start" description="Live in 60 seconds" href="/docs/quickstart" />
+  <Card title="Trust score" description="What the 0-100 score means" href="/docs/trust-score" />
+  <Card title="Detectors" description="The six parallel risk signals" href="/docs/detectors" />
+  <Card title="Deployment modes" description="Blocking, monitoring, async, self-hosted" href="/docs/modes" />
+</Cards>

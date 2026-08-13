@@ -1,0 +1,56 @@
+---
+title: Detectors
+description: The six parallel detectors that power the trust score
+---
+
+# Detectors
+
+Every prompt/response pair is analyzed by **six detectors running in parallel**. Each detector emits a signal with confidence and evidence; the risk reasoner aggregates them into the trust score.
+
+## The six detectors
+
+| Detector | Flags | Example |
+|----------|-------|---------|
+| **Fabricated citations** | References that don't exist | A DOI or URL that was never published |
+| **Numeric drift** | Numbers that contradict the source | "GDP grew 12%" when the source says 4% |
+| **Entity confusion** | Wrong people, places, or products | Attributing a quote to the wrong author |
+| **Context contradiction** | Statements that contradict earlier context | Answering differently to the same fact mid-conversation |
+| **Unsupported claims** | Assertions with no backing | Confidently stated facts with no evidence |
+| **Overconfidence** | Absolute certainty without caveats | "This is definitely true" with zero qualification |
+
+## Why parallel matters
+
+The detectors are **stateless and independent**, so they:
+
+- Run concurrently — latency stays flat as detectors are added
+- Fail independently — one detector going down never blocks the others
+- Stay explainable — each signal carries its own evidence
+
+## The aggregator
+
+Detector signals are combined by a risk reasoner that weighs confidence and severity, then applies your policy:
+
+```text
+prompt → 6 parallel detectors → aggregator → risk reasoner → policy → action
+```
+
+<Mermaid
+  chart="
+flowchart LR
+    D1[Fabricated citations] --> A[Aggregator]
+    D2[Numeric drift] --> A
+    D3[Entity confusion] --> A
+    D4[Context contradiction] --> A
+    D5[Unsupported claims] --> A
+    D6[Overconfidence] --> A
+    A --> R[Risk Reasoner]
+    R --> P[Policy Engine]
+    P --> T[Trust score + action]
+"
+/>
+
+<Callout type="info">
+  Detection rules are configurable via the settings API — including versioned
+  history so you can see exactly what policy was active when any score was
+  produced.
+</Callout>

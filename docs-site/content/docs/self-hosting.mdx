@@ -1,0 +1,50 @@
+---
+title: Self-Hosting
+description: Run the SentinelAI core on your own infrastructure
+---
+
+# Self-Hosting
+
+The SentinelAI core is open source and runs entirely on your own infrastructure. Data never leaves your network.
+
+## Why self-host
+
+- **Data residency** — prompts and responses stay inside your VPC
+- **Regulatory control** — no third-party processing of customer data
+- **Cost predictability** — no per-request cloud fees at scale
+- **Full API surface** — same detectors, same endpoints, same SDK
+
+## What you run
+
+The self-hosted deployment is the same FastAPI service the managed cloud is built on:
+
+| Component | Purpose |
+|-----------|---------|
+| **API service** | `/api/analyze`, `/api/logs`, `/api/settings` |
+| **Detector engine** | The six parallel detectors |
+| **Policy engine** | Trust score thresholds and actions |
+
+## Point the SDK at it
+
+```python
+client = SentinelAIClient(
+    api_key="sk_local_...",
+    base_url="http://localhost:8000",
+)
+```
+
+Everything else — `verify()`, conversation context, corrected responses — works identically to the managed cloud.
+
+## What the managed cloud adds
+
+The cloud is not a different product; it layers operations on top of the same core:
+
+- Real-time dashboard and alerting
+- Versioned settings history
+- Audit logs and team management
+- Managed uptime and scaling
+
+<Callout type="info">
+  Self-hosting is free and open source. Start with the core, move to the cloud
+  when you want dashboards, alerting, and team features.
+</Callout>

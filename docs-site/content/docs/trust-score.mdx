@@ -1,0 +1,51 @@
+---
+title: Trust Score
+description: How the 0-100 risk score works and what each band means
+---
+
+# Trust Score
+
+SentinelAI condenses six parallel detector signals into a single, explainable number: the **trust score**, from 0 to 100.
+
+## The scale
+
+| Band | Range | Meaning | Action |
+|------|-------|---------|--------|
+| **Trusted** | 0–24 | No material risk detected | Serve as-is |
+| **Needs review** | 25–59 | Some signals flagged, output questionable | Auto-correct or flag for humans |
+| **Hallucinated** | 60–100 | High-confidence hallucination or attack | Block and escalate |
+
+## Why it's not a black box
+
+Every score ships with **reasons** — the specific tokens and signals that drove the number.
+
+```json
+{
+  "trust_score": 72,
+  "status": "hallucinated",
+  "reasons": [
+    {
+      "detector": "fabricated_citation",
+      "confidence": 0.94,
+      "evidence": "Citation [1] references a DOI that does not exist",
+      "tokens": ["IEEE", "978-1-7281-3277-8"]
+    },
+    {
+      "detector": "overconfidence",
+      "confidence": 0.81,
+      "evidence": "Absolute claims made without supporting context"
+    }
+  ]
+}
+```
+
+## How to use it
+
+- **Debug in seconds, not hours** — the reasons tell you exactly why a response was flagged
+- **Tune your policy** — choose the threshold where your app corrects vs. blocks
+- **Audit with confidence** — every score has provenance your compliance team can follow
+
+<Callout type="warning">
+  The score is a risk indicator, not a guarantee. SentinelAI flags risk
+  honestly — it never claims to guarantee safety or alignment.
+</Callout>

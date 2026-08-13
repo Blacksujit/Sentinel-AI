@@ -1,0 +1,66 @@
+---
+title: Python SDK
+description: sentinelai-sdk — verify LLM output in three lines
+---
+
+# Python SDK
+
+The official client is `sentinelai-sdk`, a thin wrapper around the SentinelAI API with retries, timeouts, and error handling built in.
+
+```bash
+pip install sentinelai-sdk
+```
+
+## Quick example
+
+```python
+from sentinelai import SentinelAIClient
+
+client = SentinelAIClient(api_key="sk_...")
+
+result = client.verify(prompt=prompt, response=llm_output)
+
+if result.status == "hallucinated":
+    return result.corrected  # serve the fix, not the flaw
+```
+
+## The result object
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `status` | `str` | `trusted`, `needs_review`, or `hallucinated` |
+| `trust_score` | `float` | 0 (safe) to 100 (critical) |
+| `reasons` | `list[Reason]` | Detector-level explanations with evidence and tokens |
+| `corrected` | `str \| None` | Cleaned response when auto-correction applies |
+
+## Conversation context
+
+Pass prior turns to get conversation-aware verdicts:
+
+```python
+result = client.verify(
+    prompt=prompt,
+    response=llm_output,
+    conversation=[
+        {"role": "user", "content": "What's our Q3 revenue?"},
+        {"role": "assistant", "content": "Q3 revenue was $2.1M."},
+    ],
+)
+```
+
+## Blocking vs. monitoring
+
+By default `verify()` is synchronous — the verdict arrives before you serve the response.
+
+For monitoring-only workloads, the same call logs without blocking your request path.
+
+## Reliability
+
+- Automatic retries with backoff on transient failures
+- Timeouts that fail fast instead of hanging
+- Structured errors — you always know whether a verdict is a verdict or a failure
+
+<Callout type="info">
+  The SDK works against both the managed cloud and your self-hosted instance.
+  Point it at your own base URL with `SentinelAIClient(api_key="...", base_url="http://localhost:8000")`.
+</Callout>
