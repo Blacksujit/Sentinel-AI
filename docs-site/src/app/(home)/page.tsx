@@ -29,9 +29,9 @@ const features = [
         <path d="M2 17l10 5 10-5" />
       </Icon>
     ),
-    title: "3 signal detectors in parallel",
+    title: "Catches what filters miss",
     description:
-      "Prompt anomaly detection (Jaccard similarity against your baselines), jailbreak detection (sentence-transformer cosine similarity), and output risk scoring (regex heuristics across 8 categories: violence, hate speech, self-harm, illegal activity, misinformation, privacy, inappropriate content, harmful instructions).",
+      "Naive filters only match keywords, so attackers paraphrase around them. Three detectors run in parallel — prompt anomalies, jailbreak attempts, and risky output across 8 categories like violence, hate speech, and self-harm.",
   },
   {
     icon: (
@@ -40,9 +40,9 @@ const features = [
         <path d="M22 12h-4M6 12H2M12 6V2M12 22v-4" />
       </Icon>
     ),
-    title: "Explainable verdicts",
+    title: "Know why it was flagged",
     description:
-      "Every decision ships with a human-readable reason, the flags that triggered it, and the exact thresholds applied — plus a settings version, so any score can be replayed against the policy that produced it.",
+      "A bare score tells you nothing. Every verdict ships with the reason, the flags that triggered it, and the thresholds applied — so you can replay any score against the policy that produced it.",
   },
   {
     icon: (
@@ -50,9 +50,9 @@ const features = [
         <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
       </Icon>
     ),
-    title: "4 policy actions + correction",
+    title: "Act, don't fail",
     description:
-      "The policy engine maps the risk score to allow, warn, block, or escalate — and the SDK's correct() returns a cleaned response instead of a failure.",
+      "A risky response isn't a dead end. The policy engine allows, warns, blocks, or escalates — and correct() returns a cleaned response instead of an error.",
   },
   {
     icon: (
@@ -60,9 +60,9 @@ const features = [
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
       </Icon>
     ),
-    title: "Conversation-aware",
+    title: "Watch the whole conversation",
     description:
-      "The SDK's ConversationTracker tracks turns across a session, scores each turn, and reports conversation-level risk statistics.",
+      "One prompt can look harmless while the conversation drifts. ConversationTracker scores every turn and rolls them up into conversation-level risk.",
   },
   {
     icon: (
@@ -71,9 +71,9 @@ const features = [
         <path d="m8 6-6 6 6 6" />
       </Icon>
     ),
-    title: "3-line SDK",
+    title: "Live in three lines",
     description:
-      "pip install sentinelai-risk, then verify() returns a 0–100 score, status, claims, and corrected text. Retries with exponential backoff, parallel batch analysis, and API-key auth built in.",
+      "pip install sentinelai-risk, call verify(), and get a 0–100 score with a clear verdict. Retries, parallel batches, and API-key auth are handled for you.",
   },
   {
     icon: (
@@ -83,9 +83,9 @@ const features = [
         <path d="M6 6.5h.01M6 17.5h.01" />
       </Icon>
     ),
-    title: "Self-hostable",
+    title: "Keep data on your network",
     description:
-      "Open-source FastAPI core with SQLite/PostgreSQL storage. The same SDK and API run against your own base URL — data never leaves your network.",
+      "The core is open source and self-hostable. Same SDK, same API, your own server — with SQLite or PostgreSQL behind it.",
   },
 ];
 
