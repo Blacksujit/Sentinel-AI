@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs-site/public/logo.svg" alt="SentinelAI" width="240">
+  <img src="docs-site/public/logo.svg" alt="SentinelAI" width="220">
 </p>
 
 <h3 align="center">AI risk monitoring for production LLMs</h3>
@@ -28,7 +28,7 @@
 
 ---
 
-## Why SentinelAI
+## The problem
 
 LLMs are confident — and wrong. They invent citations, flip numbers, and blend
 entities with zero hesitation. Most teams find out after a bad response reaches
@@ -39,7 +39,7 @@ pair in real time. Six detectors run in parallel, every score ships with
 token-level reasons, and your policy decides the action: serve, auto-correct,
 or block.
 
-**No black boxes.** Every verdict explains itself.
+**No black boxes. Every verdict explains itself.**
 
 ## Quick start
 
@@ -67,6 +67,65 @@ Live in under 60 seconds. See the
 [quickstart guide](https://blacksujit.github.io/Sentinel-AI/docs/quickstart)
 for configuration, deployment modes, and self-hosting.
 
+## Architecture
+
+SentinelAI is model-agnostic and minimally invasive — it observes
+prompt/response pairs and never sits in the generation path:
+
+```mermaid
+flowchart LR
+    Client[Client Application]
+    LLM[AI / LLM]
+    Sentinel[SentinelAI API]
+    PromptMon[Prompt Anomaly Detector]
+    OutputMon[Output Risk Scorer]
+    Aggregator[Risk Aggregator]
+    DB[(Risk Logs)]
+
+    Client --> LLM
+    LLM --> Sentinel
+    Sentinel --> PromptMon
+    Sentinel --> OutputMon
+    PromptMon --> Aggregator
+    OutputMon --> Aggregator
+    Aggregator --> DB
+    Aggregator --> Client
+```
+
+1. The client application sends prompt and model response to SentinelAI
+2. Prompt anomaly detection checks for distribution shifts
+3. Output risk scoring flags unsafe or unstable responses
+4. Risk signals are aggregated into a unified score
+5. Results are returned and optionally logged for review
+
+## How a response is scored
+
+```mermaid
+flowchart LR
+    App[Your App] --> API[SentinelAI API]
+    API --> Detectors[6 Parallel Detectors]
+    Detectors --> Reasoner[Risk Reasoner]
+    Reasoner --> Policy[Policy Engine]
+    Policy -->|0-24 Trusted| Serve[Serve as-is]
+    Policy -->|25-59 Review| Fix[Auto-correct or flag]
+    Policy -->|60-100 Block| Block[Block + escalate]
+```
+
+| Trust score | Status | Default action |
+|-------------|--------|----------------|
+| 0–24 | Trusted | Serve as-is |
+| 25–59 | Needs review | Auto-correct or flag for humans |
+| 60–100 | Hallucinated | Block and escalate |
+
+## Deployment modes
+
+| Mode | Use case |
+|------|----------|
+| **Blocking** | Verify every response before it hits your user |
+| **Monitoring** | Log everything, review flagged ones later |
+| **Async** | High-throughput: fire-and-forget + webhooks |
+| **Self-hosted** | Keep all data on your own infrastructure |
+
 ## What you get back
 
 | Field | Meaning |
@@ -85,18 +144,6 @@ for configuration, deployment modes, and self-hosting.
 - **Conversation-aware** — risk judged across multi-turn context, not in isolation
 - **3-line SDK** — `pip install sentinelai-risk` and you are live
 - **Self-hostable** — open-source core, your data stays on your infrastructure
-
-## How it works
-
-```
-prompt ─▶ 6 parallel detectors ─▶ risk reasoner ─▶ policy engine ─▶ action
-```
-
-| Trust score | Status | Default action |
-|-------------|--------|----------------|
-| 0–24 | Trusted | Serve as-is |
-| 25–59 | Needs review | Auto-correct or flag for humans |
-| 60–100 | Hallucinated | Block and escalate |
 
 ## Documentation
 
@@ -121,7 +168,7 @@ npm run dev
 | `docs-site/` | Documentation website (Next.js + Fumadocs, static export) |
 | `Backend/` | SentinelAI API backend (FastAPI) |
 | `Frontend/` | Web dashboard |
-| `sentinelai-sdk/` | Python SDK |
+| `sentinelai-sdk/` | Python SDK (published as `sentinelai-risk`) |
 | `Docs/` | Source documentation & design notes |
 
 ## Roadmap
