@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinelai-risk"
+version = "1.0.0"
+description = "Official Python SDK for SentinelAI AI safety platform"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+authors = [
+    { name = "SentinelAI Team", email = "support@sentinelai.com" },
+]
+keywords = ["ai safety", "security", "monitoring", "chatbot", "moderation"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Security",
+]
+dependencies = [
+    "requests>=2.25.0",
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/Blacksujit/Sentinel-AI/issues"
+Documentation = "https://blacksujit.github.io/Sentinel-AI/"
+"Source Code" = "https://github.com/Blacksujit/Sentinel-AI"
+Changelog = "https://github.com/Blacksujit/Sentinel-AI/blob/main/sentinelai-sdk/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*", "typescript*"]
+
+[tool.setuptools.package-data]
+"*" = ["LICENSE"]

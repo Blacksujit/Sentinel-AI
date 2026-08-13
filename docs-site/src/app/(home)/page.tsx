@@ -72,7 +72,7 @@ const features = [
     ),
     title: "3-line SDK",
     description:
-      "pip install sentinelai-sdk and you are live. No pipelines, no config sprawl.",
+      "pip install sentinelai-risk and you are live. No pipelines, no config sprawl.",
   },
   {
     icon: (

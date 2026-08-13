@@ -1,6 +1,6 @@
 # REAL DEPLOYMENT GUIDE - Publishing SentinelAI SDK
 
-## 🎯 Option 1: Publish to PyPI (Official Python Package Repository)
+## ðŸŽ¯ Option 1: Publish to PyPI (Official Python Package Repository)
 
 ### Step 1: Prepare Your Package
 ```bash
@@ -29,7 +29,7 @@ pip install twine
 python -m twine upload --repository testpypi dist/*
 
 # Install from TestPyPI to test
-pip install --index-url https://test.pypi.org/simple/ sentinelai-sdk
+pip install --index-url https://test.pypi.org/simple/ sentinelai-risk
 ```
 
 ### Step 4: Publish to Real PyPI
@@ -38,13 +38,13 @@ pip install --index-url https://test.pypi.org/simple/ sentinelai-sdk
 python -m twine upload dist/*
 
 # Now anyone can install it:
-pip install sentinelai-sdk
+pip install sentinelai-risk
 ```
 
 ### Step 5: Verify Installation
 ```bash
 # Test installation
-pip install sentinelai-sdk
+pip install sentinelai-risk
 
 # Test import
 python -c "from sentinelai import SentinelAIClient; print('✅ SDK installed successfully!')"
@@ -52,7 +52,7 @@ python -c "from sentinelai import SentinelAIClient; print('✅ SDK installed suc
 
 ---
 
-## 🐳 Option 2: Docker Container Registry
+## ðŸ³ Option 2: Docker Container Registry
 
 ### Step 1: Create Dockerfile
 ```dockerfile
@@ -74,28 +74,28 @@ ENTRYPOINT ["python", "-c", "from sentinelai import SentinelAIClient; print('Sen
 ### Step 2: Build and Push to Docker Hub
 ```bash
 # Build Docker image
-docker build -t yourcompany/sentinelai-sdk:latest .
+docker build -t yourcompany/sentinelai-risk:latest .
 
 # Tag for Docker Hub
-docker tag yourcompany/sentinelai-sdk:latest yourcompany/sentinelai-sdk:v1.0.0
+docker tag yourcompany/sentinelai-risk:latest yourcompany/sentinelai-risk:v1.0.0
 
 # Push to Docker Hub
-docker push yourcompany/sentinelai-sdk:latest
-docker push yourcompany/sentinelai-sdk:v1.0.0
+docker push yourcompany/sentinelai-risk:latest
+docker push yourcompany/sentinelai-risk:v1.0.0
 ```
 
 ### Step 3: Others can use it
 ```bash
 # Pull and use the SDK
-docker run --rm yourcompany/sentinelai-sdk:latest
+docker run --rm yourcompany/sentinelai-risk:latest
 
 # Or in their Dockerfile
-FROM yourcompany/sentinelai-sdk:latest
+FROM yourcompany/sentinelai-risk:latest
 ```
 
 ---
 
-## 📦 Option 3: GitHub Package Registry
+## ðŸ“¦ Option 3: GitHub Package Registry
 
 ### Step 1: Configure GitHub Actions
 Create `.github/workflows/publish.yml`:
@@ -131,7 +131,7 @@ jobs:
 
 ### Step 2: Add PyPI Token to GitHub Secrets
 1. Go to your GitHub repository
-2. Settings → Secrets and variables → Actions
+2. Settings â†’ Secrets and variables â†’ Actions
 3. Add new secret: `PYPI_API_TOKEN`
 4. Use your PyPI API token
 
@@ -141,17 +141,17 @@ jobs:
 
 ---
 
-## 🌐 Option 4: Private Package Repository
+## ðŸŒ Option 4: Private Package Repository
 
 ### For Enterprise/Internal Use
 
 #### Option 4A: GitHub Packages
 ```bash
 # Install from GitHub Packages
-pip install git+https://github.com/yourcompany/sentinelai-sdk.git
+pip install git+https://github.com/yourcompany/sentinelai-risk.git
 
 # Or with token
-pip install git+https://your-token@github.com/yourcompany/sentinelai-sdk.git
+pip install git+https://your-token@github.com/yourcompany/sentinelai-risk.git
 ```
 
 #### Option 4B: Private PyPI Server
@@ -165,12 +165,12 @@ devpi-server --start
 twine upload --repository-url http://your-pypi.com/simple/ dist/*
 
 # Install from private repo
-pip install --index-url http://your-pypi.com/simple/ sentinelai-sdk
+pip install --index-url http://your-pypi.com/simple/ sentinelai-risk
 ```
 
 ---
 
-## 🚀 Option 5: Cloud Package Managers
+## ðŸš€ Option 5: Cloud Package Managers
 
 ### AWS CodeArtifact
 ```bash
@@ -186,12 +186,12 @@ twine upload --repository codeartifact dist/*
 ### Google Cloud Artifact Registry
 ```bash
 # Setup Artifact Registry
-gcloud artifacts repositories create sentinelai-sdk \
+gcloud artifacts repositories create sentinelai-risk \
     --repository-format=pypi \
     --location=us-central1
 
 # Publish
-gcloud artifacts pypi upload sentinelai-sdk dist/*
+gcloud artifacts pypi upload sentinelai-risk dist/*
 ```
 
 ### Azure Artifacts
@@ -205,7 +205,7 @@ twine upload --repository-url https://pkgs.dev.azure.com/yourorg/_packaging/sent
 
 ---
 
-## 🎯 RECOMMENDED APPROACH
+## ðŸŽ¯ RECOMMENDED APPROACH
 
 ### For Public SDK: Use PyPI
 ```bash
@@ -228,7 +228,7 @@ python -m twine upload dist/*
 
 ---
 
-## 📋 What You Get With Real Publishing
+## ðŸ“‹ What You Get With Real Publishing
 
 ### PyPI Benefits:
 - ✅ **Global Distribution** - Available to all Python developers
@@ -236,7 +236,7 @@ python -m twine upload dist/*
 - ✅ **Dependency Resolution** - Automatic dependency handling
 - ✅ **Documentation** - Auto-generated docs on pypi.org
 - ✅ **Search & Discovery** - Developers can find your SDK
-- ✅ **Installation** - Simple `pip install sentinelai-sdk`
+- ✅ **Installation** - Simple `pip install sentinelai-risk`
 
 ### Docker Benefits:
 - ✅ **Container Ready** - Works in any Docker environment
@@ -252,7 +252,7 @@ python -m twine upload dist/*
 
 ---
 
-## 🚀 Let's Publish It Now!
+## ðŸš€ Let's Publish It Now!
 
 ### Step 1: Prepare the Package
 ```bash
@@ -276,25 +276,25 @@ python -m twine upload dist/*
 ### Step 4: Verify Installation
 ```bash
 # Anyone can now install your SDK!
-pip install sentinelai-sdk
+pip install sentinelai-risk
 
 # Test it works
 python -c "
 from sentinelai import SentinelAIClient
-print('🎉 SentinelAI SDK installed successfully!')
-print('Available at: https://pypi.org/project/sentinelai-sdk/')
+print('ðŸŽ‰ SentinelAI SDK installed successfully!')
+print('Available at: https://pypi.org/project/sentinelai-risk/')
 "
 ```
 
 ---
 
-## 📊 After Publishing
+## ðŸ“Š After Publishing
 
 Your SDK will be available at:
-- **PyPI**: https://pypi.org/project/sentinelai-sdk/
-- **Installation**: `pip install sentinelai-sdk`
+- **PyPI**: https://pypi.org/project/sentinelai-risk/
+- **Installation**: `pip install sentinelai-risk`
 - **Documentation**: Auto-generated on PyPI
 - **Downloads**: Track usage statistics
 - **Versions**: Manage multiple versions
 
-**Ready to make your SentinelAI SDK real?** Let's publish it to PyPI! 🚀
+**Ready to make your SentinelAI SDK real?** Let's publish it to PyPI! ðŸš€

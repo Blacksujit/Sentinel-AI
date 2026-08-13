@@ -1,4 +1,4 @@
-# 🚀 SentinelAI Production Setup Guide
+# ðŸš€ SentinelAI Production Setup Guide
 
 ## Step 1: Environment Configuration
 
@@ -149,12 +149,12 @@ curl -X POST "https://your-domain.com/api/analyze/external" \
 1. **API Documentation**: Share your API documentation
 2. **API Keys**: Generate unique API keys for each developer
 3. **Base URL**: Your production SentinelAI URL
-4. **SDK Installation**: `pip install sentinelai-sdk`
+4. **SDK Installation**: `pip install sentinelai-risk`
 
 ### Example Integration Code to Share:
 ```python
 # Installation
-pip install --index-url https://test.pypi.org/simple/ sentinelai-sdk
+pip install --index-url https://test.pypi.org/simple/ sentinelai-risk
 
 # Integration
 from sentinelai import SentinelAIClient
@@ -185,7 +185,7 @@ else:
     return original_response
 ```
 
-## 🔐 Security Best Practices
+## ðŸ” Security Best Practices
 
 1. **Use HTTPS**: Always use HTTPS in production
 2. **Rotate API Keys**: Change API keys regularly
@@ -194,7 +194,7 @@ else:
 5. **IP Whitelisting**: Consider IP restrictions for sensitive APIs
 6. **Audit Logs**: Keep audit logs of API access
 
-## 📞 Support
+## ðŸ“ž Support
 
 For production deployment issues:
 - Check logs: `tail -f logs/app.log`

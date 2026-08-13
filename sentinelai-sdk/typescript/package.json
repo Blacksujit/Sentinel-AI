@@ -6,7 +6,7 @@
   "homepage": "https://sentinelaihq.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sentinelai/sentinelai-sdk"
+    "url": "https://github.com/Blacksujit/Sentinel-AI"
   },
   "license": "MIT",
   "main": "dist/index.js",

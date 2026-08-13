@@ -7,9 +7,9 @@
 
 ## Step 2: Get API Token
 1. Login to TestPyPI: https://test.pypi.org/
-2. Go to Account Settings → API tokens
+2. Go to Account Settings â†’ API tokens
 3. Add API token
-4. Name: "sentinelai-sdk"
+4. Name: "sentinelai-risk"
 5. Scope: "Entire account" (or specific project)
 6. Copy the generated token
 
@@ -27,7 +27,7 @@ python -m twine upload --repository testpypi dist/*
 ## Step 5: Test Installation
 ```bash
 # Install from TestPyPI
-pip install --index-url https://test.pypi.org/simple/ sentinelai-sdk
+pip install --index-url https://test.pypi.org/simple/ sentinelai-risk
 
 # Test it works
 python -c "from sentinelai import SentinelAIClient; print('✅ SDK installed from TestPyPI!')"

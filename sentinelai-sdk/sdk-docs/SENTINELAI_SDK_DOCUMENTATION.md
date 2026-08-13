@@ -1,12 +1,12 @@
 # SentinelAI Python SDK Documentation
 
-## 🚀 Quick Start
+## ðŸš€ Quick Start
 
 ### Installation
 
 ```bash
 # Install the SDK
-pip install sentinelai-sdk
+pip install sentinelai-risk
 
 # Or copy the sentinelai_sdk.py file to your project
 ```
@@ -33,16 +33,16 @@ result = client.analyze(
 
 # Handle based on risk assessment
 if result['decision'] == 'block':
-    print("🚫 Response blocked - high risk!")
+    print("ðŸš« Response blocked - high risk!")
 elif result['decision'] == 'warn':
-    print("⚠️ Response flagged for review")
+    print("âš ï¸ Response flagged for review")
 else:
     print("✅ Response is safe")
 ```
 
 ---
 
-## 📋 API Reference
+## ðŸ“‹ API Reference
 
 ### SentinelAIClient Class
 
@@ -150,7 +150,7 @@ Check if the SentinelAI API is healthy and accessible.
 **Example:**
 ```python
 if not client.health_check():
-    print("⚠️ SentinelAI is down - using fallback mode")
+    print("âš ï¸ SentinelAI is down - using fallback mode")
     # Implement fallback behavior
 ```
 
@@ -242,7 +242,7 @@ print(f"Total turns: {summary['total_turns']}")
 
 ---
 
-## 🎯 Integration Examples
+## ðŸŽ¯ Integration Examples
 
 ### Example 1: Customer Support Chatbot
 
@@ -402,7 +402,7 @@ print(f"Session risk: {summary['risk_statistics']['average_risk_score']:.3f}")
 
 ---
 
-## 🔧 Configuration
+## ðŸ”§ Configuration
 
 ### Environment Variables
 
@@ -431,7 +431,7 @@ client = SentinelAIClient(
 
 ---
 
-## 🚨 Error Handling
+## ðŸš¨ Error Handling
 
 ### Exception Types
 
@@ -450,15 +450,15 @@ try:
     result = client.analyze(prompt, response, user_id, session_id)
     
 except SentinelAIAuthenticationError:
-    print("❌ Invalid API key - check your credentials")
+    print("âŒ Invalid API key - check your credentials")
     
 except SentinelAIConnectionError:
-    print("🔴 Cannot connect to SentinelAI - check network")
+    print("ðŸ”´ Cannot connect to SentinelAI - check network")
     # Implement fallback behavior
     return safe_fallback_response()
     
 except SentinelAIError as e:
-    print(f"⚠️ SentinelAI error: {e}")
+    print(f"âš ï¸ SentinelAI error: {e}")
     # Log error and proceed with caution
     return response_with_warning()
 ```
@@ -472,13 +472,13 @@ result = client.analyze(prompt, response, user_id, session_id)
 
 if result.get('fallback'):
     # SentinelAI was unavailable - fallback used
-    print("⚠️ Using fallback mode - SentinelAI unavailable")
+    print("âš ï¸ Using fallback mode - SentinelAI unavailable")
     # Implement your fallback logic here
 ```
 
 ---
 
-## 📊 Monitoring & Analytics
+## ðŸ“Š Monitoring & Analytics
 
 ### Health Monitoring
 
@@ -524,7 +524,7 @@ decision_counts = {
 
 ---
 
-## 🔒 Security Best Practices
+## ðŸ”’ Security Best Practices
 
 ### API Key Management
 
@@ -581,7 +581,7 @@ def safe_analyze(client, prompt, response, **kwargs):
 
 ---
 
-## 🚀 Deployment
+## ðŸš€ Deployment
 
 ### Production Deployment
 
@@ -636,7 +636,7 @@ services:
 
 ---
 
-## 📝 Quick Reference
+## ðŸ“ Quick Reference
 
 ### Essential Code Snippets
 
@@ -665,9 +665,9 @@ if client.health_check():
 ### Decision Types
 
 - **`allow`** - Safe to deliver (risk < 0.3)
-- **`warn`** - Flagged for review (0.3 ≤ risk < 0.7)
-- **`block`** - Blocked content (0.7 ≤ risk < 0.85)
-- **`escalate`** - High priority escalation (risk ≥ 0.85)
+- **`warn`** - Flagged for review (0.3 â‰¤ risk < 0.7)
+- **`block`** - Blocked content (0.7 â‰¤ risk < 0.85)
+- **`escalate`** - High priority escalation (risk â‰¥ 0.85)
 
 ### Risk Score Interpretation
 
@@ -678,7 +678,7 @@ if client.health_check():
 
 ---
 
-## 🆘 Support
+## ðŸ†˜ Support
 
 - **Documentation**: Complete guide available
 - **Examples**: See integration examples above
@@ -688,10 +688,10 @@ if client.health_check():
 
 ---
 
-## 📄 License
+## ðŸ“„ License
 
-SentinelAI Python SDK © 2026 SentinelAI Team. All rights reserved.
+SentinelAI Python SDK Â© 2026 SentinelAI Team. All rights reserved.
 
 ---
 
-**Ready to integrate?** Start with the basic usage example and scale up as needed! 🚀
+**Ready to integrate?** Start with the basic usage example and scale up as needed! ðŸš€

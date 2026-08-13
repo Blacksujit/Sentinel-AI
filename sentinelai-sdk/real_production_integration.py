@@ -274,5 +274,5 @@ for user_id, session_id, message in test_messages:
 print("\n🎉 INTEGRATION COMPLETE!")
 print("=" * 50)
 print("Your SentinelAI SDK is now ready for production use!")
-print("📖  Documentation: https://test.pypi.org/project/sentinelai-sdk/1.0.0/")
+print("📖  Documentation: https://pypi.org/project/sentinelai-risk/1.0.0/")
 print("🔗 External API: http://localhost:8000/api/analyze/external")

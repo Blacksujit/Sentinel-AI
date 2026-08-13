@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/sentinelai-sdk/"><img alt="PyPI" src="https://img.shields.io/pypi/v/sentinelai-sdk?label=PyPI"></a>
-  <a href="https://pypi.org/project/sentinelai-sdk/"><img alt="Python" src="https://img.shields.io/pypi/pyversions/sentinelai-sdk?label=Python"></a>
+  <a href="https://pypi.org/project/sentinelai-risk/"><img alt="PyPI" src="https://img.shields.io/pypi/v/sentinelai-risk?label=PyPI"></a>
+  <a href="https://pypi.org/project/sentinelai-risk/"><img alt="Python" src="https://img.shields.io/pypi/pyversions/sentinelai-risk?label=Python"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Blacksujit/Sentinel-AI"></a>
   <a href="https://blacksujit.github.io/Sentinel-AI/"><img alt="Docs" src="https://img.shields.io/badge/docs-github_pages-blue"></a>
 </p>
@@ -23,7 +23,7 @@
   &nbsp;•&nbsp;
   <a href="https://sentinel-ai-dml3.onrender.com/api/docs">API Reference</a>
   &nbsp;•&nbsp;
-  <a href="https://pypi.org/project/sentinelai-sdk/">PyPI</a>
+  <a href="https://pypi.org/project/sentinelai-risk/">PyPI</a>
 </p>
 
 ---
@@ -44,7 +44,7 @@ or block.
 ## Quick start
 
 ```bash
-pip install sentinelai-sdk
+pip install sentinelai-risk
 ```
 
 ```python
@@ -83,7 +83,7 @@ for configuration, deployment modes, and self-hosting.
 - **Explainable risk** — every score ships with token-level reasons, no black boxes
 - **Auto-correction** — serve a cleaned response instead of a risky one
 - **Conversation-aware** — risk judged across multi-turn context, not in isolation
-- **3-line SDK** — `pip install sentinelai-sdk` and you are live
+- **3-line SDK** — `pip install sentinelai-risk` and you are live
 - **Self-hostable** — open-source core, your data stays on your infrastructure
 
 ## How it works

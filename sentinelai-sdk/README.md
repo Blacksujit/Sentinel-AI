@@ -7,7 +7,7 @@ Official Python SDK for integrating applications with SentinelAI AI safety platf
 ### Installation
 
 ```bash
-pip install sentinelai-sdk
+pip install sentinelai-risk
 ```
 
 ### Quick Start with Render Backend
@@ -59,14 +59,14 @@ else:
 
 ## 📚 Documentation
 
-Full documentation available at: [SentinelAI SDK Documentation](https://github.com/Blacksujit/Sentinel-AI/tree/main/Docs)
+Full documentation available at: [SentinelAI Documentation](https://blacksujit.github.io/Sentinel-AI/)
 
 ## 🔧 Installation
 
 ### From PyPI (Recommended)
 
 ```bash
-pip install sentinelai-sdk
+pip install sentinelai-risk
 ```
 
 ### From Source
@@ -247,8 +247,8 @@ print(f"Average risk score: {summary['risk_statistics']['average_risk_score']:.3
 
 SentinelAI API keys are generated from the SentinelAI Console:
 
-- Console: https://sentinel-ai-hazel.vercel.app
-- API Keys page: https://sentinel-ai-hazel.vercel.app/api-keys
+- Console: https://sentinelaihq.com
+- API Keys page: https://sentinelaihq.com/api-keys
 
 Copy the generated key **once** and store it securely (for example in a secrets manager or environment variable).
 
@@ -413,7 +413,7 @@ MIT License - see LICENSE file for details.
 
 ## 🆘 Support
 
-- **Documentation**: [Full Documentation](https://github.com/Blacksujit/Sentinel-AI/tree/main/Docs)
+- **Documentation**: [Full Documentation](https://blacksujit.github.io/Sentinel-AI/)
 - **Issues**: [GitHub Issues](https://github.com/Blacksujit/Sentinel-AI/issues)
  
 
