@@ -5,45 +5,57 @@ description: How the 0-100 risk score works and what each band means
 
 # Trust Score
 
-SentinelAI condenses six parallel detector signals into a single, explainable number: the **trust score**, from 0 to 100.
+SentinelAI condenses the detector signals into a single, explainable number: the **risk score**, from 0 to 100. The SDK's `verify()` maps it to a status band, and the policy engine maps it to an action.
 
 ## The scale
 
-| Band | Range | Meaning | Action |
-|------|-------|---------|--------|
-| **Trusted** | 0–24 | No material risk detected | Serve as-is |
-| **Needs review** | 25–59 | Some signals flagged, output questionable | Auto-correct or flag for humans |
-| **Hallucinated** | 60–100 | High-confidence hallucination or attack | Block and escalate |
+| Band | Range | Status | Meaning |
+|------|-------|--------|---------|
+| **Trusted** | 0–24 | `trusted` | No material risk detected — serve as-is |
+| **Needs review** | 25–59 | `needs_review` | Signals flagged, output questionable — review or auto-correct |
+| **High risk** | 60–100 | `hallucinated` | High-confidence risk or attack — block and escalate |
 
-## Why it's not a black box
+## A real verdict
 
-Every score ships with **reasons** — the specific tokens and signals that drove the number.
+The API returns the raw analysis; the SDK's `verify()` wraps it with the status band and claims:
 
 ```json
 {
-  "trust_score": 72,
-  "status": "hallucinated",
-  "reasons": [
-    {
-      "detector": "fabricated_citation",
-      "confidence": 0.94,
-      "evidence": "Citation [1] references a DOI that does not exist",
-      "tokens": ["IEEE", "978-1-7281-3277-8"]
-    },
-    {
-      "detector": "overconfidence",
-      "confidence": 0.81,
-      "evidence": "Absolute claims made without supporting context"
-    }
-  ]
+  "final_risk_score": 0.72,
+  "flags": ["violence", "harmful_instructions"],
+  "confidence": 0.88,
+  "decision": "block",
+  "action_taken": "block",
+  "decision_reason": "Multiple high-severity output risk categories triggered",
+  "settings_version": 3,
+  "thresholds_applied": {"block": 0.6},
+  "log_id": "analysis-241"
 }
 ```
 
+And what `verify()` returns to your app:
+
+```python
+result = client.verify(prompt=prompt, response=llm_output)
+# result["score"]       -> 72  (0-100)
+# result["status"]      -> "hallucinated"
+# result["claims"]      -> [{"detector": "Unsafe Output", "severity": "high", ...}]
+# result["corrected"]   -> cleaned response, when correction applies
+```
+
+## Why it's not a black box
+
+Every verdict carries the evidence that drove it:
+
+- **`flags`** — which detectors and risk categories fired
+- **`decision_reason`** — a human-readable explanation from the risk reasoner
+- **`thresholds_applied` + `settings_version`** — the exact policy that produced this score, replayable via `/api/settings/history`
+
 ## How to use it
 
-- **Debug in seconds, not hours** — the reasons tell you exactly why a response was flagged
-- **Tune your policy** — choose the threshold where your app corrects vs. blocks
-- **Audit with confidence** — every score has provenance your compliance team can follow
+- **Debug in seconds, not hours** — the flags and reason tell you exactly why a response was flagged
+- **Tune your policy** — choose the thresholds where your app corrects vs. blocks
+- **Audit with confidence** — every score records its settings version and log ID for your compliance trail
 
 <Callout type="warning">
   The score is a risk indicator, not a guarantee. SentinelAI flags risk

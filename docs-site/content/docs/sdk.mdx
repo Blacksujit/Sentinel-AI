@@ -23,47 +23,69 @@ llm_output = "Revenue grew 45% year over year."
 
 result = client.verify(prompt=prompt, response=llm_output)
 
-if result.status == "hallucinated":
-    print(result.corrected)  # serve the fix, not the flaw
+if result["status"] == "hallucinated":
+    print(result["corrected"])  # serve the fix, not the flaw
 else:
-    print(result.trust_score, result.reasons)
+    print(result["score"], result["claims"])
 ```
 
-## The result object
+## `verify()` — the one-shot check
 
 | Field | Type | Meaning |
 |-------|------|---------|
-| `status` | `str` | `trusted`, `needs_review`, or `hallucinated` |
-| `trust_score` | `float` | 0 (safe) to 100 (critical) |
-| `reasons` | `list[Reason]` | Detector-level explanations with evidence and tokens |
-| `corrected` | `str \| None` | Cleaned response when auto-correction applies |
+| `score` | `int` | 0 (safe) to 100 (critical) |
+| `status` | `str` | `trusted` (0–24), `needs_review` (25–59), `hallucinated` (60–100) |
+| `decision` | `str` | `allow`, `warn`, `block`, or `escalate` |
+| `action_taken` | `str` | The action executed by the policy engine |
+| `claims` | `list[dict]` | Detector-level findings with severity and note |
+| `corrected` | `str \| None` | Cleaned response when correction applies |
+| `meta` | `dict` | Claims checked, detectors run, timestamp |
+
+## `analyze()` — the raw API response
+
+`verify()` is built on `analyze()`, which returns the full API payload: `final_risk_score` (0–1), `flags`, `confidence`, `decision`, `action_taken`, `decision_reason`, `settings_version`, `thresholds_applied`, and `log_id` for feedback reporting.
+
+## `correct()` — get the fixed text
+
+```python
+safe_text = client.correct(prompt=prompt, response=llm_output)
+```
+
+Returns the original response when trusted, the corrected version otherwise.
 
 ## Conversation context
 
-Pass prior turns to get conversation-aware verdicts:
+Track a multi-turn session with `ConversationTracker` and score turns in context:
 
 ```python
-result = client.verify(
-    prompt=prompt,
-    response=llm_output,
-    conversation=[
-        {"role": "user", "content": "What's our Q3 revenue?"},
-        {"role": "assistant", "content": "Q3 revenue was $2.1M."},
-    ],
-)
+from sentinelai import ConversationTracker
+
+tracker = ConversationTracker(client, session_id="sess-001")
+tracker.add_turn(role="user", content="What's our Q3 revenue?")
+tracker.add_turn(role="assistant", content="Q3 revenue was $2.1M.")
+
+verdicts = tracker.analyze_conversation()      # per-turn verdicts
+stats = tracker.get_risk_statistics()          # conversation-level risk
+risky = tracker.get_high_risk_turns(threshold=0.7)
 ```
 
-## Blocking vs. monitoring
+## Batch analysis
 
-By default `verify()` is synchronous — the verdict arrives before you serve the response.
+```python
+results = client.analyze_batch([
+    {"prompt": "A", "response": "..."},
+    {"prompt": "B", "response": "..."},
+])
+```
 
-For monitoring-only workloads, the same call logs without blocking your request path.
+Items are analyzed in parallel (default 5 workers).
 
 ## Reliability
 
-- Automatic retries with backoff on transient failures
-- Timeouts that fail fast instead of hanging
-- Structured errors — you always know whether a verdict is a verdict or a failure
+- **Automatic retries** with exponential backoff on 429/5xx — capped at 60s
+- **Timeouts** that fail fast instead of hanging
+- **Safe fallback** — if the API is unreachable, `analyze()` returns `{"decision": "allow", "fallback": true}` rather than crashing your request path
+- **Structured errors** — `SentinelAIError`, `SentinelAIConnectionError`, `SentinelAIAuthenticationError`
 
 <Callout type="info">
   The SDK works against both the managed cloud and your self-hosted instance.

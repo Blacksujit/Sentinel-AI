@@ -36,5 +36,9 @@
 .footer-col h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-soft); margin-bottom: 12px; font-weight: 600; }
 .footer-col a { display: block; text-decoration: none; color: var(--ink); font-size: 13.5px; margin-bottom: 8px; opacity: 0.8; }
 .footer-col a:hover { opacity: 1; color: var(--red); }
+.footer-socials { display: flex; gap: 14px; margin-top: 18px; }
+.footer-socials a { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; color: var(--ink); opacity: 0.8; transition: opacity 0.15s ease, color 0.15s ease; }
+.footer-socials a:hover { opacity: 1; color: var(--red); border-color: var(--red); }
+.footer-socials .icon-sm { width: 16px; height: 16px; }
 .footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 22px; font-size: 12.5px; color: var(--ink-soft); flex-wrap: wrap; gap: 8px; }
 @media (max-width: 640px) { .footer-top { flex-direction: column; } .footer-cols { gap: 32px; } }

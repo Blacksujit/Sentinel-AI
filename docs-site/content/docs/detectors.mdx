@@ -1,56 +1,67 @@
 ---
 title: Detectors
-description: The six parallel detectors that power the trust score
+description: The three signal detectors and eight output risk categories behind every verdict
 ---
 
 # Detectors
 
-Every prompt/response pair is analyzed by **six detectors running in parallel**. Each detector emits a signal with confidence and evidence; the risk reasoner aggregates them into the trust score.
+Every prompt/response pair is analyzed by **three signal detectors running in parallel**. Their signals are aggregated, reasoned over, and mapped to a policy action — always with a human-readable explanation.
 
-## The six detectors
+## The three signal detectors
 
-| Detector | Flags | Example |
-|----------|-------|---------|
-| **Fabricated citations** | References that don't exist | A DOI or URL that was never published |
-| **Numeric drift** | Numbers that contradict the source | "GDP grew 12%" when the source says 4% |
-| **Entity confusion** | Wrong people, places, or products | Attributing a quote to the wrong author |
-| **Context contradiction** | Statements that contradict earlier context | Answering differently to the same fact mid-conversation |
-| **Unsupported claims** | Assertions with no backing | Confidently stated facts with no evidence |
-| **Overconfidence** | Absolute certainty without caveats | "This is definitely true" with zero qualification |
+| Detector | Side | How it works | Flags |
+|----------|------|--------------|-------|
+| **PromptAnomalyDetector** | Prompt | Jaccard similarity against stored baselines, plus keyword and length heuristics — flags prompts that drift from your normal traffic | `prompt_anomaly` |
+| **JailbreakRAGDetector** | Prompt | Sentence-transformer cosine similarity against known jailbreak patterns | `jailbreak_detected` |
+| **OutputRiskScorer** | Response | Rule-based regex heuristics across eight risk categories (below) | `unsafe_output` + category flags |
+
+## The eight output risk categories
+
+| Category | Example of what it flags |
+|----------|--------------------------|
+| **Violence** | Kill, murder, weapons, torture |
+| **Hate speech** | Racist, sexist, homophobic, derogatory slurs |
+| **Self-harm** | Suicide, self-injury, hopelessness |
+| **Illegal activities** | Hacking, theft, drugs, fraud, money laundering |
+| **Misinformation** | Fake news, conspiracy, debunked claims |
+| **Privacy violation** | SSNs, passwords, confidential or sensitive data |
+| **Inappropriate content** | Explicit/NSFW content, gore |
+| **Harmful instructions** | Step-by-step exploit guides, bypassing security, building weapons |
+
+Each category carries its own weight (0–1); a response can trigger multiple categories, and the aggregator applies a synergy bonus when several fire at once.
 
 ## Why parallel matters
 
 The detectors are **stateless and independent**, so they:
 
-- Run concurrently — latency stays flat as detectors are added
-- Fail independently — one detector going down never blocks the others
-- Stay explainable — each signal carries its own evidence
+- Run concurrently — one detector's failure never blocks the others
+- Stay explainable — each signal is a named flag with a weight, not an opaque embedding score
+- Feed a single aggregator — max severity plus synergy bonus, then a final risk score
 
-## The aggregator
-
-Detector signals are combined by a risk reasoner that weighs confidence and severity, then applies your policy:
+## The pipeline
 
 ```text
-prompt → 6 parallel detectors → aggregator → risk reasoner → policy → action
+prompt + response → 3 parallel detectors → aggregator → risk reasoner → policy engine → action
 ```
 
 <Mermaid
   chart="
 flowchart LR
-    D1[Fabricated citations] --> A[Aggregator]
-    D2[Numeric drift] --> A
-    D3[Entity confusion] --> A
-    D4[Context contradiction] --> A
-    D5[Unsupported claims] --> A
-    D6[Overconfidence] --> A
+    D1[PromptAnomalyDetector] --> A[Aggregator]
+    D2[JailbreakRAGDetector] --> A
+    D3[OutputRiskScorer<br/>8 categories] --> A
     A --> R[Risk Reasoner]
     R --> P[Policy Engine]
-    P --> T[Trust score + action]
+    P --> T[Decision + reason + action]
 "
 />
 
+## What every verdict includes
+
+The API returns the aggregated `final_risk_score` (0–1), the triggered `flags`, a `decision` (`allow`, `warn`, `block`, `escalate`), the `action_taken`, a human-readable `decision_reason`, and `settings_version` + `thresholds_applied` — the exact policy that produced the verdict.
+
 <Callout type="info">
   Detection rules are configurable via the settings API — including versioned
-  history so you can see exactly what policy was active when any score was
-  produced.
+  history (`/api/settings/history`) so you can see exactly what policy was
+  active when any score was produced.
 </Callout>

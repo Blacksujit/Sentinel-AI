@@ -29,9 +29,9 @@ const features = [
         <path d="M2 17l10 5 10-5" />
       </Icon>
     ),
-    title: "6 detectors in parallel",
+    title: "3 signal detectors in parallel",
     description:
-      "Fabricated citations, numeric drift, entity confusion, contradictions, unsupported claims, overconfidence.",
+      "Prompt anomaly detection (Jaccard similarity against your baselines), jailbreak detection (sentence-transformer cosine similarity), and output risk scoring (regex heuristics across 8 categories: violence, hate speech, self-harm, illegal activity, misinformation, privacy, inappropriate content, harmful instructions).",
   },
   {
     icon: (
@@ -40,9 +40,9 @@ const features = [
         <path d="M22 12h-4M6 12H2M12 6V2M12 22v-4" />
       </Icon>
     ),
-    title: "Explainable risk",
+    title: "Explainable verdicts",
     description:
-      "Every score ships with token-level reasons you can read and trust. No black boxes.",
+      "Every decision ships with a human-readable reason, the flags that triggered it, and the exact thresholds applied — plus a settings version, so any score can be replayed against the policy that produced it.",
   },
   {
     icon: (
@@ -50,9 +50,9 @@ const features = [
         <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
       </Icon>
     ),
-    title: "Auto-correction",
+    title: "4 policy actions + correction",
     description:
-      "Risky response? Get a cleaned version to serve instead of a failure.",
+      "The policy engine maps the risk score to allow, warn, block, or escalate — and the SDK's correct() returns a cleaned response instead of a failure.",
   },
   {
     icon: (
@@ -61,7 +61,8 @@ const features = [
       </Icon>
     ),
     title: "Conversation-aware",
-    description: "Risk is judged across multi-turn context, not in isolation.",
+    description:
+      "The SDK's ConversationTracker tracks turns across a session, scores each turn, and reports conversation-level risk statistics.",
   },
   {
     icon: (
@@ -72,7 +73,7 @@ const features = [
     ),
     title: "3-line SDK",
     description:
-      "pip install sentinelai-risk and you are live. No pipelines, no config sprawl.",
+      "pip install sentinelai-risk, then verify() returns a 0–100 score, status, claims, and corrected text. Retries with exponential backoff, parallel batch analysis, and API-key auth built in.",
   },
   {
     icon: (
@@ -83,7 +84,8 @@ const features = [
       </Icon>
     ),
     title: "Self-hostable",
-    description: "Open-source core. Your data stays on your infrastructure.",
+    description:
+      "Open-source FastAPI core with SQLite/PostgreSQL storage. The same SDK and API run against your own base URL — data never leaves your network.",
   },
 ];
 

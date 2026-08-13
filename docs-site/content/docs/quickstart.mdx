@@ -25,32 +25,34 @@ llm_output = "Revenue grew 45% year over year."
 
 result = client.verify(prompt=prompt, response=llm_output)
 
-if result.status == "hallucinated":
-    print(result.corrected)  # serve the fix, not the flaw
+if result["status"] == "hallucinated":
+    print(result["corrected"])  # serve the fix, not the flaw
 else:
-    print(result.trust_score, result.reasons)
+    print(result["score"], result["claims"])
 ```
 
 That's it. Every response is now scored, explained, and protected.
 
 ## 3. What you get back
 
-The `result` object contains:
+`verify()` returns a dict with:
 
-- **`status`** — `trusted`, `needs_review`, or `hallucinated`
-- **`trust_score`** — a number from 0 (safe) to 100 (critical risk)
-- **`reasons`** — human-readable, token-level explanations for every flag
-- **`corrected`** — the cleaned response, present when auto-correction applies
+- **`score`** — a number from 0 (safe) to 100 (critical risk)
+- **`status`** — `trusted` (0–24), `needs_review` (25–59), or `hallucinated` (60–100)
+- **`claims`** — detector-level findings with severity and note
+- **`corrected`** — the cleaned response, present when correction applies
+- **`decision` / `action_taken`** — what the policy engine decided and did
 
 <Callout type="info">
-  Built-in retries, timeouts, and error handling are included. The SDK never
-  leaves your request hanging.
+  Built-in retries, timeouts, and error handling are included. If the API is
+  unreachable, the SDK returns a safe `allow` fallback instead of crashing your
+  request path.
 </Callout>
 
 ## Next steps
 
 <Cards>
   <Card title="Trust score" description="Understand the 0-100 scale" href="/docs/trust-score" />
-  <Card title="Detectors" description="What the six detectors flag" href="/docs/detectors" />
+  <Card title="Detectors" description="The three signal detectors and eight risk categories" href="/docs/detectors" />
   <Card title="Modes" description="Choose blocking, monitoring, or async" href="/docs/modes" />
 </Cards>

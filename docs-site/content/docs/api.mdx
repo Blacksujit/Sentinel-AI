@@ -35,8 +35,7 @@ The core risk-analysis endpoint.
 ```json
 {
   "prompt": "Summarize the Q3 report",
-  "response": "Revenue grew 45% year over year.",
-  "conversation": []
+  "response": "Revenue grew 45% year over year."
 }
 ```
 
@@ -44,32 +43,34 @@ The core risk-analysis endpoint.
 |-------|------|----------|-------------|
 | `prompt` | `string` | yes | The user prompt |
 | `response` | `string` | yes | The model's response to score |
-| `conversation` | `array` | no | Prior turns for conversation-aware scoring |
 
 **Response**
 
 ```json
 {
-  "trust_score": 72,
-  "status": "hallucinated",
-  "reasons": [
-    {
-      "detector": "fabricated_citation",
-      "confidence": 0.94,
-      "evidence": "Citation references a DOI that does not exist",
-      "tokens": ["978-1-7281-3277-8"]
-    }
-  ],
-  "corrected": "Revenue grew 4.5% year over year."
+  "final_risk_score": 0.72,
+  "flags": ["violence", "harmful_instructions"],
+  "confidence": 0.88,
+  "decision": "block",
+  "action_taken": "block",
+  "decision_reason": "Multiple high-severity output risk categories triggered",
+  "settings_version": 3,
+  "thresholds_applied": {"block": 0.6},
+  "log_id": "analysis-241"
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `trust_score` | `float` | 0–100 risk score |
-| `status` | `string` | `trusted` \| `needs_review` \| `hallucinated` |
-| `reasons` | `array` | Detector explanations with confidence, evidence, tokens |
-| `corrected` | `string \| null` | Cleaned response when correction applies |
+| `final_risk_score` | `float` | Aggregated risk score, 0–1 |
+| `flags` | `array` | Triggered detectors and risk categories (e.g. `prompt_anomaly`, `jailbreak_detected`, `unsafe_output`, `violence`) |
+| `confidence` | `float \| null` | Confidence of the risk classification |
+| `decision` | `string` | `allow`, `warn`, `block`, or `escalate` |
+| `action_taken` | `string` | The action executed by the policy engine |
+| `decision_reason` | `string` | Human-readable explanation from the risk reasoner |
+| `settings_version` | `int \| null` | Which policy version produced this verdict |
+| `thresholds_applied` | `any \| null` | The exact thresholds used |
+| `log_id` | `string \| null` | ID for feedback reporting |
 
 **Status codes**
 
@@ -80,6 +81,10 @@ The core risk-analysis endpoint.
 | `422` | Invalid request body |
 | `429` | Rate limit exceeded |
 | `500` | Internal error — your prompt/response was never served unverified |
+
+### `POST /api/analyze/external`
+
+The endpoint the Python SDK calls. Extends `/api/analyze` with `source` (your application identifier), plus optional `user_id`, `session_id`, and `client_metadata` for per-user/session tracking.
 
 ### `GET /api/logs`
 

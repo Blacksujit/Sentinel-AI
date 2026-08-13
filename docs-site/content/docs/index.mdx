@@ -10,8 +10,8 @@ LLMs are confident. They're also wrong — inventing citations, flipping numbers
 ## What SentinelAI does
 
 - **Scores risk** on a 0–100 trust scale for every prompt/response pair
-- **Explains every score** with token-level reasons — not a black box
-- **Acts on risk** — serve, auto-correct, or block and escalate
+- **Explains every score** with named flags and a human-readable reason — not a black box
+- **Acts on risk** — allow, warn, block, or escalate via the policy engine
 - **Tracks conversations** across multi-turn context
 - **Integrates in 3 lines** with the Python SDK
 
@@ -35,11 +35,11 @@ Existing tools are fragmented: ML monitoring platforms show scores without reaso
   chart="
 flowchart LR
     App[Your App] --> API[SentinelAI API]
-    API --> Detectors[6 Parallel Detectors]
+    API --> Detectors[3 Signal Detectors]
     Detectors --> Reasoner[Risk Reasoner]
     Reasoner --> Policy[Policy Engine]
     Policy -->|0-24 Trusted| Serve[Serve as-is]
-    Policy -->|25-59 Review| Fix[Auto-correct]
+    Policy -->|25-59 Review| Fix[Warn / auto-correct]
     Policy -->|60-100 Block| Block[Block + escalate]
 "
 />
@@ -47,6 +47,6 @@ flowchart LR
 <Cards>
   <Card title="Quick start" description="Live in 60 seconds" href="/docs/quickstart" />
   <Card title="Trust score" description="What the 0-100 score means" href="/docs/trust-score" />
-  <Card title="Detectors" description="The six parallel risk signals" href="/docs/detectors" />
+  <Card title="Detectors" description="Three signal detectors, eight risk categories" href="/docs/detectors" />
   <Card title="Deployment modes" description="Blocking, monitoring, async, self-hosted" href="/docs/modes" />
 </Cards>
