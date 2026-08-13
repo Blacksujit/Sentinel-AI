@@ -1,10 +1,19 @@
 <p align="center">
-  <img src="docs-site/public/logo.svg" alt="SentinelAI" width="320">
+  <img src="docs-site/public/logo.svg" alt="SentinelAI" width="240">
+</p>
+
+<h3 align="center">AI risk monitoring for production LLMs</h3>
+
+<p align="center">
+  Catch hallucinations, prompt injections, and jailbreaks <b>before</b> they reach your users —
+  with a score, a reason, and an action for every response.
 </p>
 
 <p align="center">
-  <b>AI risk monitoring for production LLMs.</b><br>
-  Catch hallucinations, prompt injections, and jailbreaks <i>before</i> they reach your users.
+  <a href="https://pypi.org/project/sentinelai-sdk/"><img alt="PyPI" src="https://img.shields.io/pypi/v/sentinelai-sdk?label=PyPI"></a>
+  <a href="https://pypi.org/project/sentinelai-sdk/"><img alt="Python" src="https://img.shields.io/pypi/pyversions/sentinelai-sdk?label=Python"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Blacksujit/Sentinel-AI"></a>
+  <a href="https://blacksujit.github.io/Sentinel-AI/"><img alt="Docs" src="https://img.shields.io/badge/docs-github_pages-blue"></a>
 </p>
 
 <p align="center">
@@ -12,16 +21,25 @@
   &nbsp;•&nbsp;
   <a href="https://blacksujit.github.io/Sentinel-AI/"><b>Documentation</b></a>
   &nbsp;•&nbsp;
-  <a href="https://sentinel-ai-dml3.onrender.com/api/docs">API Docs</a>
+  <a href="https://sentinel-ai-dml3.onrender.com/api/docs">API Reference</a>
   &nbsp;•&nbsp;
   <a href="https://pypi.org/project/sentinelai-sdk/">PyPI</a>
 </p>
 
 ---
 
-SentinelAI monitors production LLM responses for risk in real time. Six detectors run in
-parallel — fabricated citations, numeric drift, entity confusion, contradictions, unsupported
-claims, and overconfidence — and every score ships with token-level reasons.
+## Why SentinelAI
+
+LLMs are confident — and wrong. They invent citations, flip numbers, and blend
+entities with zero hesitation. Most teams find out after a bad response reaches
+a user, or from a compliance auditor.
+
+SentinelAI sits between your app and your LLM, scoring every prompt/response
+pair in real time. Six detectors run in parallel, every score ships with
+token-level reasons, and your policy decides the action: serve, auto-correct,
+or block.
+
+**No black boxes.** Every verdict explains itself.
 
 ## Quick start
 
@@ -30,40 +48,65 @@ pip install sentinelai-sdk
 ```
 
 ```python
-from sentinelai_sdk import SentinelAI
+from sentinelai import SentinelAIClient
 
-client = SentinelAI(api_key="your-api-key")
+client = SentinelAIClient(api_key="sk_...")
 
-result = client.guard(
-    messages=[{"role": "user", "content": "What is the capital of France?"}],
-    response="The capital of France is Paris.",
-)
-print(result.risk_score, result.reasons)
+prompt = "What was Q3 revenue?"
+llm_output = "Revenue grew 45% year over year."
+
+result = client.verify(prompt=prompt, response=llm_output)
+
+if result.status == "hallucinated":
+    print(result.corrected)  # serve the fix, not the flaw
+else:
+    print(result.trust_score, result.reasons)
 ```
 
-See the [quickstart guide](https://blacksujit.github.io/Sentinel-AI/docs/quickstart) for
-configuration, modes, and self-hosting.
+Live in under 60 seconds. See the
+[quickstart guide](https://blacksujit.github.io/Sentinel-AI/docs/quickstart)
+for configuration, deployment modes, and self-hosting.
+
+## What you get back
+
+| Field | Meaning |
+|-------|---------|
+| `status` | `trusted`, `needs_review`, or `hallucinated` |
+| `trust_score` | 0 (safe) to 100 (critical risk) |
+| `reasons` | Token-level explanations for every flag |
+| `corrected` | A cleaned response when auto-correction applies |
 
 ## Features
 
-- **6 detectors in parallel** — fabricated citations, numeric drift, entity confusion,
-  contradictions, unsupported claims, overconfidence
+- **Six detectors in parallel** — fabricated citations, numeric drift, entity
+  confusion, contradictions, unsupported claims, overconfidence
 - **Explainable risk** — every score ships with token-level reasons, no black boxes
 - **Auto-correction** — serve a cleaned response instead of a risky one
-- **Conversation-aware** — risk judged across multi-turn context
+- **Conversation-aware** — risk judged across multi-turn context, not in isolation
+- **3-line SDK** — `pip install sentinelai-sdk` and you are live
 - **Self-hostable** — open-source core, your data stays on your infrastructure
+
+## How it works
+
+```
+prompt ─▶ 6 parallel detectors ─▶ risk reasoner ─▶ policy engine ─▶ action
+```
+
+| Trust score | Status | Default action |
+|-------------|--------|----------------|
+| 0–24 | Trusted | Serve as-is |
+| 25–59 | Needs review | Auto-correct or flag for humans |
+| 60–100 | Hallucinated | Block and escalate |
 
 ## Documentation
 
-The documentation site is a static Next.js/Fumadocs build, deployed to GitHub Pages:
+Full docs — trust score, detectors, deployment modes, API reference, and
+self-hosting — live at **https://blacksujit.github.io/Sentinel-AI/**.
 
-**https://blacksujit.github.io/Sentinel-AI/**
-
-Source lives in [`docs-site/`](docs-site) — static export via `output: 'export'` with a
-`/Sentinel-AI` base path, built by [`.github/workflows/pages.yml`](.github/workflows/pages.yml)
-on every push to `main`.
-
-Local dev:
+The docs site is a static Next.js/Fumadocs build in [`docs-site/`](docs-site),
+exported with a `/Sentinel-AI` base path and deployed to GitHub Pages by
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) on every push to
+`main`.
 
 ```bash
 cd docs-site
@@ -76,11 +119,17 @@ npm run dev
 | Path | Contents |
 | --- | --- |
 | `docs-site/` | Documentation website (Next.js + Fumadocs, static export) |
-| `Backend/` | SentinelAI API backend |
+| `Backend/` | SentinelAI API backend (FastAPI) |
 | `Frontend/` | Web dashboard |
 | `sentinelai-sdk/` | Python SDK |
 | `Docs/` | Source documentation & design notes |
 
+## Roadmap
+
+- Prompt drift detection, structured logging, alerting
+- Feedback-driven calibration, CI/eval integration, automated red-teaming
+- EU AI Act / SOC 2 / ISO 42001 compliance reporting
+
 ## License
 
-See [LICENSE](LICENSE).
+[MIT](LICENSE)

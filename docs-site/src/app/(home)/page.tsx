@@ -1,38 +1,87 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { assetPath } from "@/lib/shared";
+
+function Icon({ children }: { children: ReactNode }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5 text-fd-primary"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {children}
+    </svg>
+  );
+}
 
 const features = [
   {
-    icon: "🛡️",
+    icon: (
+      <Icon>
+        <path d="M12 2 2 7l10 5 10-5-10-5z" />
+        <path d="M2 12l10 5 10-5" />
+        <path d="M2 17l10 5 10-5" />
+      </Icon>
+    ),
     title: "6 detectors in parallel",
     description:
       "Fabricated citations, numeric drift, entity confusion, contradictions, unsupported claims, overconfidence.",
   },
   {
-    icon: "🎯",
+    icon: (
+      <Icon>
+        <circle cx="12" cy="12" r="10" />
+        <path d="M22 12h-4M6 12H2M12 6V2M12 22v-4" />
+      </Icon>
+    ),
     title: "Explainable risk",
     description:
       "Every score ships with token-level reasons you can read and trust. No black boxes.",
   },
   {
-    icon: "✂️",
+    icon: (
+      <Icon>
+        <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+      </Icon>
+    ),
     title: "Auto-correction",
     description:
       "Risky response? Get a cleaned version to serve instead of a failure.",
   },
   {
-    icon: "🧠",
+    icon: (
+      <Icon>
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </Icon>
+    ),
     title: "Conversation-aware",
     description: "Risk is judged across multi-turn context, not in isolation.",
   },
   {
-    icon: "📦",
+    icon: (
+      <Icon>
+        <path d="m16 18 6-6-6-6" />
+        <path d="m8 6-6 6 6 6" />
+      </Icon>
+    ),
     title: "3-line SDK",
     description:
       "pip install sentinelai-sdk and you are live. No pipelines, no config sprawl.",
   },
   {
-    icon: "🏠",
+    icon: (
+      <Icon>
+        <rect x="2" y="3" width="20" height="7" rx="2" />
+        <rect x="2" y="14" width="20" height="7" rx="2" />
+        <path d="M6 6.5h.01M6 17.5h.01" />
+      </Icon>
+    ),
     title: "Self-hostable",
     description: "Open-source core. Your data stays on your infrastructure.",
   },
@@ -45,7 +94,7 @@ export default function HomePage() {
         <img
           src={assetPath("/logo.svg")}
           alt="SentinelAI"
-          className="mb-8 h-12 w-auto"
+          className="mb-8 h-10 w-auto"
         />
 
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
@@ -105,7 +154,7 @@ export default function HomePage() {
               key={feature.title}
               className="rounded-xl border border-fd-border bg-fd-card p-6 transition-shadow hover:shadow-lg"
             >
-              <div className="mb-3 text-2xl">{feature.icon}</div>
+              <div className="mb-3">{feature.icon}</div>
               <h3 className="mb-2 font-semibold">{feature.title}</h3>
               <p className="text-sm text-fd-muted-foreground">
                 {feature.description}

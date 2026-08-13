@@ -20,10 +20,15 @@ from sentinelai import SentinelAIClient
 
 client = SentinelAIClient(api_key="sk_...")
 
+prompt = "What was Q3 revenue?"
+llm_output = "Revenue grew 45% year over year."
+
 result = client.verify(prompt=prompt, response=llm_output)
 
 if result.status == "hallucinated":
-    return result.corrected  # serve the fix, not the flaw
+    print(result.corrected)  # serve the fix, not the flaw
+else:
+    print(result.trust_score, result.reasons)
 ```
 
 That's it. Every response is now scored, explained, and protected.

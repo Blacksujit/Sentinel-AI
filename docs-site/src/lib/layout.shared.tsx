@@ -9,7 +9,7 @@ export function baseOptions(): BaseLayoutProps {
           <img
             src={assetPath("/logo.svg")}
             alt="SentinelAI"
-            className="h-6 w-auto"
+            className="h-5 w-auto"
           />
         </>
       ),
