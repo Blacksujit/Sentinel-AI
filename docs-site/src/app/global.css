@@ -2,14 +2,48 @@
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
 
+/*
+ * SentinelAI docs design system
+ * Cool-tinted neutrals + brand blue (#3B5BFF), Mintlify/Vercel-grade polish.
+ */
 @theme {
-  --color-fd-primary: hsl(233, 91%, 56%);
-  --color-fd-primary-foreground: hsl(0, 0%, 100%);
+  --color-fd-background: hsl(230 40% 99%);
+  --color-fd-foreground: hsl(226 35% 11%);
+  --color-fd-muted: hsl(228 30% 96%);
+  --color-fd-muted-foreground: hsl(226 12% 40%);
+  --color-fd-popover: hsl(0 0% 100%);
+  --color-fd-popover-foreground: hsl(226 35% 11%);
+  --color-fd-card: hsl(0 0% 100%);
+  --color-fd-card-foreground: hsl(226 35% 11%);
+  --color-fd-border: hsla(226 25% 60% / 28%);
+  --color-fd-primary: hsl(233 100% 60%);
+  --color-fd-primary-foreground: hsl(0 0% 100%);
+  --color-fd-secondary: hsl(228 25% 95%);
+  --color-fd-secondary-foreground: hsl(226 35% 11%);
+  --color-fd-accent: hsl(233 100% 97%);
+  --color-fd-accent-foreground: hsl(233 65% 38%);
+  --color-fd-ring: hsl(233 100% 60%);
+  --color-fd-overlay: hsla(226 35% 8% / 28%);
 }
 
 .dark {
-  --color-fd-primary: hsl(233, 91%, 68%);
-  --color-fd-primary-foreground: hsl(233, 91%, 12%);
+  --color-fd-background: hsl(230 28% 7%);
+  --color-fd-foreground: hsl(226 25% 92%);
+  --color-fd-muted: hsl(230 20% 12%);
+  --color-fd-muted-foreground: hsla(226 15% 72% / 0.75);
+  --color-fd-popover: hsl(230 22% 10%);
+  --color-fd-popover-foreground: hsl(226 25% 92%);
+  --color-fd-card: hsl(230 24% 9.5%);
+  --color-fd-card-foreground: hsl(226 25% 92%);
+  --color-fd-border: hsla(226 25% 70% / 14%);
+  --color-fd-primary: hsl(233 94% 70%);
+  --color-fd-primary-foreground: hsl(233 80% 12%);
+  --color-fd-secondary: hsl(230 20% 13%);
+  --color-fd-secondary-foreground: hsl(226 25% 92%);
+  --color-fd-accent: hsla(233 94% 70% / 16%);
+  --color-fd-accent-foreground: hsl(226 25% 90%);
+  --color-fd-ring: hsl(233 94% 70%);
+  --color-fd-overlay: hsla(226 30% 3% / 55%);
 }
 
 html {
@@ -19,4 +53,270 @@ html {
 html > body[data-scroll-locked] {
   margin-right: 0px !important;
   --removed-body-scroll-bar-size: 0px !important;
+}
+
+/* ---------- typography ---------- */
+
+body {
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-fd-primary) 22%, transparent);
+}
+
+/* ---------- nav ---------- */
+
+#nd-nav,
+.nd-nav {
+  border-bottom: 1px solid var(--color-fd-border);
+  background: color-mix(in srgb, var(--color-fd-background) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+#nd-nav a[aria-current="page"],
+.nd-nav a[aria-current="page"] {
+  color: var(--color-fd-primary);
+}
+
+/* search trigger pill + shortcut key */
+.nd-search kbd,
+#nd-nav kbd {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 5px;
+  border: 1px solid var(--color-fd-border);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--color-fd-card);
+  color: var(--color-fd-muted-foreground);
+}
+
+/* ---------- sidebar ---------- */
+
+#nd-sidebar {
+  border-right: 1px solid var(--color-fd-border);
+}
+
+#nd-sidebar a:hover {
+  color: var(--color-fd-foreground);
+  background: color-mix(in srgb, var(--color-fd-accent) 70%, transparent);
+}
+
+#nd-sidebar a[data-active="true"],
+#nd-sidebar a[aria-current="page"] {
+  color: var(--color-fd-accent-foreground);
+  background: var(--color-fd-accent);
+  font-weight: 600;
+}
+
+#nd-sidebar > div > div > div {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  color: var(--color-fd-muted-foreground);
+}
+
+/* ---------- toc ---------- */
+
+#nd-toc a {
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+#nd-toc a:hover {
+  color: var(--color-fd-foreground);
+}
+
+#nd-toc a[data-active="true"] {
+  color: var(--color-fd-primary);
+  background: color-mix(in srgb, var(--color-fd-primary) 8%, transparent);
+}
+
+/* ---------- page content ---------- */
+
+main {
+  scrollbar-width: thin;
+}
+
+main h1,
+main h2,
+main h3,
+main h4 {
+  letter-spacing: -0.02em;
+  scroll-margin-top: 6rem;
+}
+
+main h2 {
+  padding-top: 0.5rem;
+}
+
+main a {
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--color-fd-primary) 40%, transparent);
+  transition: text-decoration-color 0.15s ease;
+}
+
+main a:hover {
+  text-decoration-color: var(--color-fd-primary);
+}
+
+/* code blocks */
+main pre {
+  border: 1px solid var(--color-fd-border);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.08);
+}
+
+main figure[data-rehype-pretty-code-figure] pre {
+  border: 1px solid var(--color-fd-border);
+  border-radius: 12px;
+}
+
+main code:not(pre code) {
+  font-size: 0.85em;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 6px;
+  padding: 0.1em 0.35em;
+  background: var(--color-fd-muted);
+}
+
+/* tables */
+main table {
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 12px;
+}
+
+main thead th {
+  background: var(--color-fd-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+
+main tbody tr {
+  transition: background 0.12s ease;
+}
+
+main tbody tr:hover {
+  background: var(--color-fd-accent);
+}
+
+/* ---------- landing page ---------- */
+
+.hero-glow {
+  position: absolute;
+  left: 50%;
+  top: -18rem;
+  width: 52rem;
+  height: 34rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background:
+    radial-gradient(40% 45% at 38% 42%, hsla(233 100% 62% / 0.28), transparent 70%),
+    radial-gradient(38% 42% at 64% 48%, hsla(199 90% 55% / 0.18), transparent 70%);
+  filter: blur(28px);
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--color-fd-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-fd-border) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, black 25%, transparent 78%);
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, black 25%, transparent 78%);
+}
+
+.pip-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: min(100%, 30rem);
+  padding: 0.8rem 1.1rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--color-fd-border);
+  background: var(--color-fd-foreground);
+  color: var(--color-fd-background);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.9rem;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 16px 40px -16px rgb(0 0 0 / 0.25);
+}
+
+.pip-card .prompt {
+  color: color-mix(in srgb, var(--color-fd-background) 55%, transparent);
+  user-select: none;
+}
+
+.pip-card code {
+  font-family: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.pip-card .badge {
+  margin-left: auto;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.22rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-fd-background) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fd-background) 22%, transparent);
+}
+
+.icon-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  background: var(--color-fd-accent);
+  color: var(--color-fd-accent-foreground);
+  border: 1px solid color-mix(in srgb, var(--color-fd-primary) 14%, transparent);
+}
+
+.feature-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--color-fd-primary) 35%, var(--color-fd-border));
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.04), 0 20px 40px -20px rgb(0 0 0 / 0.18);
+}
+
+.cta-border {
+  background: linear-gradient(
+    135deg,
+    hsl(233 100% 62%),
+    hsl(265 82% 60%),
+    hsl(199 90% 55%)
+  );
+  padding: 1px;
+  border-radius: 1.4rem;
+  box-shadow: 0 24px 60px -24px hsl(233 100% 62% / 0.45);
+}
+
+.cta-inner {
+  border-radius: calc(1.4rem - 1px);
+  background: var(--color-fd-background);
+  padding: 3.5rem 2rem;
 }

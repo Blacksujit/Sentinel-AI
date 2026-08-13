@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { assetPath } from "@/lib/shared";
 
 function Icon({ children }: { children: ReactNode }) {
   return (
@@ -22,6 +21,7 @@ function Icon({ children }: { children: ReactNode }) {
 
 const features = [
   {
+    href: "/docs/detectors",
     icon: (
       <Icon>
         <path d="M12 2 2 7l10 5 10-5-10-5z" />
@@ -34,6 +34,7 @@ const features = [
       "Naive filters only match keywords, so attackers paraphrase around them. Three detectors run in parallel — prompt anomalies, jailbreak attempts, and risky output across 8 categories like violence, hate speech, and self-harm.",
   },
   {
+    href: "/docs/trust-score",
     icon: (
       <Icon>
         <circle cx="12" cy="12" r="10" />
@@ -45,6 +46,7 @@ const features = [
       "A bare score tells you nothing. Every verdict ships with the reason, the flags that triggered it, and the thresholds applied — so you can replay any score against the policy that produced it.",
   },
   {
+    href: "/docs/quickstart",
     icon: (
       <Icon>
         <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
@@ -55,6 +57,7 @@ const features = [
       "A risky response isn't a dead end. The policy engine allows, warns, blocks, or escalates — and correct() returns a cleaned response instead of an error.",
   },
   {
+    href: "/docs/sdk",
     icon: (
       <Icon>
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -65,6 +68,7 @@ const features = [
       "One prompt can look harmless while the conversation drifts. ConversationTracker scores every turn and rolls them up into conversation-level risk.",
   },
   {
+    href: "/docs/quickstart",
     icon: (
       <Icon>
         <path d="m16 18 6-6-6-6" />
@@ -76,6 +80,7 @@ const features = [
       "pip install sentinelai-risk, call verify(), and get a 0–100 score with a clear verdict. Retries, parallel batches, and API-key auth are handled for you.",
   },
   {
+    href: "/docs/self-hosting",
     icon: (
       <Icon>
         <rect x="2" y="3" width="20" height="7" rx="2" />
@@ -92,29 +97,39 @@ const features = [
 export default function HomePage() {
   return (
     <div className="flex flex-1 flex-col">
-      <section className="flex flex-col items-center text-center px-6 pt-24 pb-16">
-        <img
-          src={assetPath("/logo.svg")}
-          alt="SentinelAI"
-          className="mb-8 h-8 w-auto"
-        />
+      <section className="relative overflow-hidden flex flex-col items-center text-center px-6 pt-24 pb-16">
+        <div className="hero-glow" aria-hidden="true" />
+        <div className="hero-grid" aria-hidden="true" />
 
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+        <span className="relative mb-6 inline-flex items-center gap-2 rounded-full border border-fd-border bg-fd-card px-3.5 py-1.5 text-xs font-medium text-fd-muted-foreground">
+          <span className="h-1.5 w-1.5 rounded-full bg-fd-primary" />
+          Open source · MIT licensed · Python 3.9+
+        </span>
+
+        <h1 className="relative text-4xl md:text-6xl font-bold tracking-tight mb-6">
           AI risk monitoring
           <br />
-          for production LLMs
+          <span className="bg-gradient-to-r from-[hsl(233_100%_60%)] via-[hsl(265_82%_60%)] to-[hsl(199_90%_55%)] bg-clip-text text-transparent">
+            for production LLMs
+          </span>
         </h1>
 
-        <p className="text-lg md:text-xl text-fd-muted-foreground max-w-2xl mb-10">
+        <p className="relative text-lg md:text-xl text-fd-muted-foreground max-w-2xl mb-8">
           Catch hallucinations, prompt injections, and jailbreaks{" "}
           <span className="font-semibold text-fd-foreground">before</span> they
           reach your users.
         </p>
 
-        <div className="flex items-center gap-4 mb-4">
+        <div className="pip-card relative mb-8" aria-label="Install command">
+          <span className="prompt">$</span>
+          <code>pip install sentinelai-risk</code>
+          <span className="badge">PyPI</span>
+        </div>
+
+        <div className="relative flex items-center gap-4 mb-4">
           <Link
             href="/docs"
-            className="inline-flex items-center gap-2 rounded-lg bg-fd-primary px-6 py-3 text-sm font-semibold text-fd-primary-foreground transition-opacity hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-lg bg-fd-primary px-6 py-3 text-sm font-semibold text-fd-primary-foreground shadow-[0_8px_24px_-8px_var(--color-fd-primary)] transition-opacity hover:opacity-90"
           >
             Read the docs
             <span aria-hidden>→</span>
@@ -127,7 +142,7 @@ export default function HomePage() {
           </a>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-fd-muted-foreground">
+        <div className="relative flex flex-wrap items-center justify-center gap-2 text-xs text-fd-muted-foreground">
           <span className="rounded-full border border-fd-border px-3 py-1">
             Python 3.9+
           </span>
@@ -142,7 +157,7 @@ export default function HomePage() {
           </span>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm">
+        <div className="relative mt-6 flex flex-wrap items-center justify-center gap-3 text-sm">
           <a
             href="https://github.com/Blacksujit/Sentinel-AI"
             target="_blank"
@@ -183,32 +198,44 @@ export default function HomePage() {
       <section className="border-t border-fd-border bg-fd-muted/40">
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 px-6 py-16 md:grid-cols-3">
           {features.map((feature) => (
-            <div
+            <Link
               key={feature.title}
-              className="rounded-xl border border-fd-border bg-fd-card p-6 transition-shadow hover:shadow-lg"
+              href={feature.href}
+              className="feature-card group flex flex-col rounded-xl border border-fd-border bg-fd-card p-6"
             >
-              <div className="mb-3">{feature.icon}</div>
+              <div className="icon-tile mb-4">{feature.icon}</div>
               <h3 className="mb-2 font-semibold">{feature.title}</h3>
-              <p className="text-sm text-fd-muted-foreground">
+              <p className="mb-4 text-sm text-fd-muted-foreground">
                 {feature.description}
               </p>
-            </div>
+              <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-fd-primary opacity-0 transition-opacity group-hover:opacity-100">
+                Learn more <span aria-hidden>→</span>
+              </span>
+            </Link>
           ))}
         </div>
       </section>
 
-      <section className="flex flex-col items-center px-6 py-16 text-center">
-        <h2 className="mb-4 text-2xl font-bold">Deploy AI with confidence</h2>
-        <p className="max-w-xl text-fd-muted-foreground mb-8">
-          Every organization deploying LLMs needs to know when the model is
-          wrong. SentinelAI makes risk visible, explainable, and controllable.
-        </p>
-        <Link
-          href="/docs/quickstart"
-          className="font-medium text-fd-primary hover:underline"
-        >
-          Get started in 60 seconds →
-        </Link>
+      <section className="flex justify-center px-6 py-16">
+        <div className="cta-border w-full max-w-3xl">
+          <div className="cta-inner flex flex-col items-center text-center">
+            <h2 className="mb-4 text-2xl font-bold tracking-tight">
+              Deploy AI with confidence
+            </h2>
+            <p className="mb-8 max-w-xl text-fd-muted-foreground">
+              Every organization deploying LLMs needs to know when the model is
+              wrong. SentinelAI makes risk visible, explainable, and
+              controllable.
+            </p>
+            <Link
+              href="/docs/quickstart"
+              className="inline-flex items-center gap-2 rounded-lg bg-fd-primary px-6 py-3 text-sm font-semibold text-fd-primary-foreground transition-opacity hover:opacity-90"
+            >
+              Get started in 60 seconds
+              <span aria-hidden>→</span>
+            </Link>
+          </div>
+        </div>
       </section>
     </div>
   );
