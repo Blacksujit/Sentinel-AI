@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Sun, Moon, Menu, X, ArrowRight } from 'lucide-react';
+import { Sun, Moon, Menu, X, ArrowRight, Star, Coffee } from 'lucide-react';
 import BrandMark from './BrandMark';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/docs', label: 'Docs' },
 ];
+
+const GITHUB_REPO = 'https://github.com/Blacksujit/Sentinel-AI';
+const SPONSORS = 'https://github.com/sponsors/Blacksujit';
 
 export default function Nav() {
   const pathname = usePathname();
@@ -41,7 +44,7 @@ export default function Nav() {
       <div className="wrap nav-inner">
         <Link href="/" className="brand" onClick={() => setOpen(false)}>
           <BrandMark />
-          Sentinal AI
+          SentinelAI
         </Link>
 
         <ul className="nav-links">
@@ -58,6 +61,26 @@ export default function Nav() {
         </ul>
 
         <div className="nav-right">
+          <a
+            href={GITHUB_REPO}
+            target="_blank"
+            rel="noreferrer"
+            className="nav-social"
+            aria-label="Star SentinelAI on GitHub"
+          >
+            <Star size={15} />
+            Star
+          </a>
+          <a
+            href={SPONSORS}
+            target="_blank"
+            rel="noreferrer"
+            className="nav-social"
+            aria-label="Buy us a coffee"
+          >
+            <Coffee size={15} />
+            Buy us a coffee
+          </a>
           <button
             className="theme-toggle"
             onClick={toggleTheme}
@@ -91,6 +114,26 @@ export default function Nav() {
               {link.label}
             </Link>
           ))}
+          <a
+            href={GITHUB_REPO}
+            target="_blank"
+            rel="noreferrer"
+            className="mobile-link"
+            onClick={() => setOpen(false)}
+          >
+            <Star size={15} />
+            Star on GitHub
+          </a>
+          <a
+            href={SPONSORS}
+            target="_blank"
+            rel="noreferrer"
+            className="mobile-link"
+            onClick={() => setOpen(false)}
+          >
+            <Coffee size={15} />
+            Buy us a coffee
+          </a>
         </div>
       )}
     </header>
