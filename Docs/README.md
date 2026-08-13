@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.svg" alt="SentinelAI" width="400">
+  <img src="logo.svg" alt="SentinelAI" width="420">
 </p>
 
 <p align="center">
@@ -8,28 +8,31 @@
 </p>
 
 <p align="center">
-  <a href="https://sentinelaihq.com">Live Demo</a> ·
+  <a href="https://sentinelaihq.com"><b>Live Demo</b></a> ·
   <a href="https://sentinel-ai-dml3.onrender.com/api/docs">API Docs</a> ·
   <a href="https://pypi.org/project/sentinelai-sdk/">PyPI</a>
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.9%2B-2B42F5?style=flat-square" alt="Python 3.9+">
+  <img src="https://img.shields.io/badge/self--hosted-yes-00B386?style=flat-square" alt="Self-hostable">
+  <img src="https://img.shields.io/badge/status-production%20ready-2B42F5?style=flat-square" alt="Production ready">
+</p>
+
 ---
 
-## What is this?
+LLMs are confident. They're also wrong — inventing citations, flipping numbers, and blending entities with zero hesitation. **SentinelAI sits between your app and your LLM**, scoring every prompt/response pair in real time, explaining the risk, and acting on it — before bad output reaches a user.
 
-SentinelAI sits between your app and your LLM, analyzing every prompt/response pair in real-time. It returns a **trust score (0–100)**, tells you *why*, and can auto-correct risky responses — so you serve the fix, not the flaw.
+## What SentinelAI does
 
-LLMs hallucinate. They invent citations, flip numbers, and mix up entities. SentinelAI is the safety net your AI feature needs before you ship it.
+- 🛡️ **6 detectors in parallel** — fabricated citations, numeric drift, entity confusion, context contradictions, unsupported claims, overconfidence
+- 🎯 **Explainable risk, not a black box** — every score ships with token-level reasons you can read and trust
+- ✂️ **Auto-correction** — when a response is risky, get a cleaned version to serve instead
+- 🧠 **Conversation-aware** — risk is judged across multi-turn context, not in isolation
+- 📦 **3-line SDK** — `pip install sentinelai-sdk` and you're live. No pipelines, no config sprawl
+- 🏠 **Self-hostable** — open-source core. Your data stays on your infra
 
-## Why you'll love it
-
-- 🛡️ **6 detectors in parallel** — fake citations, numeric drift, entity confusion, contradictions, unsupported claims, overconfidence
-- 🎯 **Explainable, not a black box** — every score comes with token-level reasons
-- ✂️ **Auto-correction** — blocked? We return a cleaned response to serve instead
-- 🧠 **Conversation-aware** — tracks context across multi-turn chats
-- ⚡ **3-line setup** — no pipelines, no config, no lock-in
-
-## Quick start
+## 60-second quick start
 
 ```bash
 pip install sentinelai-sdk
@@ -46,7 +49,7 @@ if result.status == "hallucinated":
     return result.corrected  # serve the fix, not the flaw
 ```
 
-That's it. You're live in under 60 seconds.
+Every response is now scored, explained, and protected. That's the whole integration.
 
 ## How it works
 
@@ -65,7 +68,7 @@ flowchart LR
 - **Needs review (25–59)** — auto-correct or flag for humans
 - **Hallucinated (60–100)** — block and escalate
 
-## Where you can use it
+## Where it runs
 
 | Mode | Use case |
 |------|----------|
@@ -82,21 +85,19 @@ flowchart LR
 | **Pro** | Managed cloud, dashboard, alerting, settings history |
 | **Enterprise** | SLAs, SSO, audit logs, custom retention, compliance reports |
 
-## Roadmap
+## Get involved
 
-Short term: better prompt drift detection, structured logging, alerting.
-Next: feedback-driven calibration, CI/eval integration, automated red-teaming, EU AI Act / SOC 2 / ISO 42001 compliance reporting.
-
-## Built for teams shipping AI
-
-Made for AI/ML engineers at 50–500 person SaaS companies who want confidence, not complexity. Unlike observability tools that just log, SentinelAI **acts** — scoring, correcting, and escalating in real time.
+- ⭐ Star the repo and help us reach 100 stars — that's our launch milestone
+- 🐛 Found a false positive? Open an issue — we read every one
+- 💬 Questions? [support@sentinelai.dev](mailto:support@sentinelai.dev)
+- 🚀 Ready to try it? [Launch the live demo](https://sentinelaihq.com)
 
 ---
 
 <p align="center">
   <a href="https://sentinelaihq.com">Dashboard</a> ·
-  <a href="https://github.com/">GitHub</a> ·
-  <a href="mailto:support@sentinelai.dev">support@sentinelai.dev</a>
+  <a href="https://github.com/Blacksujit/Sentinel-AI">GitHub</a> ·
+  <a href="https://sentinel-ai-dml3.onrender.com/api/docs">API Docs</a>
 </p>
 
 <p align="center"><i>Making AI systems observable and safe by default.</i></p>
