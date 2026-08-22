@@ -181,7 +181,7 @@ class TestSentinelAIClient:
 
     @patch.object(requests.Session, 'request')
     def test_verify_hallucinated(self, mock_request):
-        """Test verify returns hallucinated for high risk scores"""
+        """Test verify flags a claim that contradicts the prompt as hallucinated"""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -193,13 +193,36 @@ class TestSentinelAIClient:
         mock_request.return_value = mock_response
 
         result = self.client.verify(
-            prompt="Who won the 2019 Nobel Prize?",
-            response="Stephen Hawking won it posthumously.",
+            prompt="Our refund policy is 60 days.",
+            response="We offer 30-day refunds.",
         )
         assert result["status"] == "hallucinated"
         assert result["score"] == 91
-        assert len(result["claims"]) > 0
-        assert result["corrected"] is not None
+        assert len(result["claims"]) == 1
+        assert result["claims"][0]["verdict"] == "contradicted"
+        assert result["corrected"] == "We offer 60-day refunds."
+
+    @patch.object(requests.Session, 'request')
+    def test_verify_unverified_claim_requires_review(self, mock_request):
+        """Test claims without prompt evidence are marked unverified, not corrected"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "final_risk_score": 0.1,
+            "decision": "allow",
+            "flags": [],
+            "action_taken": "allow",
+        }
+        mock_request.return_value = mock_response
+
+        result = self.client.verify(
+            prompt="What is the capital of France?",
+            response="Paris was founded 2,000 years ago.",
+        )
+        assert result["status"] == "needs_review"
+        assert len(result["claims"]) == 1
+        assert result["claims"][0]["verdict"] == "unverified"
+        assert result["corrected"] is None
 
     @patch.object(requests.Session, 'request')
     def test_correct_returns_original_when_trusted(self, mock_request):

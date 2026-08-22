@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from app.auth.dependencies import require_authenticated_user, get_db
 from app.tenancy.org_context import resolve_org, resolve_org_from_request, require_org_membership
 from app.rbac.enforce import require_permission, require_permission_from_path
+from app.rbac.permissions import user_permissions_for_org
 from app.services.audit_service import AuditService
 from app.services.usage_service import UsageService
 from app.services.workspace_service import WorkspaceService
@@ -18,6 +19,7 @@ from app.storage.org_models import Organization, OrgMembership
 from app.storage.user_models import User
 from app.storage.rbac_models import RbacRole
 from app.storage.models import RiskLog
+from app.storage.usage_models import AuditLog
 from app.api.schemas import RiskLogResponse
 import json
 
@@ -39,6 +41,15 @@ def _ensure_unique_org_slug(db: Session, base_slug: str) -> str:
         slug = f"{base}-{i}"
         i += 1
     return slug
+
+
+def _require_org_permission(db: Session, user_id: int, org_id: int, permission_key: str) -> None:
+    perms = user_permissions_for_org(db, user_id=user_id, org_id=org_id)
+    if permission_key not in perms:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Permission denied: {permission_key}",
+        )
 
 # Pydantic models
 class OrgCreate(BaseModel):
@@ -233,7 +244,7 @@ async def list_orgs(
     org_ids = (
         db.query(OrgMembership.org_id)
         .filter(OrgMembership.user_id == user.id)
-        .subquery()
+        .scalar_subquery()
     )
     orgs = db.query(Organization).filter(Organization.id.in_(org_ids)).all()
     return [
@@ -346,21 +357,13 @@ async def get_org_baselines(
     user: User = Depends(require_authenticated_user),
     db: Session = Depends(get_db),
 ):
-    """Get organization baseline configuration."""
+    """Get organization baseline configuration (defaults merged with org overrides)."""
     org = resolve_org(db, org_id)
     require_org_membership(db, user_id=user.id, org_id=org.id)
-    
-    # Return default baselines for now
-    return {
-        "risk_threshold_low": 30.0,
-        "risk_threshold_medium": 60.0,
-        "risk_threshold_high": 85.0,
-        "risk_threshold_critical": 95.0,
-        "model_sensitivity": "medium",
-        "alert_on_block": True,
-        "alert_on_high_risk": True,
-        "alert_on_critical": True
-    }
+
+    from app.storage.baseline_config_models import DEFAULT_BASELINE_CONFIG
+    stored = org.baseline_config or {}
+    return {**DEFAULT_BASELINE_CONFIG, **stored}
 
 
 class OnboardingData(BaseModel):
@@ -381,7 +384,12 @@ async def dev_sync_org(
 
     This creates or resolves an organization by its Clerk org ID and
     adds the requesting user as an OWNER member if not already.
+    Disabled when APP_ENV is production.
     """
+    import os
+    if os.getenv("APP_ENV", "").lower() == "production":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
     clerk_org_id = payload.clerk_org_id
     org = OrganizationSyncService.get_organization_by_clerk_id(clerk_org_id, db)
 
@@ -498,14 +506,25 @@ async def update_org_baselines(
     user: User = Depends(require_authenticated_user),
     db: Session = Depends(get_db),
 ):
-    """Update organization baseline configuration."""
+    """Update organization baseline configuration (partial merge, validated)."""
     org = resolve_org(db, org_id)
     require_org_membership(db, user_id=user.id, org_id=org.id)
-    
-    # Update baseline config in organization
-    org.baseline_config = config
+    _require_org_permission(db, user_id=user.id, org_id=org.id, permission_key="settings.update")
+
+    from app.storage.baseline_config_models import DEFAULT_BASELINE_CONFIG
+    allowed_keys = set(DEFAULT_BASELINE_CONFIG.keys())
+    unknown = set(config.keys()) - allowed_keys
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unknown baseline keys: {sorted(unknown)}",
+        )
+
+    previous = dict(org.baseline_config or {})
+    merged = {**DEFAULT_BASELINE_CONFIG, **previous, **config}
+    org.baseline_config = merged
     db.commit()
-    
+
     AuditService.log(
         db,
         org_id=org.id,
@@ -514,6 +533,68 @@ async def update_org_baselines(
         action="baseline.updated",
         target_type="organization",
         target_id=org.id,
+        event_metadata={"previous_values": previous, "new_values": config},
     )
-    
-    return config
+    db.commit()
+    return merged
+
+
+@router.get("/orgs/{org_id}/audit-logs")
+async def list_org_audit_logs(
+    org_id: str,
+    request: Request,
+    limit: int = 50,
+    offset: int = 0,
+    action: Optional[str] = None,
+    actor_user_id: Optional[int] = None,
+    user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    """List organization audit log entries (paginated, filterable).
+
+    Requires the ``audit.view`` permission. Actor emails are joined from the
+    users table; org-scoped entries only (org_id must match).
+    """
+    org = resolve_org(db, org_id)
+    require_org_membership(db, user_id=user.id, org_id=org.id)
+    _require_org_permission(db, user_id=user.id, org_id=org.id, permission_key="audit.view")
+
+    limit = max(1, min(limit, 200))
+    offset = max(0, offset)
+
+    q = db.query(AuditLog).filter(AuditLog.org_id == org.id)
+    if action:
+        q = q.filter(AuditLog.action == action)
+    if actor_user_id:
+        q = q.filter(AuditLog.actor_user_id == actor_user_id)
+
+    total = q.count()
+    logs = q.order_by(AuditLog.created_at.desc()).offset(offset).limit(limit).all()
+
+    actor_ids = {log.actor_user_id for log in logs if log.actor_user_id}
+    actors: dict = {}
+    if actor_ids:
+        for u in db.query(User).filter(User.id.in_(actor_ids)).all():
+            actors[u.id] = {"email": u.email, "name": u.name}
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "items": [
+            {
+                "id": log.id,
+                "action": log.action,
+                "actor_type": log.actor_type,
+                "actor_user_id": log.actor_user_id,
+                "actor": actors.get(log.actor_user_id),
+                "target_type": log.target_type,
+                "target_id": log.target_id,
+                "ip": log.ip,
+                "user_agent": log.user_agent,
+                "event_metadata": log.event_metadata,
+                "created_at": log.created_at.isoformat() if log.created_at else None,
+            }
+            for log in logs
+        ],
+    }

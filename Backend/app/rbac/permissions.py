@@ -12,7 +12,10 @@ PERMISSION_REGISTRY = {
     "apikey.revoke": "Revoke API keys",
     "apikey.rotate": "Rotate API keys",
     "usage.view": "View usage analytics",
+    "audit.view": "View organization audit logs",
     "settings.update": "Update organization settings",
+    "redteam.run": "Run red team security evaluations",
+    "redteam.view": "View red team results and reports",
 }
 
 def get_permission_keys() -> List[str]:

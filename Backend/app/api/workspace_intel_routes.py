@@ -38,6 +38,13 @@ router = APIRouter(
 engine = IntelligenceEngine()
 
 
+def _ev(val, default="UNKNOWN"):
+    """Safely extract enum value — works for both enum objects and plain strings."""
+    if val is None:
+        return default
+    return val.value if hasattr(val, "value") else str(val)
+
+
 # ─── Pydantic Schemas ───────────────────────────────────────────────────────────
 
 class IncidentCreateRequest(BaseModel):
@@ -770,9 +777,9 @@ async def workspace_ws(
 def _incident_to_response(i) -> IncidentResponse:
     return IncidentResponse(
         id=i.id, workspace_id=i.workspace_id, title=i.title,
-        description=i.description, severity=i.severity.value if i.severity else "MEDIUM",
-        status=i.status.value if i.status else "DETECTED",
-        source=i.source.value if i.source else "ANOMALY",
+        description=i.description, severity=_ev(i.severity, "MEDIUM"),
+        status=_ev(i.status, "DETECTED"),
+        source=_ev(i.source, "ANOMALY"),
         detected_at=i.detected_at, acknowledged_at=i.acknowledged_at,
         resolved_at=i.resolved_at, assignee_id=i.assignee_id,
         reporter_id=i.reporter_id, root_cause=i.root_cause,
@@ -786,9 +793,9 @@ def _incident_to_response(i) -> IncidentResponse:
 def _incident_to_dict(i) -> Dict:
     return {
         "id": i.id, "workspace_id": i.workspace_id, "title": i.title,
-        "severity": i.severity.value if i.severity else "MEDIUM",
-        "status": i.status.value if i.status else "DETECTED",
-        "source": i.source.value if i.source else "ANOMALY",
+        "severity": _ev(i.severity, "MEDIUM"),
+        "status": _ev(i.status, "DETECTED"),
+        "source": _ev(i.source, "ANOMALY"),
         "detected_at": i.detected_at.isoformat() if i.detected_at else None,
         "resolved_at": i.resolved_at.isoformat() if i.resolved_at else None,
         "assignee_id": i.assignee_id,
@@ -798,9 +805,9 @@ def _incident_to_dict(i) -> Dict:
 def _deployment_to_response(d) -> DeploymentResponse:
     return DeploymentResponse(
         id=d.id, workspace_id=d.workspace_id, service_name=d.service_name,
-        environment=d.environment.value if d.environment else "PRODUCTION",
+        environment=_ev(d.environment, "PRODUCTION"),
         version=d.version, commit_sha=d.commit_sha, branch=d.branch,
-        repository=d.repository, status=d.status.value if d.status else "PENDING",
+        repository=d.repository, status=_ev(d.status, "PENDING"),
         triggered_by=d.triggered_by, duration_seconds=d.duration_seconds,
         risk_score=d.risk_score, risk_factors=d.risk_factors or [],
         rollback_reason=d.rollback_reason,
@@ -811,8 +818,8 @@ def _deployment_to_response(d) -> DeploymentResponse:
 def _deployment_to_dict(d) -> Dict:
     return {
         "id": d.id, "service_name": d.service_name,
-        "environment": d.environment.value if d.environment else "PRODUCTION",
-        "version": d.version, "status": d.status.value if d.status else "PENDING",
+        "environment": _ev(d.environment, "PRODUCTION"),
+        "version": d.version, "status": _ev(d.status, "PENDING"),
         "risk_score": d.risk_score,
         "started_at": d.started_at.isoformat() if d.started_at else None,
         "completed_at": d.completed_at.isoformat() if d.completed_at else None,
@@ -821,9 +828,9 @@ def _deployment_to_dict(d) -> Dict:
 
 def _timeline_to_response(e) -> TimelineEventResponse:
     return TimelineEventResponse(
-        id=e.id, event_type=e.event_type.value if e.event_type else "UNKNOWN",
+        id=e.id, event_type=_ev(e.event_type, "UNKNOWN"),
         title=e.title, description=e.description,
-        severity=e.severity.value if e.severity else "INFO",
+        severity=_ev(e.severity, "INFO"),
         source=e.source, source_id=e.source_id,
         metadata=e.extra_meta or {}, related_entity_type=e.related_entity_type,
         related_entity_id=e.related_entity_id, ai_summary=e.ai_summary,
@@ -833,7 +840,7 @@ def _timeline_to_response(e) -> TimelineEventResponse:
 
 def _integration_to_response(i) -> IntegrationResponse:
     return IntegrationResponse(
-        id=i.id, provider=i.provider.value if i.provider else "UNKNOWN",
+        id=i.id, provider=_ev(i.provider, "UNKNOWN"),
         name=i.name, description=i.description,
         is_active=i.is_active, last_sync_at=i.last_sync_at,
         last_error=i.last_error, created_at=i.created_at,
@@ -842,14 +849,14 @@ def _integration_to_response(i) -> IntegrationResponse:
 
 def _integration_to_dict(i) -> Dict:
     return {
-        "id": i.id, "provider": i.provider.value if i.provider else "UNKNOWN",
+        "id": i.id, "provider": _ev(i.provider, "UNKNOWN"),
         "name": i.name, "is_active": i.is_active,
     }
 
 
 def _memory_to_response(m) -> MemoryResponse:
     return MemoryResponse(
-        id=m.id, memory_type=m.memory_type.value if m.memory_type else "UNKNOWN",
+        id=m.id, memory_type=_ev(m.memory_type, "UNKNOWN"),
         title=m.title, content=m.content, tags=m.tags or [],
         confidence=m.confidence, source_incident_id=m.source_incident_id,
         created_at=m.created_at,
@@ -858,7 +865,7 @@ def _memory_to_response(m) -> MemoryResponse:
 
 def _summary_to_response(s) -> SummaryResponse:
     return SummaryResponse(
-        id=s.id, summary_type=s.summary_type.value if s.summary_type else "UNKNOWN",
+        id=s.id, summary_type=_ev(s.summary_type, "UNKNOWN"),
         title=s.title, content=s.content, generated_by=s.generated_by,
         period_start=s.period_start, period_end=s.period_end, created_at=s.created_at,
     )
@@ -866,7 +873,7 @@ def _summary_to_response(s) -> SummaryResponse:
 
 def _activity_to_response(a) -> ActivityFeedResponse:
     return ActivityFeedResponse(
-        id=a.id, activity_type=a.activity_type.value if a.activity_type else "UNKNOWN",
+        id=a.id, activity_type=_ev(a.activity_type, "UNKNOWN"),
         title=a.title, description=a.description, actor_name=a.actor_name,
         related_entity_type=a.related_entity_type, related_entity_id=a.related_entity_id,
         metadata=a.extra_meta or {}, activity_time=a.activity_time,

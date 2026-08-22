@@ -31,33 +31,38 @@ function LogsContent() {
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    const mockLogs: ActivityLog[] = [
-      {
-        id: "1",
-        action: "Prompt Test",
-        details: "Tested prompt: 'Example prompt text here...'",
-        timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-        riskLevel: "low",
-      },
-      {
-        id: "2",
-        action: "Profile Update",
-        details: "Updated profile settings",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      },
-      {
-        id: "3",
-        action: "Prompt Test",
-        details: "Tested prompt: 'Another test prompt...'",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        riskLevel: "medium",
-      },
-    ];
-    
-    setTimeout(() => {
-      setLogs(mockLogs);
-      setLoading(false);
-    }, 500);
+    const loadLogs = async () => {
+      try {
+        const response = await fetch("/api/logs?limit=50", { cache: "no-store" })
+        if (!response.ok) throw new Error("Failed to load logs")
+        const data = await response.json()
+        const riskLogs: any[] = Array.isArray(data) ? data : []
+        setLogs(
+          riskLogs.map((log: any, i: number) => ({
+            id: String(log?.id ?? i),
+            action: "Risk Event",
+            details: log?.prompt
+              ? `Analyzed: ${String(log.prompt).slice(0, 120)}`
+              : "AI risk event recorded",
+            timestamp: log?.created_at
+              ? new Date(log.created_at).toISOString()
+              : new Date().toISOString(),
+            riskLevel:
+              (log?.final_risk_score ?? 0) >= 0.7
+                ? "high"
+                : (log?.final_risk_score ?? 0) >= 0.4
+                  ? "medium"
+                  : "low",
+          }))
+        )
+      } catch {
+        setLogs([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadLogs()
   }, []);
 
   const filteredLogs = filter === "all" 

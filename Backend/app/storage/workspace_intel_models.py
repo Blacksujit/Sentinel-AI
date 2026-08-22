@@ -157,7 +157,7 @@ class Incident(Base):
     """Operational incident from detection through resolution and postmortem."""
     __tablename__ = "workspace_incidents"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
     title = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)
@@ -197,7 +197,7 @@ class Deployment(Base):
     """Track service deployments with risk scoring and rollback detection."""
     __tablename__ = "workspace_deployments"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
     service_name = Column(String(255), nullable=False, index=True)
     environment = Column(SAEnum(DeploymentEnvironment), nullable=False, default=DeploymentEnvironment.PRODUCTION)
@@ -235,7 +235,7 @@ class TimelineEvent(Base):
     """Unified operational timeline event across all sources (incidents, deployments, alerts, etc.)."""
     __tablename__ = "workspace_timeline_events"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
     event_type = Column(SAEnum(TimelineEventType), nullable=False, index=True)
     title = Column(String(500), nullable=False)
@@ -293,7 +293,7 @@ class AIMemory(Base):
     """Operational memory for AI-powered retrieval of past incidents, root causes, and fixes."""
     __tablename__ = "workspace_ai_memory"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
     memory_type = Column(SAEnum(MemoryType), nullable=False, index=True)
 
@@ -353,7 +353,7 @@ class EscalationInstance(Base):
     """Active escalation process tracking."""
     __tablename__ = "workspace_escalation_instances"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     policy_id = Column(Integer, ForeignKey("workspace_escalation_policies.id"), nullable=False)
     incident_id = Column(BigInteger, ForeignKey("workspace_incidents.id"), nullable=True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
@@ -403,7 +403,7 @@ class AgentRun(Base):
     """Track AI agent execution history."""
     __tablename__ = "workspace_agent_runs"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     agent_id = Column(Integer, ForeignKey("workspace_ai_agents.id"), nullable=False)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
 
@@ -425,7 +425,7 @@ class WorkspaceSummary(Base):
     """AI-generated workspace summaries (daily briefings, incident reports, executive digests)."""
     __tablename__ = "workspace_summaries"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
     summary_type = Column(SAEnum(SummaryType), nullable=False, index=True)
     title = Column(String(500), nullable=False)
@@ -453,7 +453,7 @@ class ActivityFeed(Base):
     """Real-time activity feed entries for workspace collaboration awareness."""
     __tablename__ = "workspace_activity_feed"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
     activity_type = Column(SAEnum(ActivityType), nullable=False, index=True)
     title = Column(String(500), nullable=False)
@@ -481,7 +481,7 @@ class Postmortem(Base):
     """Auto-generated incident postmortems with timeline, impact, root cause, and action items."""
     __tablename__ = "workspace_postmortems"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
     incident_id = Column(BigInteger, ForeignKey("workspace_incidents.id"), nullable=False, unique=True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
 

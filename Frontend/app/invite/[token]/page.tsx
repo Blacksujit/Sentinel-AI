@@ -33,7 +33,7 @@ export default function InviteAcceptPage({ params }: { params: { token: string }
         const response = await apiPost<{ org_id: number }>(`/api/invites/${params.token}/accept`, {}, token ?? undefined);
         setMessage("Invite accepted successfully. Redirecting to your organization...");
         setTimeout(() => {
-          router.replace(`/orgs/${response.org_id}`);
+          router.replace(`/org/${response.org_id}/dashboard`);
         }, 500);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Failed to accept invite.";

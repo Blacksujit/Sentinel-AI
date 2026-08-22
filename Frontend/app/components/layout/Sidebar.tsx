@@ -9,13 +9,15 @@ import {
   LayoutDashboard,
   Play,
   FileText,
-  User
+  User,
+  ShieldCheck
 } from 'lucide-react'
 
 const navigationItems = [
   { href: '/user/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/user/playground', label: 'Playground', icon: Play },
   { href: '/logs', label: 'Logs', icon: FileText },
+  { href: '/user/review-queue', label: 'Review Queue', icon: ShieldCheck },
   { href: '/user/profile', label: 'Profile', icon: User },
 ]
 

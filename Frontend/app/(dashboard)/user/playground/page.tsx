@@ -25,6 +25,13 @@ type AnalyzeResponse = {
   decision_reason?: string
   settings_version?: number
   thresholds_applied?: any
+  redacted_prompt?: string | null
+  redacted_response?: string | null
+  pii?: {
+    pii_detected: boolean
+    categories: Record<string, number>
+    count: number
+  } | null
 }
 
 export default function UserPlaygroundPage() {
@@ -263,6 +270,38 @@ function UserPlaygroundContent() {
                   </div>
                 </div>
               </div>
+
+              {result.pii?.pii_detected && (
+                <div className="mt-4 space-y-3 border-t border-border pt-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground">PII Redacted</span>
+                    <Badge variant="destructive" className="text-xs">
+                      {result.pii.count} instance{result.pii.count === 1 ? '' : 's'}
+                    </Badge>
+                    {Object.entries(result.pii.categories ?? {}).map(([cat, n]) => (
+                      <Badge key={cat} variant="outline" className="text-xs border-border text-muted-foreground">
+                        {cat} × {n}
+                      </Badge>
+                    ))}
+                  </div>
+                  {result.redacted_response && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Redacted response</div>
+                      <div className="rounded-xl border border-border bg-card p-3 text-sm text-foreground/90 whitespace-pre-wrap">
+                        {result.redacted_response}
+                      </div>
+                    </div>
+                  )}
+                  {result.redacted_prompt && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Redacted prompt</div>
+                      <div className="rounded-xl border border-border bg-card p-3 text-sm text-foreground/90 whitespace-pre-wrap">
+                        {result.redacted_prompt}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </MotionCard>
           )}
         </div>

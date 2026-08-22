@@ -6,6 +6,14 @@ This shows how to use real URLs and API keys with your SentinelAI SDK
 import os
 from sentinelai import SentinelAIClient
 
+# Keys are never hardcoded in source. Generate one with `python generate_api_keys.py`
+# and export it, e.g.:
+#   $env:SENTINELAI_API_KEY = "sk_sentinel_..."
+SENTINELAI_API_KEY = os.getenv("SENTINELAI_API_KEY", "")
+if not SENTINELAI_API_KEY:
+    print("⚠️  SENTINELAI_API_KEY is not set — generate one with `python generate_api_keys.py`")
+    print("    and export it before running this example.")
+
 # ========================================
 # OPTION 1: Local Development
 # ========================================
@@ -13,8 +21,8 @@ print("🔧 LOCAL DEVELOPMENT SETUP")
 print("=" * 40)
 
 local_client = SentinelAIClient(
-    base_url="http://localhost:8000",  # Your local SentinelAI backend
-    api_key="uP51PCn!wyDYGaRA0H3V2z2IVBgC#W0A",  # Your generated API key
+    base_url=os.getenv("SENTINELAI_URL", "http://localhost:8000"),  # Your local SentinelAI backend
+    api_key=SENTINELAI_API_KEY,
     source="local-chatbot"
 )
 
@@ -40,10 +48,9 @@ print()
 print("🌍 ENVIRONMENT VARIABLES SETUP")
 print("=" * 40)
 
-# Set environment variables (normally done via .env file)
-os.environ['SENTINELAI_URL'] = "http://localhost:8000"
-os.environ['SENTINELAI_API_KEY'] = "uP51PCn!wyDYGaRA0H3V2z2IVBgC#W0A"
-os.environ['APP_NAME'] = "env-chatbot"
+# Set environment variables (normally done via .env file, never in code)
+os.environ.setdefault('SENTINELAI_URL', 'http://localhost:8000')
+os.environ.setdefault('APP_NAME', 'env-chatbot')
 
 env_client = SentinelAIClient(
     base_url=os.getenv('SENTINELAI_URL'),
@@ -106,21 +113,21 @@ print()
 print("🔄 MULTIPLE CLIENT SETUP")
 print("=" * 40)
 
-# Different applications can use different API keys
+# Different applications can use different API keys (each set via its own env var)
 clients = {
     "customer-support": SentinelAIClient(
-        base_url="http://localhost:8000",
-        api_key="uP51PCn!wyDYGaRA0H3V2z2IVBgC#W0A",
+        base_url=os.getenv("SENTINELAI_URL", "http://localhost:8000"),
+        api_key=os.getenv("SENTINELAI_KEY_CUSTOMER_SUPPORT", SENTINELAI_API_KEY),
         source="customer-support"
     ),
     "content-moderation": SentinelAIClient(
-        base_url="http://localhost:8000",
-        api_key="c*XKqdL@KkB%VyKIoupPPJisdtyVj0De",
+        base_url=os.getenv("SENTINELAI_URL", "http://localhost:8000"),
+        api_key=os.getenv("SENTINELAI_KEY_CONTENT_MODERATION", SENTINELAI_API_KEY),
         source="content-moderation"
     ),
     "ai-assistant": SentinelAIClient(
-        base_url="http://localhost:8000",
-        api_key="WCE$CXyMq$zy&@7Q*YO8Pi34ui6#AO@K",
+        base_url=os.getenv("SENTINELAI_URL", "http://localhost:8000"),
+        api_key=os.getenv("SENTINELAI_KEY_AI_ASSISTANT", SENTINELAI_API_KEY),
         source="ai-assistant"
     )
 }

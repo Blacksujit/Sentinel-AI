@@ -197,9 +197,34 @@ async def create_workspace(
 ):
     """Create a new workspace for the user's organization."""
     org_ids = [row.org_id for row in db.query(OrgMembership.org_id).filter(OrgMembership.user_id == user.id).all()]
-    if not org_ids:
-        raise HTTPException(status_code=400, detail="User must be a member of an organization to create a workspace")
-    org_id = org_ids[0]
+
+    if org_ids:
+        org_id = org_ids[0]
+    else:
+        # Auto-create a personal org so workspace creation works without Clerk webhooks
+        from app.storage.org_models import Organization, PlanTier
+        from app.storage.baseline_config_models import DEFAULT_BASELINE_CONFIG
+        from app.storage.rbac_models import RbacRole
+
+        personal_slug = f"personal-{user.id}"
+        org = db.query(Organization).filter(Organization.slug == personal_slug).first()
+        if not org:
+            org = Organization(
+                clerk_org_id=f"local-{user.id}",
+                name=f"{user.name or user.email}'s Organization",
+                slug=personal_slug,
+                owner_user_id=user.id,
+                plan_tier=PlanTier.FREE,
+                baseline_config=DEFAULT_BASELINE_CONFIG.copy(),
+            )
+            db.add(org)
+            db.flush()
+
+            owner_role = db.query(RbacRole).filter(RbacRole.name == "OWNER", RbacRole.org_id.is_(None)).first()
+            if owner_role:
+                db.add(OrgMembership(org_id=org.id, user_id=user.id, role_id=owner_role.id))
+            db.commit()
+        org_id = org.id
 
     workspace = WorkspaceService.create_workspace(
         db=db, org_id=org_id, name=workspace_data.name, created_by_user_id=user.id

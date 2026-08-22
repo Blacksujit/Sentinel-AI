@@ -9,7 +9,6 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 import { IntelligenceOverview } from './intelligence-overview'
@@ -132,10 +131,6 @@ export function WorkspaceIntelDashboard({
             <GitPullRequest className="w-4 h-4 mr-1" />
             Log Deployment
           </Button>
-          <Badge variant="success">
-            <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--green)]" />
-            Live
-          </Badge>
         </div>
       </motion.div>
 
@@ -235,9 +230,6 @@ export function WorkspaceIntelDashboard({
           <Card className="border bg-card">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg text-card-foreground">Operational Timeline</CardTitle>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--green)]" /> Real-time
-              </div>
             </CardHeader>
             <CardContent className="max-h-[600px] overflow-y-auto">
               <TimelineView groups={timelineGroups || []} isLoading={timelineLoading} />

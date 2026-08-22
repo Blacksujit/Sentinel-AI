@@ -85,26 +85,20 @@ class OrganizationSyncService:
             db.add(org)
             db.flush()  # Get org.id
             
-            # Create or get admin role
-            admin_role = db.query(RbacRole).filter(
-                RbacRole.name == "admin",
-                RbacRole.org_id == org.id
+            # Assign seeded system OWNER role (permissions come from seed_rbac_data;
+            # creating an org-scoped role here would orphan permission grants).
+            owner_role = db.query(RbacRole).filter(
+                RbacRole.name == "OWNER",
+                RbacRole.org_id.is_(None)
             ).first()
-            
-            if not admin_role:
-                admin_role = RbacRole(
-                    name="admin",
-                    org_id=org.id,
-                    permissions=["*"]  # All permissions
-                )
-                db.add(admin_role)
-                db.flush()
+            if not owner_role:
+                raise ValueError("System OWNER role not found; run seed_rbac_data() first")
             
             # Create owner membership
             membership = OrgMembership(
                 user_id=owner.id,
                 org_id=org.id,
-                role_id=admin_role.id
+                role_id=owner_role.id
             )
             db.add(membership)
             
@@ -133,11 +127,12 @@ class OrganizationSyncService:
                 db=db,
                 org_id=org.id,
                 actor_user_id=owner.id,
+                actor_type="user",
                 action="org.created",
                 target_type="organization",
                 target_id=org.id,
-                target_name=org.name,
                 event_metadata={
+                    "target_name": org.name,
                     "clerk_org_id": clerk_org_id,
                     "plan_tier": PlanTier.FREE.value,
                     "company_email": company_email
@@ -215,12 +210,15 @@ class OrganizationSyncService:
                     db=db,
                     org_id=org.id,
                     actor_user_id=updated_by_user_id,
+                    actor_type="user",
                     action="org.updated",
                     target_type="organization",
                     target_id=org.id,
-                    target_name=org.name,
-                    previous_values=previous_values,
-                    new_values=new_values
+                    event_metadata={
+                        "target_name": org.name,
+                        "previous_values": previous_values,
+                        "new_values": new_values
+                    }
                 )
             
             db.commit()
@@ -270,25 +268,80 @@ class OrganizationSyncService:
                     db=db,
                     org_id=org.id,
                     actor_user_id=deleted_by_user_id,
+                    actor_type="user",
                     action="org.deleted",
                     target_type="organization",
                     target_id=org.id,
-                    target_name=org_name,
-                    event_metadata={"deleted_at": datetime.utcnow().isoformat()}
+                    event_metadata={
+                        "target_name": org_name,
+                        "deleted_at": datetime.utcnow().isoformat()
+                    }
                 )
             
-            # Note: In production, implement soft delete with a "deleted_at" column
-            # For MVP, we do hard delete but revoke all API keys first
-            
-            # Revoke all API keys
+            # Purge dependent rows in FK-safe order. Audit logs and risk logs are
+            # DETACHED (org_id -> NULL) instead of deleted to preserve compliance
+            # and analysis history; everything else is removed with the org.
+            from app.storage.workspace_models import (
+                Workspace, WorkspaceMember, WorkspaceRole, WorkspaceInvite,
+            )
             from app.storage.api_key_models import ApiKey, ApiKeyStatus
+            from app.storage.invite_models import OrgInvite
+            from app.storage.usage_models import UsageEvent, AuditLog
+            from app.storage.models import RiskLog
+            from app.storage.baseline_config_models import (
+                BaselineConfiguration, BaselineConfigurationHistory,
+            )
+
+            workspace_ids = [
+                w.id for w in db.query(Workspace.id).filter(Workspace.org_id == org_id).all()
+            ]
+            if workspace_ids:
+                db.query(WorkspaceInvite).filter(
+                    WorkspaceInvite.workspace_id.in_(workspace_ids)
+                ).delete(synchronize_session=False)
+                db.query(WorkspaceMember).filter(
+                    WorkspaceMember.workspace_id.in_(workspace_ids)
+                ).delete(synchronize_session=False)
+                db.query(WorkspaceRole).filter(
+                    WorkspaceRole.workspace_id.in_(workspace_ids)
+                ).delete(synchronize_session=False)
+                db.query(Workspace).filter(Workspace.org_id == org_id).delete(
+                    synchronize_session=False
+                )
+            db.query(OrgMembership).filter(OrgMembership.org_id == org_id).delete(
+                synchronize_session=False
+            )
+            db.query(OrgInvite).filter(OrgInvite.org_id == org_id).delete(
+                synchronize_session=False
+            )
             api_keys = db.query(ApiKey).filter(ApiKey.org_id == org_id).all()
             for key in api_keys:
                 key.status = ApiKeyStatus.REVOKED
                 key.revoked_at = datetime.utcnow()
                 if deleted_by_user_id:
                     key.revoked_by_user_id = deleted_by_user_id
-            
+                db.delete(key)
+            db.query(UsageEvent).filter(UsageEvent.org_id == org_id).delete(
+                synchronize_session=False
+            )
+            db.query(RbacRole).filter(RbacRole.org_id == org_id).delete(
+                synchronize_session=False
+            )
+            db.query(BaselineConfigurationHistory).filter(
+                BaselineConfigurationHistory.org_id == org_id
+            ).delete(synchronize_session=False)
+            db.query(BaselineConfiguration).filter(
+                BaselineConfiguration.org_id == org_id
+            ).delete(synchronize_session=False)
+
+            # Detach rather than delete: preserve audit + risk history
+            db.query(AuditLog).filter(AuditLog.org_id == org_id).update(
+                {AuditLog.org_id: None}, synchronize_session=False
+            )
+            db.query(RiskLog).filter(RiskLog.org_id == org_id).update(
+                {RiskLog.org_id: None}, synchronize_session=False
+            )
+
             db.delete(org)
             db.commit()
             return True

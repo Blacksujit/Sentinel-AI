@@ -31,7 +31,7 @@ export default function PostAuthPage() {
       const token = await getToken()
       let me: MemberResponse
       try {
-        me = await apiGet('/me', token!)
+        me = await apiGet('/api/me', token!)
       } catch {
         router.replace('/user/onboarding')
         return

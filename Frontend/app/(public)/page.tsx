@@ -72,6 +72,9 @@ export default function Home() {
               <Link href="/start" className="btn btn-primary">
                 Try the analyzer <ArrowRight size={16} />
               </Link>
+              <Link href="/hack" className="btn btn-secondary">
+                Hack the Sentinel <ShieldCheck size={16} />
+              </Link>
               <Link href="/docs" className="btn btn-secondary">
                 See how it works
               </Link>

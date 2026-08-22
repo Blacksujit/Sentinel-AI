@@ -125,7 +125,7 @@ class TestEndToEndWorkflow:
         # Check health
         health_response = client.get("/health")
         assert health_response.status_code == status.HTTP_200_OK
-        assert health_response.json() == {"status": "ok"}
+        assert health_response.json()["status"] == "healthy"
         
         # Perform analysis
         analysis_response = client.post(

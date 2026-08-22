@@ -1,0 +1,41 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { backendApiUrl } from '@/lib/backend-url'
+
+export async function GET() {
+  try {
+    const response = await fetch(backendApiUrl('/game/scores'), {
+      method: 'GET',
+      cache: 'no-store',
+    })
+    const text = await response.text()
+    return new NextResponse(text, {
+      status: response.status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  } catch (error) {
+    console.error('[api/game/scores] proxy error:', error)
+    return NextResponse.json({ error: 'Failed to reach game service' }, { status: 502 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.text()
+
+    const response = await fetch(backendApiUrl('/game/scores'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      cache: 'no-store',
+    })
+
+    const text = await response.text()
+    return new NextResponse(text, {
+      status: response.status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  } catch (error) {
+    console.error('[api/game/scores] proxy error:', error)
+    return NextResponse.json({ error: 'Failed to reach game service' }, { status: 502 })
+  }
+}

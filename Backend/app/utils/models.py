@@ -4,7 +4,7 @@ Database Models for SentinelAI
 This module contains SQLAlchemy models for settings, baselines, and audit logs.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, JSON
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, JSON
 from datetime import datetime
 from typing import Optional
 
@@ -26,6 +26,7 @@ class SettingsModel(Base):
     
     # Configuration
     enforcement_mode = Column(String(20), nullable=False, default="warn")
+    pii_redaction_enabled = Column(Boolean, nullable=False, default=True)
     version = Column(Integer, nullable=False, default=1)
     
     # Metadata
@@ -46,11 +47,34 @@ class SettingsModel(Base):
                 "unsafe_output": self.unsafe_output_weight
             },
             "enforcement_mode": self.enforcement_mode,
+            "pii_redaction_enabled": bool(self.pii_redaction_enabled),
             "version": self.version,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "updated_by": self.updated_by
         }
+
+class GameScoreModel(Base):
+    """Public leaderboard entry for the 'Hack the Sentinel' prompt-injection game."""
+    __tablename__ = "game_scores"
+
+    id = Column(Integer, primary_key=True, index=True)
+    player_name = Column(String(100), nullable=False)
+    levels_completed = Column(Integer, nullable=False, default=0)
+    attempts = Column(Integer, nullable=False, default=0)
+    ip_hash = Column(String(64), nullable=True, default=None)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    def to_dict(self) -> dict:
+        """Convert model to dictionary"""
+        return {
+            "id": self.id,
+            "player_name": self.player_name,
+            "levels_completed": self.levels_completed,
+            "attempts": self.attempts,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
 
 class SettingsVersionLog(Base):
     """Audit log for settings changes with version tracking"""

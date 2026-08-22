@@ -16,7 +16,10 @@ class TestHealthEndpoint:
         response = client.get("/health")
         
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == {"status": "ok"}
+        data = response.json()
+        assert data["status"] == "healthy"
+        assert "checks" in data
+        assert data["checks"]["database"]["status"] == "healthy"
     
     def test_health_check_is_accessible(self, client):
         """Test that health endpoint is always accessible."""

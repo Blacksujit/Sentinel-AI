@@ -222,6 +222,69 @@ def choose_model(plan_tier: str) -> str:
     return mapping.get(plan_tier, "claude-sonnet-4-20250514")
 
 
+def generate_text(
+    system_prompt: str,
+    user_prompt: str,
+    max_tokens: int = 300,
+    model: str = "claude-3-haiku",
+) -> Optional[str]:
+    """Generate plain text from a system + user prompt (no JSON parsing).
+
+    Returns the generated text, or None if no API key is configured or the
+    call fails. Used by the red team mutation loop.
+    """
+    if ANTHROPIC_API_KEY:
+        try:
+            api_url = "https://api.anthropic.com/v1/messages"
+            headers = {
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            }
+            body = {
+                "model": model,
+                "max_tokens": max_tokens,
+                "system": system_prompt,
+                "messages": [{"role": "user", "content": user_prompt}],
+            }
+            resp = httpx.post(api_url, headers=headers, json=body, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+            for block in data.get("content", []):
+                if block.get("type") == "text":
+                    return block.get("text", "").strip()
+            return None
+        except Exception as e:
+            logger.error("Claude generation failed: %s", e)
+            return None
+
+    if OPENAI_API_KEY:
+        try:
+            api_url = "https://api.openai.com/v1/chat/completions"
+            headers = {
+                "authorization": f"Bearer {OPENAI_API_KEY}",
+                "content-type": "application/json",
+            }
+            body = {
+                "model": "gpt-4o-mini",
+                "max_tokens": max_tokens,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            }
+            resp = httpx.post(api_url, headers=headers, json=body, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+            return data.get("choices", [{}])[0].get("message", {}).get("content", "").strip() or None
+        except Exception as e:
+            logger.error("OpenAI generation failed: %s", e)
+            return None
+
+    logger.warning("No ANTHROPIC/OPENAI API key set — cannot generate text")
+    return None
+
+
 def analyze_with_llm(prompt: str, response: str, plan_tier: str = "free") -> LLMAnalysisResult:
     model = choose_model(plan_tier)
 

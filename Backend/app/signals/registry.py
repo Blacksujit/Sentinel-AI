@@ -77,3 +77,20 @@ class SignalRegistry:
 
 # Global registry instance
 signal_registry = SignalRegistry()
+
+
+def build_default_registry() -> SignalRegistry:
+    """Build the production detector registry (prompt + output detectors).
+
+    Single source of truth for the detector set both /analyze and the
+    red team executor use, so the executor can never drift from production.
+    """
+    from app.monitors.prompt_anomaly import detect_prompt_anomaly
+    from app.monitors.jailbreak_rag import detect_jailbreak_rag
+    from app.scoring.output_risk import score_output_risk
+
+    registry = SignalRegistry()
+    registry.register("prompt_anomaly", detect_prompt_anomaly, "prompt")
+    registry.register("jailbreak_rag", detect_jailbreak_rag, "prompt")
+    registry.register("output_risk", score_output_risk, "output")
+    return registry

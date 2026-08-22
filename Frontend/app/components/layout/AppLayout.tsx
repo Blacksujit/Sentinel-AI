@@ -35,6 +35,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     { href: '/user/dashboard', label: 'Dashboard' },
     { href: '/user/playground', label: 'Playground' },
     { href: '/logs', label: 'Logs' },
+    { href: '/user/review-queue', label: 'Review Queue' },
     { href: '/user/profile', label: 'Profile' },
   ]
 
@@ -43,6 +44,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     if (pathname === '/user/playground') return 'Playground'
     if (pathname === '/logs') return 'Logs'
     if (pathname?.startsWith('/logs/')) return 'Logs / Detail'
+    if (pathname === '/user/review-queue') return 'Review Queue'
     if (pathname === '/user/profile') return 'Profile'
     return 'Console'
   })()

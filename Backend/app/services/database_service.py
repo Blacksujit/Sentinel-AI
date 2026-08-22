@@ -49,6 +49,7 @@ class SettingsRepository:
             jailbreak_attempt_weight=0.4,
             unsafe_output_weight=0.3,
             enforcement_mode="warn",
+            pii_redaction_enabled=True,
             version=1,
             updated_by=updated_by,
         )
@@ -92,6 +93,13 @@ class SettingsRepository:
 
         if "enforcement_mode" in patch:
             current.enforcement_mode = str(patch["enforcement_mode"])
+
+        if "pii_redaction_enabled" in patch:
+            val = patch["pii_redaction_enabled"]
+            if isinstance(val, str):
+                current.pii_redaction_enabled = val.strip().lower() in ("1", "true", "yes", "on")
+            else:
+                current.pii_redaction_enabled = bool(val)
 
         current.version = int(current.version) + 1
         current.updated_at = datetime.utcnow()

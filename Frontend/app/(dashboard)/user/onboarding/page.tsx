@@ -41,7 +41,7 @@ export default function UserOnboardingPage() {
       const token = await getToken()
       console.log('[Onboarding] Starting with token:', token ? 'present' : 'missing')
       
-      const result = await apiPost('/user/onboarding', formData, token)
+      const result = await apiPost('/api/user/onboarding', formData, token)
       console.log('[Onboarding] Success:', result)
 
       toast.success('Welcome to SentinelAI!')

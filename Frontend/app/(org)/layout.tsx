@@ -17,7 +17,8 @@ import {
   X,
   Shield,
   ChevronRight,
-  Building2
+  Building2,
+  ScrollText,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
@@ -45,6 +46,7 @@ function SidebarContent() {
     { label: 'Workspaces', href: `/org/${orgId}/dashboard/workspaces`, icon: Building2 },
     { label: 'API Usage', href: `/org/${orgId}/dashboard/usage`, icon: BarChart3 },
     { label: 'Logs & Activity', href: `/org/${orgId}/dashboard/logs`, icon: FileText },
+    { label: 'Audit Log', href: `/org/${orgId}/dashboard/audit`, icon: ScrollText },
     { label: 'Baselines', href: `/org/${orgId}/dashboard/baselines`, icon: Shield },
     { label: 'API Keys', href: `/org/${orgId}/dashboard/api-keys`, icon: Key },
     { label: 'Billing', href: `/org/${orgId}/dashboard/billing`, icon: CreditCard },

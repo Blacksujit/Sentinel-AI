@@ -5,6 +5,7 @@ Handles CRUD operations, pattern extraction, and database management.
 
 import uuid
 import hashlib
+import json
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
@@ -16,6 +17,7 @@ from app.learning.models import (
     PatternSubmission, DetectionMetrics
 )
 from app.learning.pattern_extractor import PatternExtractor, ExtractedPattern as ExtractedPatternData
+from app.storage.models import RiskLog
 
 
 class FeedbackService:
@@ -208,6 +210,79 @@ class FeedbackService:
             ]
         )
     
+    def submit_review(
+        self,
+        log: RiskLog,
+        disposition: str,
+        notes: Optional[str],
+        user_id: str,
+    ) -> FeedbackResponse:
+        """
+        Record an admin disposition for a risk log in the review queue.
+
+        The disposition is stored as a reviewed feedback entry: confirmed
+        threats and compliance issues are flagged for training, false
+        positives are explicitly excluded from the training set.
+        """
+        if disposition not in ("confirmed_threat", "false_positive", "compliance_issue"):
+            return FeedbackResponse(
+                success=False,
+                feedback_id="",
+                message=f"Unknown disposition: {disposition}",
+            )
+
+        feedback_id = str(uuid.uuid4())
+        entry = FeedbackEntry(
+            id=feedback_id,
+            prompt_hash=hashlib.sha256((log.prompt or "").encode()).hexdigest()[:64],
+            prompt_text=log.prompt,
+            response_text=log.response,
+            final_risk_score=log.final_risk_score,
+            user_reported=False,
+            auto_detected=True,
+            user_id=user_id,
+            attack_category=disposition,
+            flags=json.loads(log.flags) if log.flags else [],
+            metadata_json={
+                "source_log_id": str(log.id),
+                "disposition": disposition,
+                "notes": notes or "",
+                "reviewed_at": datetime.utcnow().isoformat(),
+            },
+            reviewed=True,
+            used_for_training=disposition in ("confirmed_threat", "compliance_issue"),
+        )
+        self.db.add(entry)
+        self.db.commit()
+
+        messages = {
+            "confirmed_threat": "Disposition recorded as confirmed threat (queued for training).",
+            "false_positive": "Disposition recorded as false positive (excluded from training).",
+            "compliance_issue": "Compliance issue recorded (queued for training).",
+        }
+        return FeedbackResponse(
+            success=True,
+            feedback_id=feedback_id,
+            message=messages[disposition],
+        )
+
+    def get_reviewed_log_ids(self) -> set:
+        """Return the set of risk log IDs that already have a review disposition."""
+        entries = self.db.query(FeedbackEntry).filter(
+            FeedbackEntry.reviewed.is_(True),
+            FeedbackEntry.attack_category.in_(
+                ("confirmed_threat", "false_positive", "compliance_issue")
+            ),
+        ).all()
+        reviewed = set()
+        for e in entries:
+            if e.metadata_json and "source_log_id" in e.metadata_json:
+                try:
+                    reviewed.add(int(e.metadata_json["source_log_id"]))
+                except (TypeError, ValueError):
+                    continue
+        return reviewed
+
     def get_feedback_stats(self) -> FeedbackStats:
         """Get statistics about feedback."""
         total = self.db.query(FeedbackEntry).count()
@@ -294,11 +369,24 @@ class FeedbackService:
         pending = self.db.query(FeedbackEntry).filter_by(
             reviewed=False
         ).count()
-        
+
+        # False-positive / false-negative rates from reviewed human feedback.
+        # attack_category stores the reviewer disposition
+        # (confirmed_threat | false_positive | compliance_issue).
+        reviewed_entries = self.db.query(FeedbackEntry).filter_by(reviewed=True).all()
+        if reviewed_entries:
+            fp_count = sum(1 for e in reviewed_entries if e.attack_category == "false_positive")
+            fn_count = sum(1 for e in reviewed_entries if e.attack_category == "confirmed_threat")
+            false_positive_rate = round(fp_count / len(reviewed_entries), 3)
+            false_negative_rate = round(fn_count / len(reviewed_entries), 3)
+        else:
+            false_positive_rate = 0.0
+            false_negative_rate = 0.0
+
         return DetectionMetrics(
             detection_rate=round(detection_rate, 3),
-            false_negative_rate=0.0,  # Requires user feedback
-            false_positive_rate=0.0,  # Requires user feedback
+            false_negative_rate=false_negative_rate,
+            false_positive_rate=false_positive_rate,
             avg_detection_time_ms=round(avg_time, 2),
             new_patterns_last_24h=new_patterns,
             pending_review=pending

@@ -41,6 +41,8 @@ from app.api.workspace_routes import router as workspace_router
 from app.api.workspace_intel_routes import router as workspace_intel_router
 from app.api.webhooks import router as webhooks_router
 from app.api.billing_routes import router as billing_router
+from app.api.game_routes import router as game_router
+from app.api.redteam_routes import router as redteam_router
 from app.storage.db import init_db
 from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.rate_limiter import RateLimitMiddleware
@@ -195,6 +197,8 @@ app.include_router(workspace_router, prefix="/api")
 app.include_router(workspace_intel_router, prefix="/api")
 app.include_router(webhooks_router, prefix="/api")
 app.include_router(billing_router, prefix="/api")
+app.include_router(game_router, prefix="/api")
+app.include_router(redteam_router, prefix="/api")
 
 
 # ── Health & Observability Endpoints ──────────────────────────────

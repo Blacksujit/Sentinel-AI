@@ -417,7 +417,9 @@ def _build_event_group(events: List[TimelineEvent]) -> Dict[str, Any]:
     severities = [e.severity for e in events]
     max_severity = max(
         (s for s in severities),
-        key=lambda s: {"INFO": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}.get(s.value, 0),
+        key=lambda s: {"INFO": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}.get(
+            s.value if hasattr(s, "value") else str(s), 0
+        ),
     )
     return {
         "time_start": events[-1].event_time.isoformat(),

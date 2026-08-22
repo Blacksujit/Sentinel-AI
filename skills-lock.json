@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "skills": {
+    "ph-algorithm-guide": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/compliance/ph-algorithm-guide/SKILL.md",
+      "computedHash": "3fe543739603731344c0901c999d19ed40810544e95674bc7cca42d7b3751407"
+    },
+    "ph-analytics-setup": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/analytics/ph-analytics-setup/SKILL.md",
+      "computedHash": "7a1fe2d1bbb04ad87e7d33ec8af2c8d6dc25f14f58e6fd321fc9b746d45e96df"
+    },
+    "ph-ban-prevention": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/compliance/ph-ban-prevention/SKILL.md",
+      "computedHash": "2c59a4907cb531db70788b85ba130f55173875d90882990077404ee89acd87d2"
+    },
+    "ph-comment-responder": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/launch-day/ph-comment-responder/SKILL.md",
+      "computedHash": "44145947b1308b8d072c0850cfbdf45d2989d231f8417fa523c971195cf13de5"
+    },
+    "ph-community-outreach": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/marketing/ph-community-outreach/SKILL.md",
+      "computedHash": "e1f0a4b674816f7ba867fd85d0697c26b698a4a763539bf5f2d9ed7dc76fef71"
+    },
+    "ph-competitor-analysis": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/strategy/ph-competitor-analysis/SKILL.md",
+      "computedHash": "fb6640836e4ec26b749d54c18aa254ad9e0b34bf76335ec21f2a15e9400fef56"
+    },
+    "ph-content-recycling": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/post-launch/ph-content-recycling/SKILL.md",
+      "computedHash": "15b7fbebc8c8c10791896a90a838fe68791f1aa174800fc376b3b70c0842cdbc"
+    },
+    "ph-conversion-tracking": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/analytics/ph-conversion-tracking/SKILL.md",
+      "computedHash": "f3c616b0a33bc15a66e6169fcfd64e62f28654c52143340e91aac23a32f5d10a"
+    },
+    "ph-description-writer": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/content/ph-description-writer/SKILL.md",
+      "computedHash": "544e900ab9c3344fd105f8c14de1fc6a10bc8630ce82cd25745c89580bb44b39"
+    },
+    "ph-email-strategy": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/marketing/ph-email-strategy/SKILL.md",
+      "computedHash": "7c18b55bb7ad0e84774008120d54f6b63add2834904b55293c58458cb894020c"
+    },
+    "ph-gallery-assets": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/content/ph-gallery-assets/SKILL.md",
+      "computedHash": "edae8cf4a26d69e22f84dd6e0d6f9a2a62b7573085fc5b0ce2c7d6025a807dab"
+    },
+    "ph-golden-kitty": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/awards/ph-golden-kitty/SKILL.md",
+      "computedHash": "ec2a6460be8fa7168c57d425cc9c87765880be3e94b41d4bd9fa2b2c4e47d1e5"
+    },
+    "ph-hunter-finder": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/hunters/ph-hunter-finder/SKILL.md",
+      "computedHash": "5d95687e7091a6353b5fa9ad24d59fbda70f62e0ccf48db51b504f8963d9ac0e"
+    },
+    "ph-launch-day-checklist": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/launch-day/ph-launch-day-checklist/SKILL.md",
+      "computedHash": "05468a4e91f39fa578a50306f94fc2a7f7caaf8b5b0e812799d57e7b2e195660"
+    },
+    "ph-launch-offers": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/pricing/ph-launch-offers/SKILL.md",
+      "computedHash": "23073d1ef9888d88cda9f4717cbd71c6eafc8838d63349bacd2911d8e7cd732e"
+    },
+    "ph-launch-strategy": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/strategy/ph-launch-strategy/SKILL.md",
+      "computedHash": "a355fd174b392782e83477122e34e3df36978c2b57d3f0f2e72aeaf43a11e18c"
+    },
+    "ph-maker-comment": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/content/ph-maker-comment/SKILL.md",
+      "computedHash": "00580f4108ba9126187dbecf57296fee193b5a1b64205819769033dca59a6349"
+    },
+    "ph-newsletter-pitch": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/awards/ph-newsletter-pitch/SKILL.md",
+      "computedHash": "955dcbfa307f70f2e77afadb84124cb9be9bdbf21fcb7135118541462d59a223"
+    },
+    "ph-post-launch-followup": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/post-launch/ph-post-launch-followup/SKILL.md",
+      "computedHash": "3cf4829e48dd462799066b10b35056771ae8f78d75207269f6751804cbc98ce4"
+    },
+    "ph-pricing-psychology": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/pricing/ph-pricing-psychology/SKILL.md",
+      "computedHash": "bcb98438d62afec379e40027bd29f55a1933c52194ca6d97cadbf3b04a28c947"
+    },
+    "ph-profile-optimizer": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/hunters/ph-profile-optimizer/SKILL.md",
+      "computedHash": "3b3a6e2f1321fec826cdac029d59284cff9ad45a1fab8a227ef704507a2fa5b3"
+    },
+    "ph-real-time-monitor": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/launch-day/ph-real-time-monitor/SKILL.md",
+      "computedHash": "6a39825fcafb5c540fee309d8d7502bc9d803bc9187d0aa00446cf15d57991ec"
+    },
+    "ph-relaunch-strategy": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/post-launch/ph-relaunch-strategy/SKILL.md",
+      "computedHash": "7386d5485fa3ca512737c6112203fad49d3574782514b27e7f2fb0a612d6f730"
+    },
+    "ph-safe-messaging": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/compliance/ph-safe-messaging/SKILL.md",
+      "computedHash": "d1a99bae41dee59853d1e75913da9b454f2e3d13807ecf0d3a877768de65463a"
+    },
+    "ph-seo-benefits": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/post-launch/ph-seo-benefits/SKILL.md",
+      "computedHash": "489714476b970b220e4dd85ae5b59801dc7141a6d716d3d0e649b7342483bd71"
+    },
+    "ph-social-media-launch": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/marketing/ph-social-media-launch/SKILL.md",
+      "computedHash": "49f1ac271f36fa34fc3ffa3cf5828c1f5063dd27a824a57c3f06fc7855d13246"
+    },
+    "ph-supporter-network": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/marketing/ph-supporter-network/SKILL.md",
+      "computedHash": "d5716d95f69345f7c913519da3c63c7f81aaa3d338ca9e8c418de4e8605a122a"
+    },
+    "ph-tagline-writer": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/content/ph-tagline-writer/SKILL.md",
+      "computedHash": "a15093eb583d8936a6144f45fddb37c7db8583c15470fad652031423a564f264"
+    },
+    "ph-thumbnail-creator": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/content/ph-thumbnail-creator/SKILL.md",
+      "computedHash": "ac394f3c573fb74fbad4fa9360b6962f9a42a8bf37aa308931af9d401699069d"
+    },
+    "ph-timing-optimizer": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/strategy/ph-timing-optimizer/SKILL.md",
+      "computedHash": "29ed039dc3342997087d66c7cfd2ad38fae3c192c5dff5381a5d4ad7bf34d397"
+    },
+    "ph-video-demo": {
+      "source": "yoanbernabeu/producthunt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/content/ph-video-demo/SKILL.md",
+      "computedHash": "0e4b0d6a097963d5a4372a3ade15c02fc977e44e01c83da2b02bed9781a6f9d3"
+    }
+  }
+}

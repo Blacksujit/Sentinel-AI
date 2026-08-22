@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from datetime import datetime
 
 
@@ -18,6 +18,9 @@ class AnalyzeResponse(BaseModel):
     settings_version: Optional[int] = None
     thresholds_applied: Optional[Any] = None
     log_id: Optional[str] = None  # ID for feedback reporting
+    redacted_prompt: Optional[str] = None  # PII-redacted prompt (only when PII found)
+    redacted_response: Optional[str] = None  # PII-redacted response (only when PII found)
+    pii: Optional[Dict[str, Any]] = None  # PII detection summary
 
 
 class RiskLogResponse(BaseModel):
@@ -53,6 +56,7 @@ class ExternalAnalyzeRequest(BaseModel):
     session_id: Optional[str] = None  # Session identifier for tracking
     client_metadata: Optional[Dict[str, Any]] = {}  # Additional client-specific data
     api_key: Optional[str] = None  # For future authentication
+    redact: bool = False  # Request PII-redacted prompt/response in the response
 
 
 class ExternalAnalyzeResponse(BaseModel):
@@ -66,3 +70,23 @@ class ExternalAnalyzeResponse(BaseModel):
     thresholds_applied: Optional[Any] = None
     analysis_id: Optional[int] = None  # ID for tracking this analysis
     timestamp: Optional[datetime] = None
+    redacted_prompt: Optional[str] = None  # PII-redacted prompt (only when redact=True)
+    redacted_response: Optional[str] = None  # PII-redacted response (only when redact=True)
+    pii: Optional[Dict[str, Any]] = None  # PII detection summary (only when redact=True)
+
+
+class ReviewRequest(BaseModel):
+    disposition: Literal["confirmed_threat", "false_positive", "compliance_issue"]
+    notes: Optional[str] = None
+
+
+class ReviewResponse(BaseModel):
+    success: bool
+    feedback_id: str
+    log_id: int
+    disposition: str
+    message: str
+
+
+class ReviewQueueItem(RiskLogResponse):
+    reviewed: bool = False

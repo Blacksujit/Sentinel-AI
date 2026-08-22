@@ -70,6 +70,11 @@ class SettingsService:
             self._load()
         return str(self._current.enforcement_mode)
 
+    def get_pii_redaction_enabled(self) -> bool:
+        if self._current is None:
+            self._load()
+        return bool(getattr(self._current, "pii_redaction_enabled", True))
+
     def get_settings_version(self) -> int:
         if self._current is None:
             self._load()

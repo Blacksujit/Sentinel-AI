@@ -196,8 +196,17 @@ def init_db():
     from app.storage import workspace_models as _workspace_models  # noqa: F401
     from app.learning import models as _learning_models  # noqa: F401
     from app.storage import wallet_models as _wallet_models  # noqa: F401
+    from app.storage import redteam_models as _redteam_models  # noqa: F401
+    from app.storage import workspace_intel_models as _workspace_intel_models  # noqa: F401
 
     eng = get_engine()
+
+    # Run migrations BEFORE create_all so dropped tables get recreated with correct schema
+    if eng.dialect.name == "sqlite":
+        _run_sqlite_migrations(eng)
+    else:
+        _run_postgres_migrations(eng)
+
     Base.metadata.create_all(bind=eng)
 
     try:
@@ -207,9 +216,6 @@ def init_db():
             seed_all(seed_db)
     except Exception as e:
         logger.warning("Database seeding failed: %s", e)
-
-    if eng.dialect.name == "sqlite":
-        _run_sqlite_migrations(eng)
 
     from app.services.database_service import DatabaseService, SettingsRepository
 
@@ -223,6 +229,32 @@ def _run_sqlite_migrations(eng):
     logger.info("[DB MIGRATION] Running SQLite migrations...")
 
     with eng.connect() as conn:
+        # Fix workspace_* tables: BigInteger → Integer migration.
+        # Old schema used BigInteger for PKs which maps to BIGINT in SQLite.
+        # BIGINT PRIMARY KEY does NOT auto-increment; only INTEGER PRIMARY KEY does.
+        # Drop affected tables so create_all() recreates them with Integer PKs.
+        for table_name in [
+            "workspace_incidents",
+            "workspace_deployments",
+            "workspace_timeline_events",
+            "workspace_ai_memory",
+            "workspace_escalation_instances",
+            "workspace_agent_runs",
+            "workspace_summaries",
+            "workspace_activity_feed",
+            "workspace_postmortems",
+        ]:
+            try:
+                master = conn.execute(text(
+                    f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{table_name}'"
+                )).fetchone()
+                if master and "BIGINT" in master[0].upper():
+                    logger.info("[DB MIGRATION] Dropping table '%s' (BigInteger PK → Integer PK)", table_name)
+                    conn.execute(text(f"DROP TABLE IF EXISTS '{table_name}'"))
+                    conn.commit()
+            except Exception as e:
+                logger.warning("[DB MIGRATION] Table '%s' drop skipped: %s", table_name, e)
+
         try:
             cols = [row[1] for row in conn.execute(text("PRAGMA table_info('risk_logs')"))]
             if "settings_version" not in cols:
@@ -247,3 +279,25 @@ def _run_sqlite_migrations(eng):
             conn.commit()
         except Exception as e:
             logger.warning("[DB MIGRATION] users migration skipped: %s", e)
+
+    with eng.connect() as conn:
+        try:
+            settings_cols = [row[1] for row in conn.execute(text("PRAGMA table_info('settings')"))]
+            if "pii_redaction_enabled" not in settings_cols:
+                conn.execute(text("ALTER TABLE settings ADD COLUMN pii_redaction_enabled BOOLEAN DEFAULT 1"))
+            conn.commit()
+        except Exception as e:
+            logger.warning("[DB MIGRATION] settings migration skipped: %s", e)
+
+
+def _run_postgres_migrations(eng):
+    """Lightweight schema migrations for PostgreSQL (no-op if column exists)."""
+    logger.info("[DB MIGRATION] Running Postgres migrations...")
+    with eng.connect() as conn:
+        try:
+            conn.execute(text(
+                "ALTER TABLE settings ADD COLUMN IF NOT EXISTS pii_redaction_enabled BOOLEAN DEFAULT TRUE"
+            ))
+            conn.commit()
+        except Exception as e:
+            logger.warning("[DB MIGRATION] settings migration skipped: %s", e)

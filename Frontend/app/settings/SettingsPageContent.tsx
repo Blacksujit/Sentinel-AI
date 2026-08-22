@@ -5,10 +5,31 @@ import { useAuth } from '@clerk/nextjs'
 import { Button, Separator, Label, Badge } from '@/components/ui'
 import { Slider } from '@/components/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
-import { History, RotateCcw, Save, Settings2 } from 'lucide-react'
+import { History, RotateCcw, Save, Settings2, Activity, ShieldAlert } from 'lucide-react'
+import Link from 'next/link'
+
+type DetectionMetrics = {
+  detection_rate: number
+  false_negative_rate: number
+  false_positive_rate: number
+  avg_detection_time_ms: number
+  new_patterns_last_24h: number
+  pending_review: number
+}
+
+type FeedbackStats = {
+  total_feedback: number
+  user_reported: number
+  auto_detected: number
+  reviewed: number
+  used_for_training: number
+  by_category: Record<string, number>
+  recent_trend: Array<Record<string, unknown>>
+}
 
 type Settings = {
   warn_threshold: number
@@ -20,6 +41,7 @@ type Settings = {
     unsafe_output: number
   }
   enforcement_mode: 'allow' | 'warn' | 'escalate'
+  pii_redaction_enabled: boolean
   version: number
   updated_at?: string
 }
@@ -44,6 +66,7 @@ const DEFAULT_SETTINGS: Settings = {
     unsafe_output: 0.3
   },
   enforcement_mode: 'warn',
+  pii_redaction_enabled: true,
   version: 1
 }
 
@@ -59,6 +82,10 @@ export default function SettingsPageContent() {
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyPage, setHistoryPage] = useState(1)
   const [totalHistory, setTotalHistory] = useState(0)
+
+  const [metrics, setMetrics] = useState<DetectionMetrics | null>(null)
+  const [feedbackStats, setFeedbackStats] = useState<FeedbackStats | null>(null)
+  const [cockpitLoading, setCockpitLoading] = useState(true)
 
   // Load settings on mount
   useEffect(() => {
@@ -118,6 +145,31 @@ export default function SettingsPageContent() {
 
     loadHistory()
   }, [historyPage])
+
+  // Load detection performance (FP tuning cockpit)
+  useEffect(() => {
+    const loadCockpit = async () => {
+      try {
+        let token = null
+        try { token = await getToken() } catch (e) { console.warn('getToken failed:', e) }
+        const authHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+
+        const [metricsResponse, statsResponse] = await Promise.all([
+          fetch('/api/learning/metrics', { cache: 'no-store', headers: authHeaders }),
+          fetch('/api/learning/feedback/stats', { cache: 'no-store', headers: authHeaders }),
+        ])
+
+        if (metricsResponse.ok) setMetrics(await metricsResponse.json())
+        if (statsResponse.ok) setFeedbackStats(await statsResponse.json())
+      } catch (error) {
+        console.error('Failed to load detection metrics:', error)
+      } finally {
+        setCockpitLoading(false)
+      }
+    }
+
+    loadCockpit()
+  }, [getToken])
 
   // Reset to defaults
   const resetToDefaults = async () => {
@@ -452,9 +504,132 @@ export default function SettingsPageContent() {
                   </Select>
                   <p className="text-xs text-muted-foreground">Default action when thresholds are exceeded</p>
                 </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="pii-redaction" className="text-foreground">PII Redaction</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Detect and redact PII in analyzed prompts and responses
+                    </p>
+                  </div>
+                  <Switch
+                    id="pii-redaction"
+                    checked={settings.pii_redaction_enabled}
+                    onCheckedChange={(checked) => updateSetting('pii_redaction_enabled', checked)}
+                    aria-label="Toggle PII redaction"
+                  />
+                </div>
               </CardContent>
             </Card>
           </motion.div>
+        </motion.div>
+
+        {/* Detection Performance (FP tuning cockpit) */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+        >
+          <Card className="card-premium border-border">
+            <CardHeader>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                    Detection Performance
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Real outcomes from review queue dispositions — false positives are excluded
+                    from the training loop automatically.
+                  </p>
+                </div>
+                {metrics && metrics.pending_review > 0 && (
+                  <Link href="/user/review-queue" className="shrink-0">
+                    <Button variant="destructive" size="sm" className="btn-premium-outline">
+                      <ShieldAlert className="mr-1.5 h-4 w-4" />
+                      {metrics.pending_review} pending review
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {cockpitLoading ? (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-20 animate-pulse rounded-lg bg-muted" />
+                  ))}
+                </div>
+              ) : !metrics && !feedbackStats ? (
+                <p className="text-sm text-muted-foreground">
+                  No detection data available yet.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                  {metrics && (
+                    <>
+                      <div className="rounded-lg border border-border bg-card p-4">
+                        <div className="text-xs text-muted-foreground">Detection Rate</div>
+                        <div className="mt-1 text-2xl font-bold text-foreground tabular-nums">
+                          {(metrics.detection_rate * 100).toFixed(0)}%
+                        </div>
+                        <p className="text-xs text-muted-foreground">High-risk flagged in last 24h</p>
+                      </div>
+                      <div className="rounded-lg border border-border bg-card p-4">
+                        <div className="text-xs text-muted-foreground">False Positive Rate</div>
+                        <div className={`mt-1 text-2xl font-bold tabular-nums ${
+                          metrics.false_positive_rate < 0.1 ? 'text-emerald-500' :
+                          metrics.false_positive_rate < 0.3 ? 'text-amber-500' : 'text-red-500'
+                        }`}>
+                          {(metrics.false_positive_rate * 100).toFixed(1)}%
+                        </div>
+                        <p className="text-xs text-muted-foreground">From reviewed dispositions</p>
+                      </div>
+                      <div className="rounded-lg border border-border bg-card p-4">
+                        <div className="text-xs text-muted-foreground">False Negative Rate</div>
+                        <div className={`mt-1 text-2xl font-bold tabular-nums ${
+                          metrics.false_negative_rate < 0.1 ? 'text-emerald-500' :
+                          metrics.false_negative_rate < 0.3 ? 'text-amber-500' : 'text-red-500'
+                        }`}>
+                          {(metrics.false_negative_rate * 100).toFixed(1)}%
+                        </div>
+                        <p className="text-xs text-muted-foreground">Missed threats confirmed by review</p>
+                      </div>
+                      <div className="rounded-lg border border-border bg-card p-4">
+                        <div className="text-xs text-muted-foreground">Avg Detection Time</div>
+                        <div className="mt-1 text-2xl font-bold text-foreground tabular-nums">
+                          {metrics.avg_detection_time_ms.toFixed(1)}ms
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {metrics.new_patterns_last_24h} new patterns in 24h
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {feedbackStats && feedbackStats.total_feedback > 0 && (
+                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
+                  <span className="text-xs text-muted-foreground mr-1">Dispositions:</span>
+                  {['confirmed_threat', 'false_positive', 'compliance_issue'].map((cat) => (
+                    <Badge
+                      key={cat}
+                      variant={cat === 'false_positive' ? 'warning' : cat === 'confirmed_threat' ? 'destructive' : 'secondary'}
+                      className="capitalize"
+                    >
+                      {cat.replace('_', ' ')}: {feedbackStats.by_category?.[cat] ?? 0}
+                    </Badge>
+                  ))}
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {feedbackStats.reviewed} reviewed · {feedbackStats.used_for_training} used for training
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Version footer */}

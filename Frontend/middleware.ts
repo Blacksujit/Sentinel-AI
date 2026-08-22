@@ -13,6 +13,7 @@ const PUBLIC_ROUTES = [
   '/start(.*)',
   '/setup(.*)',
   '/docs(.*)',
+  '/hack(.*)',
   '/auth/sign-in(.*)',
   '/auth/sign-up(.*)',
   '/org-onboarding(.*)',

@@ -5,6 +5,7 @@ SentinelAI SDK Client Module
 import requests
 import json
 import time
+import re
 from typing import Dict, Any, Optional, List, Callable
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -32,6 +33,95 @@ DEFAULT_RETRY_POLICY: Dict[str, Any] = {
 def _exponential_backoff(attempt: int, backoff_factor: float, max_backoff: float) -> float:
     delay = backoff_factor * (2 ** attempt)
     return min(delay, max_backoff)
+
+
+# ── Local claim checking (used by verify()) ────────────────────────────────
+# Factual claims are sentences containing measurable quantities (numbers,
+# percentages, dates, amounts). Each claim atom is cross-checked against the
+# context supplied in the prompt; we never assert a claim is true beyond the
+# evidence we actually have.
+_ATOM_PATTERN = re.compile(
+    r"(\d+(?:[.,]\d+)?)\s*-?\s*(%|percent|USD|EUR|GBP|\$|€|£|million|billion|thousand|"
+    r"days?|years?|hours?|minutes?|seconds?|weeks?|months?|GB|TB|MB|KB|km|miles?|"
+    r"kg|grams?|dollars?|euros?)",
+    re.IGNORECASE,
+)
+_MAX_CLAIMS_CHECKED = 20
+
+
+def _extract_claim_sentences(text: str) -> List[str]:
+    parts = re.split(r"(?<=[.!?])\s+", text.strip())
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _extract_factual_atoms(text: str) -> List[tuple]:
+    atoms = []
+    for m in _ATOM_PATTERN.finditer(text):
+        try:
+            value = float(m.group(1).replace(",", "."))
+        except ValueError:
+            continue
+        atoms.append((value, m.group(2).lower().rstrip("s")))
+    return atoms
+
+
+def _check_claims(claims: List[Dict[str, Any]], prompt: str) -> List[Dict[str, Any]]:
+    prompt_atoms = _extract_factual_atoms(prompt)
+    checked = []
+    for claim in claims:
+        statuses = []
+        for value, unit in claim["parsed"]:
+            matches = [pv for pv, pu in prompt_atoms if pu == unit]
+            if not matches:
+                statuses.append("unverified")
+            elif all(abs(pv - value) > 1e-9 for pv in matches):
+                statuses.append("contradicted")
+            else:
+                statuses.append("consistent")
+        if "contradicted" in statuses:
+            verdict = "contradicted"
+        elif "unverified" in statuses:
+            verdict = "unverified"
+        else:
+            verdict = "consistent"
+        checked.append({
+            "text": claim["text"],
+            "atoms": claim["atoms"],
+            "parsed": claim["parsed"],
+            "verdict": verdict,
+            "note": (
+                "Contradicts information provided in the prompt"
+                if verdict == "contradicted"
+                else "Could not be verified against the provided context"
+                if verdict == "unverified"
+                else "Consistent with the provided context"
+            ),
+        })
+    return checked
+
+
+def _correct_contradictions(text: str, checked: List[Dict[str, Any]], prompt: str) -> Optional[str]:
+    """Rewrite contradicted values using the prompt's values when evidence exists."""
+    if not any(c["verdict"] == "contradicted" for c in checked):
+        return None
+    prompt_atoms = _extract_factual_atoms(prompt)
+    corrected = text
+    replaced = False
+    for claim in checked:
+        if claim["verdict"] != "contradicted":
+            continue
+        sentence = claim["text"]
+        for raw_atom, (value, unit) in zip(claim["atoms"], claim["parsed"]):
+            matches = [pv for pv, pu in prompt_atoms if pu == unit]
+            if not matches:
+                continue
+            target = matches[0]
+            sep = "-" if "-" in raw_atom else " "
+            new_atom = f"{target:g}{sep}{unit}".strip()
+            if abs(target - value) > 1e-9 and raw_atom in sentence:
+                corrected = corrected.replace(sentence, sentence.replace(raw_atom, new_atom, 1))
+                replaced = True
+    return corrected if replaced else None
 
 
 class SentinelAIClient:
@@ -159,21 +249,26 @@ class SentinelAIClient:
         response: str,
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
-        client_metadata: Optional[Dict[str, Any]] = None
+        client_metadata: Optional[Dict[str, Any]] = None,
+        redact: bool = False,
     ) -> Dict[str, Any]:
         """
         Analyze prompt/response pair for AI safety risks.
-        
+
         Args:
             prompt: User's prompt/question
             response: AI model's response
             user_id: End user identifier (optional)
             session_id: Session identifier (optional)
             client_metadata: Additional metadata (optional)
-            
+            redact: Request PII-redacted prompt/response in the result
+                (returns redacted_prompt/redacted_response/pii fields when
+                PII is detected and the SentinelAI instance has PII
+                redaction enabled)
+
         Returns:
             Analysis results with risk assessment
-            
+
         Example:
             >>> result = client.analyze(
             ...     prompt="What's your refund policy?",
@@ -183,6 +278,7 @@ class SentinelAIClient:
             ... )
             >>> print(result['decision'])  # 'allow', 'warn', 'block', 'escalate'
             >>> print(result['final_risk_score'])  # 0.0 to 1.0
+            >>> print(result.get('redacted_response'))  # PII-redacted, if requested
         """
         payload = {
             "prompt": prompt,
@@ -194,7 +290,8 @@ class SentinelAIClient:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "sdk_version": "1.0.0",
                 **(client_metadata or {})
-            }
+            },
+            "redact": redact,
         }
         
         try:
@@ -218,84 +315,115 @@ class SentinelAIClient:
         response: str,
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
+        redact: bool = False,
     ) -> Dict[str, Any]:
         """
         One-shot verification of a prompt/response pair.
-        
-        Returns a simplified response with score (0-100), status,
-        detected claims, and a corrected version if needed.
-        Aligns with the SentinalAI public API spec.
-        
+
+        Extracts factual claims (sentences containing numbers, percentages,
+        amounts or durations) from the response and cross-checks each against
+        the context provided in the prompt. Claims that contradict the prompt
+        are reported, and where the prompt supplies the correct value the
+        response is corrected. Unverified claims are marked as such — nothing
+        is asserted beyond available evidence.
+
+        Returns a dict with score (0-100), status, claims[], corrected, meta.
+
         Args:
             prompt: User's prompt/question  
             response: AI model's response
             user_id: End user identifier (optional)
             session_id: Session identifier (optional)
+            redact: Request PII-redacted prompt/response in the result
+                (adds redacted_prompt/redacted_response/pii fields when PII
+                is detected and the SentinelAI instance has PII redaction
+                enabled)
             
         Returns:
             Dict with score (0-100), status, claims[], corrected, meta
             
         Example:
             >>> result = client.verify(
-            ...     prompt="Who won the Nobel Prize in Physics in 2019?",
-            ...     response="It was awarded entirely to Stephen Hawking..."
+            ...     prompt="Our refund policy is 60 days.",
+            ...     response="We offer 30-day refunds."
             ... )
             >>> print(result['status'])  # 'hallucinated'
-            >>> print(result['corrected'])  # Corrected text
+            >>> print(result['corrected'])  # "We offer 60-day refunds."
         """
         raw = self.analyze(
             prompt=prompt,
             response=response,
             user_id=user_id,
             session_id=session_id,
+            redact=redact,
         )
 
         score_0_1 = raw.get("final_risk_score", 0.0)
-        score_0_100 = round(score_0_1 * 100)
-        flags = raw.get("flags", [])
         decision = raw.get("decision", "allow")
         action = raw.get("action_taken", "allow")
 
-        if score_0_100 <= 24:
+        # 1. Extract factual claims from the response.
+        claims = []
+        for sentence in _extract_claim_sentences(response)[:_MAX_CLAIMS_CHECKED]:
+            raw_atoms = [m.group(0).strip() for m in _ATOM_PATTERN.finditer(sentence)]
+            if not raw_atoms:
+                continue
+            claims.append({
+                "text": sentence,
+                "atoms": raw_atoms,
+                "parsed": _extract_factual_atoms(sentence),
+            })
+
+        # 2. Check each claim against the prompt's provided context.
+        checked = _check_claims(claims, prompt)
+        contradicted = [c for c in checked if c["verdict"] == "contradicted"]
+        unverified = [c for c in checked if c["verdict"] == "unverified"]
+
+        # 3. Score and status. A contradiction is strong hallucination evidence;
+        #    unverified factual claims push into the review band.
+        score_0_100 = round(score_0_1 * 100)
+        if contradicted:
+            score_0_100 = max(score_0_100, 80)
+            status = "hallucinated"
+        elif checked and any(c["verdict"] != "consistent" for c in checked):
+            score_0_100 = max(score_0_100, 55)
+            status = "needs_review"
+        elif score_0_100 <= 24:
             status = "trusted"
         elif score_0_100 <= 59:
             status = "needs_review"
         else:
             status = "hallucinated"
 
-        claims = []
-        detector_map = {
-            "prompt_anomaly": ("Prompt Anomaly", "medium"),
-            "jailbreak_detected": ("Jailbreak Attempt", "critical"),
-            "unsafe_output": ("Unsafe Output", "high"),
-        }
-        for flag in flags:
-            detector_name, severity = detector_map.get(flag, (flag, "medium"))
-            claims.append({
-                "detector": detector_name,
-                "text": response if flag in ("unsafe_output",) else prompt,
-                "severity": severity,
-                "source": "response" if flag in ("unsafe_output", "output_risk") else "prompt",
-                "note": f"Flagged by {detector_name} detector",
-            })
+        # 4. Correct only where the prompt provides the evidence for the fix.
+        corrected = _correct_contradictions(response, checked, prompt)
 
-        corrected = None
-        if status in ("needs_review", "hallucinated"):
-            corrected = response
-
-        return {
+        result_payload: Dict[str, Any] = {
             "score": score_0_100,
             "status": status,
             "decision": decision,
             "action_taken": action,
-            "claims": claims,
+            "claims": [
+                {"text": c["text"], "verdict": c["verdict"], "note": c["note"]}
+                for c in checked
+            ],
             "corrected": corrected,
             "meta": {
-                "claims_checked": len(claims),
-                "detectors_run": 6,
+                "method": "local_claim_check",
+                "claims_checked": len(checked),
+                "contradictions": len(contradicted),
+                "unverified": len(unverified),
+                "backend_decision": decision,
                 "verified_at": datetime.now(timezone.utc).isoformat(),
             }
         }
+
+        if redact:
+            for field in ("redacted_prompt", "redacted_response", "pii"):
+                if raw.get(field) is not None:
+                    result_payload[field] = raw[field]
+
+        return result_payload
 
     def correct(
         self,
@@ -303,6 +431,7 @@ class SentinelAIClient:
         response: str,
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
+        redact: bool = False,
     ) -> str:
         """
         Verify and return the corrected response.
@@ -315,17 +444,26 @@ class SentinelAIClient:
             response: AI model's response  
             user_id: End user identifier (optional)
             session_id: Session identifier (optional)
+            redact: Request PII redaction for the underlying analysis
             
         Returns:
             The response string — corrected if needed, original if trusted.
+            When redact=True, the PII-redacted response is returned when
+            no factual correction applies.
         """
         result = self.verify(
             prompt=prompt,
             response=response,
             user_id=user_id,
             session_id=session_id,
+            redact=redact,
         )
-        return result.get("corrected") or response
+        corrected = result.get("corrected")
+        if corrected:
+            return corrected
+        if redact and result.get("redacted_response"):
+            return result["redacted_response"]
+        return response
     
     # ── Batch Analysis ────────────────────────────────────────────
 
@@ -334,6 +472,7 @@ class SentinelAIClient:
         items: List[Dict[str, str]],
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
+        redact: bool = False,
     ) -> List[Dict[str, Any]]:
         """
         Analyze multiple prompt/response pairs in parallel.
@@ -342,6 +481,8 @@ class SentinelAIClient:
             items: List of dicts with "prompt" and "response" keys
             user_id: End user identifier (applied to all items)
             session_id: Session identifier (applied to all items)
+            redact: Request PII-redacted prompt/response in every result
+                (applied to all items)
 
         Returns:
             List of analysis results in the same order as input items
@@ -360,6 +501,7 @@ class SentinelAIClient:
                 response=item["response"],
                 user_id=user_id,
                 session_id=session_id,
+                redact=redact,
             )
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
@@ -925,7 +1067,8 @@ class ConversationTracker:
         prompt: str,
         response: str,
         user_id: Optional[str] = None,
-        turn_metadata: Optional[Dict[str, Any]] = None
+        turn_metadata: Optional[Dict[str, Any]] = None,
+        redact: bool = False,
     ) -> Dict[str, Any]:
         """
         Add a conversation turn with analysis.
@@ -935,6 +1078,7 @@ class ConversationTracker:
             response: AI response
             user_id: User identifier
             turn_metadata: Additional turn metadata
+            redact: Request PII-redacted prompt/response in the analysis
             
         Returns:
             Analysis result for this turn
@@ -952,7 +1096,8 @@ class ConversationTracker:
             response=response,
             user_id=user_id,
             session_id=self.session_id,
-            client_metadata=metadata
+            client_metadata=metadata,
+            redact=redact,
         )
         
         turn = {

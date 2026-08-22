@@ -65,6 +65,18 @@ export async function apiPatch<T = unknown>(path: string, body: unknown, token?:
   return handleResponse(response) as Promise<T>;
 }
 
+export async function apiPut<T = unknown>(path: string, body: unknown, token?: string | null): Promise<T> {
+  const response = await fetch(path, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+  return handleResponse(response) as Promise<T>;
+}
+
 export async function apiDelete<T = unknown>(path: string, token?: string | null): Promise<T> {
   const response = await fetch(path, {
     method: "DELETE",

@@ -26,6 +26,7 @@ def seed_rbac_data(db: Session) -> None:
             "apikey.rotate",
             "usage.view",
             "settings.update",
+            "redteam.view",
         ],
         "DEVELOPER": [
             "apikey.create",
@@ -45,15 +46,25 @@ def seed_rbac_data(db: Session) -> None:
             db.add(role)
             db.flush()
 
-            for perm_key in perm_keys:
-                perm = db.query(RbacPermission).filter(RbacPermission.key == perm_key).first()
-                if perm:
-                    db.execute(
-                        rbac_role_permissions.insert().values(
-                            role_id=role.id,
-                            permission_id=perm.id
-                        )
+        # Grant permissions, reconciling roles created before new
+        # permission keys were added to the registry (idempotent).
+        for perm_key in perm_keys:
+            perm = db.query(RbacPermission).filter(RbacPermission.key == perm_key).first()
+            if not perm:
+                continue
+            granted = (
+                db.query(rbac_role_permissions)
+                .filter(rbac_role_permissions.c.role_id == role.id)
+                .filter(rbac_role_permissions.c.permission_id == perm.id)
+                .first()
+            )
+            if not granted:
+                db.execute(
+                    rbac_role_permissions.insert().values(
+                        role_id=role.id,
+                        permission_id=perm.id
                     )
+                )
     db.commit()
 
 

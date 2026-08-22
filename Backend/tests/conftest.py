@@ -4,6 +4,27 @@ Pytest Configuration and Fixtures
 This module provides shared fixtures and configuration for all tests.
 """
 
+import os
+
+# API-key auth is required for external endpoints; provide a test key
+# BEFORE any app module imports so app.middleware.auth picks it up.
+TEST_API_KEY = "test-api-key"
+os.environ.setdefault("SENTINELAI_API_KEYS", TEST_API_KEY)
+
+# Internal endpoints require a Clerk JWT; dev-unsafe mode accepts
+# unsigned tokens (same pattern used by the smoke suites).
+os.environ.setdefault("CLERK_JWT_PUBLIC_KEY", "")
+os.environ.setdefault("CLERK_JWT_KEY", "")
+os.environ.setdefault("CLERK_DEV_UNSAFE_JWT", "1")
+
+import jwt
+
+TEST_DEV_TOKEN = jwt.encode(
+    {"sub": "pytest-user", "email": "pytest@sentinel.local"},
+    key="",
+    algorithm="none",
+)
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -14,6 +35,17 @@ from contextlib import contextmanager
 from app.storage.db import Base
 from app.storage.models import RiskLog
 from app.storage.prompt_baselines import PromptBaseline
+
+
+class AuthedTestClient(TestClient):
+    """TestClient that injects the test API key and dev JWT into every request."""
+
+    def request(self, *args, **kwargs):
+        headers = dict(kwargs.get("headers") or {})
+        headers.setdefault("X-API-Key", TEST_API_KEY)
+        headers.setdefault("Authorization", f"Bearer {TEST_DEV_TOKEN}")
+        kwargs["headers"] = headers
+        return super().request(*args, **kwargs)
 
 
 @pytest.fixture(scope="function")
@@ -30,6 +62,15 @@ def test_db():
     from app.storage import models as _risk_log_models  # noqa: F401
     from app.storage import prompt_baselines as _prompt_baseline_models  # noqa: F401
     from app.utils import models as _settings_models  # noqa: F401
+    from app.storage import api_key_models as _api_key_models  # noqa: F401
+    from app.storage import user_models as _user_models  # noqa: F401
+    from app.storage import org_models as _org_models  # noqa: F401
+    from app.storage import rbac_models as _rbac_models  # noqa: F401
+    from app.storage import usage_models as _usage_models  # noqa: F401
+    from app.storage import invite_models as _invite_models  # noqa: F401
+    from app.storage import workspace_models as _workspace_models  # noqa: F401
+    from app.learning import models as _learning_models  # noqa: F401
+    from app.storage import wallet_models as _wallet_models  # noqa: F401
     
     # Create all tables
     Base.metadata.create_all(bind=engine)
@@ -53,6 +94,7 @@ def client(test_db):
     from main import app
     from app.api.routes import get_db
     from app.api.baseline_routes import get_db as get_baseline_db
+    from app.auth.dependencies import get_db as get_auth_db
     import main as main_module
     from app.services.database_service import DatabaseService
     from app.services.settings_service_db import settings_service
@@ -84,8 +126,9 @@ def client(test_db):
     
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_baseline_db] = override_get_db
+    app.dependency_overrides[get_auth_db] = override_get_db
     
-    with TestClient(app) as test_client:
+    with AuthedTestClient(app) as test_client:
         yield test_client
     
     app.dependency_overrides.clear()
