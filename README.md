@@ -5,8 +5,8 @@
 <h3 align="center">AI risk monitoring for production LLMs</h3>
 
 <p align="center">
-  Catch hallucinations, prompt injections, and jailbreaks <b>before</b> they reach your users —
-  with a score, a reason, and an action for every response.
+  Score every prompt/response pair in real time — with a score, a reason,
+  and an action for each verdict.
 </p>
 
 <p align="center">
@@ -28,18 +28,12 @@
 
 ---
 
-## The problem
+## What it does
 
-LLMs are confident — and wrong. They invent citations, flip numbers, and blend
-entities with zero hesitation. Most teams find out after a bad response reaches
-a user, or from a compliance auditor.
-
-SentinelAI sits between your app and your LLM, scoring every prompt/response
-pair in real time. Six detectors run in parallel, every score ships with
-token-level reasons, and your policy decides the action: serve, auto-correct,
-or block.
-
-**No black boxes. Every verdict explains itself.**
+SentinelAI sits between your app and your LLM. It scores every prompt/response
+pair in real time, flags risky or unsupported content, and lets your policy
+decide the action: serve, auto-correct, or block. Every verdict ships with the
+claims and flags that produced it.
 
 ## Quick start
 
@@ -50,27 +44,27 @@ pip install sentinelai-risk
 ```python
 from sentinelai import SentinelAIClient
 
-client = SentinelAIClient(api_key="sk_...")
+client = SentinelAIClient(api_key="your-api-key")
 
-prompt = "What was Q3 revenue?"
-llm_output = "Revenue grew 45% year over year."
+prompt = "Our refund policy is 60 days."
+response = "We offer 30-day refunds."
 
-result = client.verify(prompt=prompt, response=llm_output)
+result = client.verify(prompt=prompt, response=response)
 
-if result.status == "hallucinated":
-    print(result.corrected)  # serve the fix, not the flaw
+if result["status"] == "hallucinated":
+    print(result["corrected"])        # "We offer 60-day refunds."
 else:
-    print(result.trust_score, result.reasons)
+    print(result["score"], result["status"], result["claims"])
 ```
 
-Live in under 60 seconds. See the
-[quickstart guide](https://blacksujit.github.io/Sentinel-AI/docs/quickstart)
-for configuration, deployment modes, and self-hosting.
+`verify()` returns a dict (see [What you get back](#what-you-get-back)). For
+configuration, deployment, and self-hosting see the
+[quickstart guide](https://blacksujit.github.io/Sentinel-AI/docs/quickstart).
 
 ## Architecture
 
-SentinelAI is model-agnostic and minimally invasive — it observes
-prompt/response pairs and never sits in the generation path:
+SentinelAI is model-agnostic. It observes prompt/response pairs and never sits
+in the generation path:
 
 ```mermaid
 flowchart LR
@@ -103,7 +97,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     App[Your App] --> API[SentinelAI API]
-    API --> Detectors[6 Parallel Detectors]
+    API --> Detectors[3 Detectors]
     Detectors --> Reasoner[Risk Reasoner]
     Reasoner --> Policy[Policy Engine]
     Policy -->|0-24 Trusted| Serve[Serve as-is]
@@ -111,64 +105,81 @@ flowchart LR
     Policy -->|60-100 Block| Block[Block + escalate]
 ```
 
-| Trust score | Status | Default action |
-|-------------|--------|----------------|
-| 0–24 | Trusted | Serve as-is |
-| 25–59 | Needs review | Auto-correct or flag for humans |
-| 60–100 | Hallucinated | Block and escalate |
+Three detectors run on each request:
+
+| Detector | Side | What it checks |
+|----------|------|----------------|
+| **Prompt anomaly** | Prompt | Distribution shift vs. baseline prompts (similarity heuristics) |
+| **Jailbreak RAG** | Prompt | Semantic match against known jailbreak patterns (embeddings + cosine similarity) |
+| **Output risk** | Response | 8 content categories: violence, hate speech, self-harm, illegal activity, misinformation, privacy violation, inappropriate content, harmful instructions |
+
+The SDK's `verify()` adds local factual-claim checking: it extracts
+numeric/quantity claims from the response and cross-checks each against the
+prompt context, marking them `consistent`, `unverified`, or `contradicted`,
+and auto-corrects contradictions where the prompt supplies the right value.
+
+| Score | Status | Default action |
+|-------|--------|----------------|
+| 0–24 | `trusted` | Serve as-is |
+| 25–59 | `needs_review` | Auto-correct or flag for review |
+| 60–100 | `hallucinated` | Block and escalate |
+
+Higher score = higher risk.
 
 ## Deployment modes
 
 | Mode | Use case |
 |------|----------|
-| **Blocking** | Verify every response before it hits your user |
+| **Blocking** | Verify every response before it reaches your user |
 | **Monitoring** | Log everything, review flagged ones later |
 | **Async** | High-throughput: fire-and-forget + webhooks |
 | **Self-hosted** | Keep all data on your own infrastructure |
 
 ## What you get back
 
+`verify()` returns a dict with these fields:
+
 | Field | Meaning |
 |-------|---------|
+| `score` | 0 (safe) to 100 (critical risk) |
 | `status` | `trusted`, `needs_review`, or `hallucinated` |
-| `trust_score` | 0 (safe) to 100 (critical risk) |
-| `reasons` | Token-level explanations for every flag |
-| `corrected` | A cleaned response when auto-correction applies |
+| `claims` | Per-claim verdicts (`text`, `verdict`, `note`) |
+| `corrected` | A cleaned response when auto-correction applies, else `None` |
+| `decision` | Backend decision (`allow` / `warn` / `block` / `escalate`) |
+| `meta` | Counts: claims checked, contradictions, unverified, timestamp |
 
 ## Features
 
-- **Six detectors in parallel** — fabricated citations, numeric drift, entity
-  confusion, contradictions, unsupported claims, overconfidence
-- **Explainable risk** — every score ships with token-level reasons, no black boxes
+- **Three detectors** — prompt anomaly, jailbreak RAG, output risk (8 categories)
+- **Explainable** — every score ships with the claims/flags that produced it
 - **Auto-correction** — serve a cleaned response instead of a risky one
-- **Conversation-aware** — risk judged across multi-turn context, not in isolation
-- **3-line SDK** — `pip install sentinelai-risk` and you are live
+- **Conversation-aware** — risk judged across multi-turn context via `ConversationTracker`
 - **Self-hostable** — open-source core, your data stays on your infrastructure
 
 ## Documentation
 
-Full docs — trust score, detectors, deployment modes, API reference, and
-self-hosting — live at **https://blacksujit.github.io/Sentinel-AI/**.
+Full docs — scoring, detectors, deployment modes, API reference, and
+self-hosting — live at **[Docs](https://blacksujit.github.io/Sentinel-AI/)**.
 
-The docs site is a static Next.js/Fumadocs build in [`docs-site/`](docs-site),
+<!-- The docs site is a static Next.js + Fumadocs build in [`docs-site/`](docs-site),
 exported with a `/Sentinel-AI` base path and deployed to GitHub Pages by
 [`.github/workflows/pages.yml`](.github/workflows/pages.yml) on every push to
-`main`.
-
+`main`. -->
+<!-- 
 ```bash
 cd docs-site
 npm install
 npm run dev
-```
+``` -->
 
 ## Repository layout
 
 | Path | Contents |
 | --- | --- |
+| `Backend/` | SentinelAI API backend (FastAPI, `uvicorn main:app`) |
+| `Frontend/` | Web dashboard (Next.js) |
+| `sentinelai-sdk/` | Python SDK (published as `sentinelai-risk` on PyPI) |
 | `docs-site/` | Documentation website (Next.js + Fumadocs, static export) |
-| `Backend/` | SentinelAI API backend (FastAPI) |
-| `Frontend/` | Web dashboard |
-| `sentinelai-sdk/` | Python SDK (published as `sentinelai-risk`) |
 | `Docs/` | Source documentation & design notes |
 
 ## Roadmap
