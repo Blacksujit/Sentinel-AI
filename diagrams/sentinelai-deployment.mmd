@@ -1,0 +1,112 @@
+graph TD
+    %% ============================================
+    %% SentinelAI Deployment & Infrastructure
+    %% ============================================
+    
+    subgraph DNS["🌐 DNS & CDN"]
+        DOMAIN["sentinelai.io"]
+        VERCEL_DNS["vercel.app<br/>(Wildcard)"]
+        CF["☁️ Cloudflare<br/>(DNS + WAF + Cache)"]
+    end
+    
+    subgraph VERCEL["▲ Vercel Platform"]
+        EDGE["🌍 Edge Network<br/>(35+ Regions)"]
+        EDGE_FUNC["⚡ Edge Functions<br/>(Middleware)"]
+        SERVERLESS["🔥 Serverless Functions<br/>(Python 3.11)"]
+        STATIC["📦 Static Assets<br/>(Next.js Build)"]
+        CRON["⏰ Cron Jobs<br/>(Scheduled Tasks)"]
+        KV["🗄️ Vercel KV<br/>(Redis)"]
+        POSTGRES["🐘 Vercel Postgres<br/>(Managed)"]
+        BLOB["📦 Vercel Blob<br/>(File Storage)"]
+        ANALYTICS["📈 Vercel Analytics<br/>(Web Vitals)"]
+        SPEED_INSIGHTS["⚡ Speed Insights<br/>(Core Web Vitals)"]
+    end
+    
+    subgraph EXTERNAL_SVC["🔗 External Services"]
+        CLERK["👤 Clerk<br/>(Auth + User Mgmt)"]
+        STRIPE["💳 Stripe<br/>(Payments + Billing)"]
+        OPENAI["🤖 OpenAI<br/>(GPT-4 \ Embeddings)"]
+        ANTHROPIC["🤖 Anthropic<br/>(Claude)"]
+        SENDGRID["📧 SendGrid<br/>(Transactional Email)"]
+        GITHUB["🐙 GitHub<br/>(CI/CD + Webhooks)"]
+        SENTRY["🐛 Sentry<br/>(Error Tracking)"]
+        DATADOG["📊 Datadog<br/>(APM + Logs)"]
+    end
+    
+    subgraph MONITORING["📊 Monitoring & Observability"]
+        VERCEL_LOGS["📝 Vercel Logs<br/>(Real-time)"]
+        VERCEL_METRICS["📈 Vercel Metrics<br/>(Invocations, Duration, Errors)"]
+        PROMETHEUS["📈 Prometheus<br/>(Custom Metrics)"]
+        GRAFANA["📊 Grafana<br/>(Dashboards)"]
+        ALERTING["🚨 Alerting<br/>(PagerDuty/Slack)"]
+        HEALTH["💚 Health Checks<br/>(/health, /readiness, /liveness)"]
+    end
+    
+    subgraph CI_CD["🔄 CI/CD Pipeline"]
+        GITHUB_ACTIONS["🔄 GitHub Actions<br/>(Build + Test + Deploy)"]
+        PREVIEW["👀 Preview Deployments<br/>(Per PR)"]
+        PROD_DEPLOY["🚀 Production Deploy<br/>(Main Branch)"]
+        TESTS["🧪 Tests<br/>(Unit + Integration + E2E)"]
+        LINT["🔍 Lint + TypeCheck<br/>(Ruff + MyPy)"]
+        SECURITY["🔒 Security Scan<br/>(Bandit + Safety)"]
+    end
+    
+    %% Connections
+    DOMAIN --> CF
+    CF --> EDGE
+    VERCEL_DNS --> EDGE
+    
+    EDGE --> EDGE_FUNC
+    EDGE --> SERVERLESS
+    EDGE --> STATIC
+    
+    EDGE_FUNC --> KV
+    SERVERLESS --> POSTGRES
+    SERVERLESS --> BLOB
+    SERVERLESS --> KV
+    CRON --> SERVERLESS
+    
+    %% External integrations
+    SERVERLESS -.-> CLERK
+    SERVERLESS -.-> STRIPE
+    SERVERLESS -.-> OPENAI
+    SERVERLESS -.-> ANTHROPIC
+    SERVERLESS -.-> SENDGRID
+    SERVERLESS -.-> SENTRY
+    SERVERLESS -.-> DATADOG
+    
+    %% Webhooks
+    CLERK -.-> EDGE_FUNC
+    STRIPE -.-> EDGE_FUNC
+    GITHUB -.-> EDGE_FUNC
+    
+    %% Monitoring
+    SERVERLESS --> VERCEL_LOGS
+    SERVERLESS --> VERCEL_METRICS
+    SERVERLESS --> PROMETHEUS
+    SERVERLESS --> SENTRY
+    SERVERLESS --> DATADOG
+    HEALTH --> EDGE_FUNC
+    
+    %% CI/CD
+    GITHUB_ACTIONS --> TESTS
+    GITHUB_ACTIONS --> LINT
+    GITHUB_ACTIONS --> SECURITY
+    TESTS --> PREVIEW
+    LINT --> PREVIEW
+    SECURITY --> PREVIEW
+    PREVIEW --> PROD_DEPLOY
+    PROD_DEPLOY --> EDGE
+    
+    %% Styling
+    classDef dns fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef vercel fill:#000000,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef external fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,stroke-dasharray: 5 5
+    classDef monitoring fill:#ede7f6,stroke:#5e35b1,stroke-width:2px
+    classDef cicd fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
+    
+    class DOMAIN,VERCEL_DNS,CF dns
+    class EDGE,EDGE_FUNC,SERVERLESS,STATIC,CRON,KV,POSTGRES,BLOB,ANALYTICS,SPEED_INSIGHTS vercel
+    class CLERK,STRIPE,OPENAI,ANTHROPIC,SENDGRID,GITHUB,SENTRY,DATADOG external
+    class VERCEL_LOGS,VERCEL_METRICS,PROMETHEUS,GRAFANA,ALERTING,HEALTH monitoring
+    class GITHUB_ACTIONS,PREVIEW,PROD_DEPLOY,TESTS,LINT,SECURITY cicd

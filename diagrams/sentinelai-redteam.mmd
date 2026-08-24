@@ -1,0 +1,113 @@
+graph TD
+    %% ============================================
+    %% SentinelAI RedTeam + Adversarial Testing Architecture
+    %% ============================================
+    
+    subgraph ORCHESTRATOR["🎯 RedTeam Orchestrator"]
+        SCHEDULER["⏰ Scheduler<br/>(Cron \ Manual Trigger)"]
+        CONFIG["⚙️ Config<br/>(Budget, Classes, Max Cases)"]
+        EXECUTOR["🚀 Executor<br/>(Async Pipeline)"]
+        BUDGET_GUARD["💰 Budget Guard<br/>(Token/Time/Cost Limits)"]
+        MUTATION_ENGINE["🧬 Mutation Engine<br/>(Evolutionary)"]
+    end
+    
+    subgraph ATTACK_CLASSES["🎯 Attack Classes (12)"]
+        INSTRUCTION_OVERRIDE["📝 Instruction Override<br/>(Ignore previous instructions)"]
+        ROLEPLAY["🎭 Roleplay<br/>(Persona adoption)"]
+        EMOTIONAL["😢 Emotional Manipulation<br/>(Urgency/Empathy)"]
+        ENCODING["🔤 Encoding/Obfuscation<br/>(Base64/ROT13/Unicode)"]
+        FEWSHOT["📚 Few-shot Poisoning<br/>(Malicious examples)"]
+        CHAIN_OF_THOUGHT["🔗 Chain of Thought<br/>(Reasoning extraction)"]
+        CONTEXT_WINDOW["📄 Context Window<br/>(Overflow/Truncation)"]
+        MULTILINGUAL["🌐 Multilingual<br/>(Non-English bypass)"]
+        TEMPLATE_INJECTION["📋 Template Injection<br/>(Jinja2/Handlebars)"]
+        ADVERSARIAL_SUFFIX["➕ Adversarial Suffix<br/>(Gradient-optimized)"]
+        DISTILLATION["🧪 Distillation<br/>(Model extraction)"]
+        BENIGN_CONTROL["✅ Benign Control<br/>(False positive baseline)"]
+    end
+    
+    subgraph EXECUTION_PIPELINE["⚡ Execution Pipeline"]
+        CASE_GEN["📝 Case Generation<br/>(Template + Mutation)"]
+        PROMPT_EXEC["🚀 Prompt Execution<br/>(LLM Call)"]
+        RESPONSE_CAP["📥 Response Capture"]
+        VERIFICATION["✅ Verification<br/>(Multi-method)"]
+        SCORING["📊 Scoring<br/>(Pass/Fail + Confidence)"]
+    end
+    
+    subgraph VERIFICATION_METHODS["✅ Verification Methods"]
+        KEYWORD_MATCH["🔍 Keyword Match<br/>(Forbidden phrases)"]
+        SEMANTIC_SIM["🧠 Semantic Similarity<br/>(Embedding cosine)"]
+        LLM_JUDGE["🤖 LLM-as-Judge<br/>(GPT-4 Evaluation)"]
+        REGEX_PATTERN["📐 Regex Patterns<br/>(Structured output)"]
+        BEHAVIORAL["🎭 Behavioral Analysis<br/>(Tool use/Refusal)"]
+    end
+    
+    subgraph REPORTING["📊 Reporting & Analysis"]
+        RUN_REPORT["📄 Run Report<br/>(Markdown + JSON)"]
+        FINDINGS_DB["🗄️ Findings Database<br/>(Vulnerability tracking)"]
+        TREND_ANALYSIS["📈 Trend Analysis<br/>(Regression detection)"]
+        COMPLIANCE["📋 Compliance Report<br/>(SOC2/ISO)"]
+    end
+    
+    subgraph INTEGRATIONS["🔗 Integrations"]
+        API_ROUTES["🌐 API Routes<br/>(REST + Webhooks)"]
+        GITHUB_ACTIONS["🔄 CI/CD Integration<br/>(Nightly runs)"]
+        SLACK_ALERTS["📢 Slack Alerts<br/>(Critical findings)"]
+        JIRA["🎫 Jira Integration<br/>(Ticket creation)"]
+        GITBOOK["📚 GitBook<br/>(Documentation)"]
+    end
+    
+    %% Connections
+    SCHEDULER --> CONFIG
+    CONFIG --> EXECUTOR
+    EXECUTOR --> BUDGET_GUARD
+    EXECUTOR --> MUTATION_ENGINE
+    
+    EXECUTOR --> CASE_GEN
+    CASE_GEN --> ATTACK_CLASSES
+    ATTACK_CLASSES --> CASE_GEN
+    MUTATION_ENGINE --> CASE_GEN
+    
+    CASE_GEN --> PROMPT_EXEC
+    PROMPT_EXEC --> RESPONSE_CAP
+    RESPONSE_CAP --> VERIFICATION
+    VERIFICATION --> ATTACK_CLASSES
+    VERIFICATION --> VERIFICATION_METHODS
+    VERIFICATION_METHODS --> SCORING
+    SCORING --> REPORTING
+    
+    REPORTING --> RUN_REPORT
+    REPORTING --> FINDINGS_DB
+    REPORTING --> TREND_ANALYSIS
+    REPORTING --> COMPLIANCE
+    
+    REPORTING --> INTEGRATIONS
+    API_ROUTES --> EXECUTOR
+    GITHUB_ACTIONS --> SCHEDULER
+    SLACK_ALERTS --> FINDINGS_DB
+    JIRA --> FINDINGS_DB
+    GITBOOK --> REPORTING
+    
+    %% Budget Guard
+    BUDGET_GUARD -.-> EXECUTOR
+    BUDGET_GUARD -.-> CASE_GEN
+    BUDGET_GUARD -.-> PROMPT_EXEC
+    
+    %% Mutation Flow
+    MUTATION_ENGINE -.-> ATTACK_CLASSES
+    MUTATION_ENGINE -.-> CASE_GEN
+    
+    %% Styling
+    classDef orchestrator fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef attacks fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef pipeline fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef verification fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef reporting fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef integrations fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    
+    class SCHEDULER,CONFIG,EXECUTOR,BUDGET_GUARD,MUTATION_ENGINE orchestrator
+    class INSTRUCTION_OVERRIDE,ROLEPLAY,EMOTIONAL,ENCODING,FEWSHOT,CHAIN_OF_THOUGHT,CONTEXT_WINDOW,MULTILINGUAL,TEMPLATE_INJECTION,ADVERSARIAL_SUFFIX,DISTILLATION,BENIGN_CONTROL attacks
+    class CASE_GEN,PROMPT_EXEC,RESPONSE_CAP,VERIFICATION,SCORING pipeline
+    class KEYWORD_MATCH,SEMANTIC_SIM,LLM_JUDGE,REGEX_PATTERN,BEHAVIORAL verification
+    class RUN_REPORT,FINDINGS_DB,TREND_ANALYSIS,COMPLIANCE reporting
+    class API_ROUTES,GITHUB_ACTIONS,SLACK_ALERTS,JIRA,GITBOOK integrations

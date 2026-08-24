@@ -1,0 +1,304 @@
+graph TD
+    %% ============================================
+    %% SentinelAI Platform Architecture
+    %% ============================================
+    
+    %% ----- EXTERNAL CLIENTS -----
+    subgraph EXTERNAL["🌐 External Clients"]
+        PLAYGROUND["🎮 Web Playground<br/>(React/Next.js)"]
+        EXT_API["🔌 External API Consumers<br/>(API Keys \ JWT)"]
+        WEBHOOKS["📬 Webhook Senders<br/>(Clerk, Stripe, GitHub)"]
+        CLI_SDK["📦 sentinelai-sdk<br/>(Python/TypeScript)"]
+    end
+    
+    %% ----- EDGE + INGRESS -----
+    subgraph EDGE["🛡️ Edge & Ingress"]
+        CDN["☁️ CDN \ Vercel Edge<br/>(Global Distribution)"]
+        LB["⚖️ Load Balancer<br/>(Vercel \ AWS ALB)"]
+        WAF["🛡️ WAF \ Rate Limiter<br/>(DDoS Protection)"]
+    end
+    
+    %% ----- API GATEWAY -----
+    subgraph GATEWAY["🚪 API Gateway (FastAPI)"]
+        MW_STACK["📦 Middleware Stack"]
+        ROUTER["🗂️ Router Registry"]
+    end
+    
+    subgraph MIDDLEWARE["⚙️ Middleware Pipeline"]
+        REQ_ID["🆔 RequestIDMiddleware"]
+        RATE_LIMIT["🚦 RateLimitMiddleware<br/>(Sliding Window)"]
+        PLAN_ENFORCE["💳 PlanEnforcerMiddleware<br/>(Quota Enforcement)"]
+        SEC_HEADERS["🔒 SecurityHeadersMiddleware"]
+        STRUCT_LOG["📝 StructuredLoggingMiddleware"]
+        METRICS_MW["📊 MetricsMiddleware<br/>(Prometheus)"]
+        SYS_METRICS["💻 SystemMetricsCollector<br/>(CPU/Memory)"]
+    end
+    
+    %% ----- CORE API LAYER -----
+    subgraph API["🎯 Core API Layer"]
+        ROUTES["📍 Route Modules"]
+    end
+    
+    subgraph ROUTE_MODULES["📂 Route Modules"]
+        CORE_ANALYZE["🔍 /analyze<br/>(Playground)"]
+        EXT_ANALYZE["🌐 /analyze/external<br/>(API Keys)"]
+        BASELINE["⚙️ /baselines<br/>(Risk Config)"]
+        SETTINGS["🔧 /settings<br/>(Org/Workspace)"]
+        WORKSPACES["🏢 /workspaces<br/>(CRUD)"]
+        INTEL["🧠 /intel<br/>(Incidents/Deployments)"]
+        REDTEAM["🎯 /redteam<br/>(Adversarial Testing)"]
+        BILLING["💳 /billing<br/>(Stripe/Subscriptions)"]
+        ORGS["🏛️ /orgs<br/>(Management)"]
+        MEMBERS["👥 /members<br/>(Invites/RBAC)"]
+        API_KEYS["🔑 /api-keys<br/>(Management)"]
+        USAGE["📊 /usage<br/>(Metering)"]
+        WEBHOOKS_R["📬 /webhooks<br/>(Clerk/Stripe)"]
+        REDTEAM_R["🎯 /redteam<br/>(Runs/Reports)"]
+        HEALTH["💚 /health /metrics<br/>(Observability)"]
+    end
+    
+    %% ----- BUSINESS LOGIC + SERVICES -----
+    subgraph SERVICES["⚙️ Business Logic \ Services"]
+        SIGNAL_REG["📡 Signal Registry<br/>(Detectors)"]
+        RISK_REASONER["🧠 RiskReasoner<br/>(Aggregation)"]
+        POLICY_ENGINE["⚖️ PolicyEngine<br/>(Decisions)"]
+        ACTION_EXEC["⚡ ActionExecutor<br/>(Enforcement)"]
+        LLM_SERVICE["🤖 LLM Service<br/>(OpenAI/Anthropic)"]
+        RISK_REASONER2["🧠 RiskReasoner"]
+        COMPLIANCE["✅ ComplianceMonitor"]
+        FEEDBACK_SVC["📝 FeedbackService"]
+        WALLET_SVC["💰 WalletService<br/>(Credits)"]
+        USAGE_SVC["📊 UsageService<br/>(Metering)"]
+        EMAIL_SVC["📧 EmailService"]
+        SETTINGS_SVC["⚙️ SettingsService"]
+        ORG_SYNC["🔄 OrgSyncService"]
+        SEED_SVC["🌱 SeedService"]
+        AUDIT_SVC["📋 AuditService"]
+        INTEL_ENGINE["🧠 IntelligenceEngine"]
+        INCIDENT_SVC["🚨 IncidentService"]
+        DEPLOY_SVC["🚀 DeploymentService"]
+        TIMELINE_SVC["📅 TimelineService"]
+        ACTIVITY_SVC["📋 ActivityFeedService"]
+        MEMORY_SVC["🧠 AIMemoryService"]
+        ESCALATION_SVC["📈 EscalationService"]
+        SUMMARY_SVC["📝 SummaryService"]
+        INTEGRATION_SVC["🔗 IntegrationService"]
+        POSTMORTEM_SVC["📝 PostmortemService"]
+    end
+    
+    %% ----- DATA LAYER -----
+    subgraph DATA["💾 Data Layer"]
+        DB[(🗄️ PostgreSQL + SQLite - SQLAlchemy ORM)]
+    end
+    
+    subgraph MODELS["📋 Data Models"]
+        ORG_MODEL["🏛️ Organization<br/>(Multi-tenancy)"]
+        WORKSPACE_MODEL["🏢 Workspace<br/>(Team isolation)"]
+        USER_MODEL["👤 User<br/>(Clerk sync)"]
+        MEMBERSHIP_MODEL["👥 OrgMembership<br/>(Org ↔ User)"]
+        WORKSPACE_MEMBER["🏢 WorkspaceMember<br/>(Workspace ↔ User)"]
+        RBAC_MODEL["🔐 RbacRole/Permission<br/>(Role-based access)"]
+        RISK_LOG["🔍 RiskLog<br/>(Analysis history)"]
+        BASELINE_MODEL["⚙️ BaselineConfig<br/>(Risk thresholds)"]
+        AUDIT_MODEL["📋 AuditLog<br/>(Compliance)"]
+        INTEL_MODELS["🧠 Intel Models<br/>(Incidents/Deployments/Timeline/AI Memory)"]
+        BILLING_MODELS["💳 Billing Models<br/>(Subscriptions/Invoices)"]
+        WALLET_MODELS["💰 Wallet Models<br/>(Credits/Usage)"]
+        INVITE_MODEL["📨 Invite Models<br/>(Org/Workspace)"]
+        REDTEAM_MODELS["🎯 RedTeam Models<br/>(Runs/Cases/Findings)"]
+    end
+    
+    %% ----- SIGNAL DETECTORS -----
+    subgraph DETECTORS["🔍 Signal Detectors"]
+        PROMPT_ANOMALY["🔍 PromptAnomalyDetector<br/>(Statistical)"]
+        JAILBREAK["🎯 JailbreakRAGDetector<br/>(RAG-based)"]
+        OUTPUT_RISK["🛡️ OutputRiskScorer<br/>(Content safety)"]
+        PII_DETECTOR["🔒 PIIDetector<br/>(Regex + NER)"]
+    end
+    
+    %% ----- EXTERNAL INTEGRATIONS -----
+    subgraph INTEGRATIONS["🔗 External Integrations"]
+        CLERK["👤 Clerk Auth<br/>(AuthN/AuthZ)"]
+        STRIPE["💳 Stripe<br/>(Billing)"]
+        OPENAI["🤖 OpenAI API<br/>(GPT-4)"]
+        ANTHROPIC["🤖 Anthropic API<br/>(Claude)"]
+        SENDGRID["📧 SendGrid<br/>(Email)"]
+        VERCEL["▲ Vercel<br/>(Hosting/Edge)"]
+        GITHUB["🐙 GitHub<br/>(Webhooks/CI)"]
+    end
+    
+    %% ----- OBSERVABILITY -----
+    subgraph OBSERVABILITY["📊 Observability"]
+        PROM["📈 Prometheus<br/>(Metrics)"]
+        GRAFANA["📊 Grafana<br/>(Dashboards)"]
+        LOGS["📝 Structured Logs<br/>(JSON)"]
+        TRACES["🔍 Distributed Tracing"]
+        HEALTH["💚 Health/Readiness/Liveness"]
+    end
+    
+    %% ----- CONNECTIONS -----
+    
+    %% External → Edge
+    PLAYGROUND --> CDN
+    EXT_API --> CDN
+    WEBHOOKS --> CDN
+    CLI_SDK --> CDN
+    
+    CDN --> LB
+    LB --> WAF
+    WAF --> MW_STACK
+    
+    %% Middleware Stack
+    MW_STACK --> REQ_ID
+    REQ_ID --> RATE_LIMIT
+    RATE_LIMIT --> PLAN_ENFORCE
+    PLAN_ENFORCE --> SEC_HEADERS
+    SEC_HEADERS --> STRUCT_LOG
+    STRUCT_LOG --> METRICS_MW
+    METRICS_MW --> SYS_METRICS
+    SYS_METRICS --> ROUTER
+    
+    %% Router → Route Modules
+    ROUTER --> ROUTES
+    ROUTES --> CORE_ANALYZE
+    ROUTES --> EXT_ANALYZE
+    ROUTES --> BASELINE
+    ROUTES --> SETTINGS
+    ROUTES --> WORKSPACES
+    ROUTES --> INTEL
+    ROUTES --> REDTEAM
+    ROUTES --> BILLING
+    ROUTES --> ORGS
+    ROUTES --> MEMBERS
+    ROUTES --> API_KEYS
+    ROUTES --> USAGE
+    ROUTES --> WEBHOOKS_R
+    ROUTES --> REDTEAM_R
+    ROUTES --> HEALTH
+    
+    %% Route Modules → Services
+    CORE_ANALYZE --> SIGNAL_REG
+    CORE_ANALYZE --> RISK_REASONER
+    CORE_ANALYZE --> POLICY_ENGINE
+    CORE_ANALYZE --> ACTION_EXEC
+    CORE_ANALYZE --> LLM_SERVICE
+    CORE_ANALYZE --> COMPLIANCE
+    CORE_ANALYZE --> FEEDBACK_SVC
+    CORE_ANALYZE --> WALLET_SVC
+    CORE_ANALYZE --> USAGE_SVC
+    CORE_ANALYZE --> SETTINGS_SVC
+    
+    EXT_ANALYZE --> SIGNAL_REG
+    EXT_ANALYZE --> RISK_REASONER
+    EXT_ANALYZE --> POLICY_ENGINE
+    EXT_ANALYZE --> ACTION_EXEC
+    EXT_ANALYZE --> LLM_SERVICE
+    EXT_ANALYZE --> WALLET_SVC
+    EXT_ANALYZE --> USAGE_SVC
+    
+    BASELINE --> SETTINGS_SVC
+    SETTINGS --> SETTINGS_SVC
+    WORKSPACES --> SETTINGS_SVC
+    WORKSPACES --> ORG_SYNC
+    
+    INTEL --> INTEL_ENGINE
+    INTEL --> INCIDENT_SVC
+    INTEL --> DEPLOY_SVC
+    INTEL --> TIMELINE_SVC
+    INTEL --> ACTIVITY_SVC
+    INTEL --> MEMORY_SVC
+    INTEL --> ESCALATION_SVC
+    INTEL --> SUMMARY_SVC
+    INTEL --> INTEGRATION_SVC
+    INTEL --> POSTMORTEM_SVC
+    
+    REDTEAM --> REDTEAM_MODELS
+    BILLING --> STRIPE
+    ORGS --> ORG_SYNC
+    MEMBERS --> ORG_SYNC
+    API_KEYS --> WALLET_SVC
+    USAGE --> USAGE_SVC
+    WEBHOOKS_R --> CLERK
+    WEBHOOKS_R --> STRIPE
+    
+    %% Services → Detectors
+    SIGNAL_REG --> PROMPT_ANOMALY
+    SIGNAL_REG --> JAILBREAK
+    SIGNAL_REG --> OUTPUT_RISK
+    SIGNAL_REG --> PII_DETECTOR
+    
+    %% Services → External
+    LLM_SERVICE --> OPENAI
+    LLM_SERVICE --> ANTHROPIC
+    ORG_SYNC --> CLERK
+    BILLING --> STRIPE
+    EMAIL_SVC --> SENDGRID
+    WEBHOOKS_R --> GITHUB
+    
+    %% Services → Data Layer
+    SETTINGS_SVC --> DB
+    ORG_SYNC --> DB
+    WALLET_SVC --> DB
+    USAGE_SVC --> DB
+    FEEDBACK_SVC --> DB
+    INTEL_ENGINE --> DB
+    INCIDENT_SVC --> DB
+    DEPLOY_SVC --> DB
+    TIMELINE_SVC --> DB
+    AUDIT_SVC --> DB
+    
+    %% Data Layer → Models
+    DB --> ORG_MODEL
+    DB --> WORKSPACE_MODEL
+    DB --> USER_MODEL
+    DB --> MEMBERSHIP_MODEL
+    DB --> WORKSPACE_MEMBER
+    DB --> RBAC_MODEL
+    DB --> RISK_LOG
+    DB --> BASELINE_MODEL
+    DB --> AUDIT_MODEL
+    DB --> INTEL_MODELS
+    DB --> BILLING_MODELS
+    DB --> WALLET_MODELS
+    DB --> INVITE_MODEL
+    DB --> REDTEAM_MODELS
+    
+    %% Observability
+    METRICS_MW --> PROM
+    STRUCT_LOG --> LOGS
+    SYS_METRICS --> PROM
+    HEALTH --> HEALTH
+    PROM --> GRAFANA
+    LOGS --> GRAFANA
+    
+    %% External Integrations
+    CLERK --> ORG_SYNC
+    CLERK --> USER_MODEL
+    STRIPE --> BILLING
+    STRIPE --> BILLING_MODELS
+    OPENAI --> LLM_SERVICE
+    ANTHROPIC --> LLM_SERVICE
+    SENDGRID --> EMAIL_SVC
+    VERCEL -.-> CDN
+    GITHUB -.-> WEBHOOKS_R
+    
+    %% Styling
+    classDef external fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef edge fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef gateway fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef api fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef services fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef data fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    classDef detectors fill:#fff8e1,stroke:#fbc02d,stroke-width:2px
+    classDef integrations fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
+    classDef observability fill:#ede7f6,stroke:#5e35b1,stroke-width:2px
+    
+    class PLAYGROUND,EXT_API,WEBHOOKS,CLI_SDK external
+    class CDN,LB,WAF edge
+    class MW_STACK,ROUTER,REQ_ID,RATE_LIMIT,PLAN_ENFORCE,SEC_HEADERS,STRUCT_LOG,METRICS_MW,SYS_METRICS gateway
+    class ROUTES,CORE_ANALYZE,EXT_ANALYZE,BASELINE,SETTINGS,WORKSPACES,INTEL,REDTEAM,BILLING,ORGS,MEMBERS,API_KEYS,USAGE,WEBHOOKS_R,REDTEAM_R,HEALTH api
+    class SIGNAL_REG,RISK_REASONER,POLICY_ENGINE,ACTION_EXEC,LLM_SERVICE,RISK_REASONER2,COMPLIANCE,FEEDBACK_SVC,WALLET_SVC,USAGE_SVC,EMAIL_SVC,SETTINGS_SVC,ORG_SYNC,SEED_SVC,AUDIT_SVC,INTEL_ENGINE,INCIDENT_SVC,DEPLOY_SVC,TIMELINE_SVC,ACTIVITY_SVC,MEMORY_SVC,ESCALATION_SVC,SUMMARY_SVC,INTEGRATION_SVC,POSTMORTEM_SVC services
+    class DB,MODELS data
+    class PROMPT_ANOMALY,JAILBREAK,OUTPUT_RISK,PII_DETECTOR detectors
+    class CLERK,STRIPE,OPENAI,ANTHROPIC,SENDGRID,VERCEL,GITHUB integrations
+    class PROM,GRAFANA,LOGS,TRACES,HEALTH observability

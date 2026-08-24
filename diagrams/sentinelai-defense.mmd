@@ -1,0 +1,154 @@
+graph TD
+    %% ============================================
+    %% SentinelAI Defense-in-Depth Architecture
+    %% ============================================
+    
+    subgraph PERIMETER["🛡️ Perimeter Defense"]
+        WAF["🛡️ WAF<br/>(Cloudflare \ Vercel)"]
+        RATE_LIMIT["🚦 Rate Limiting<br/>(Sliding Window \ Token Bucket)"]
+        IP_REP["🔍 IP Reputation<br/>(Known bad actors)"]
+        GEO_BLOCK["🌍 Geo-blocking<br/>(High-risk regions)"]
+        TLS["🔒 TLS 1.3<br/>(Mutual TLS for APIs)"]
+    end
+    
+    subgraph APPLICATION["🏰 Application Layer"]
+        AUTH["🔐 Authentication<br/>(Clerk JWT + JWKS)"]
+        AUTHZ["🎫 Authorization<br/>(RBAC + ABAC)"]
+        API_KEYS["🔑 API Key Mgmt<br/>(Scoped + Rotating)"]
+        PLAN_ENFORCE["💳 Plan Enforcement<br/>(Quota/Feature Gates)"]
+        SEC_HEADERS["🔒 Security Headers<br/>(CSP/HSTS/X-Frame)"]
+        CSRF["🛡️ CSRF Protection<br/>(SameSite + Tokens)"]
+    end
+    
+    subgraph INPUT_VALIDATION["🔍 Input Validation & Sanitization"]
+        SCHEMA["📋 Schema Validation<br/>(Pydantic Models)"]
+        SANITIZE["🧹 Input Sanitization<br/>(HTML/JS/SQL Injection)"]
+        SIZE_LIMITS["📏 Size Limits<br/>(Prompt/Response/Files)"]
+        CONTENT_TYPE["📋 Content-Type Check<br/>(Strict MIME)"]
+        ENCODING_CHECK["🔤 Encoding Validation<br/>(UTF-8 \ No Null Bytes)"]
+    end
+    
+    subgraph DETECTION_ENGINE["🧠 Detection Engine (Defense)"]
+        SIGNAL_REG["📡 Signal Registry<br/>(Plugin Architecture)"]
+        
+        subgraph DETECTORS["🔍 Detectors"]
+            PROMPT_ANOMALY["🔍 Prompt Anomaly<br/>(Statistical/ML)"]
+            JAILBREAK["🎯 Jailbreak RAG<br/>(Known Attack Patterns)"]
+            OUTPUT_RISK["🛡️ Output Risk<br/>(Content Safety)"]
+            PII_DETECT["🔒 PII Detection<br/>(Regex + NER)"]
+            PROMPT_INJ["💉 Prompt Injection<br/>(Heuristic + ML)"]
+            TOKEN_ANOMALY["📊 Token Anomaly<br/>(Length/Entropy)"]
+        end
+    end
+    
+    subgraph RISK_ASSESSMENT["⚖️ Risk Assessment"]
+        RISK_REASONER["🧠 Risk Reasoner<br/>(Weighted Aggregation)"]
+        POLICY_ENGINE["⚖️ Policy Engine<br/>(Rule-based Decisions)"]
+        ACTION_EXEC["⚡ Action Executor<br/>(Allow/Warn/Block/Escalate)"]
+        LLM_JUDGE["🤖 LLM Judge<br/>(GPT-4 Verification)"]
+    end
+    
+    subgraph RESPONSE_ACTIONS["⚡ Response Actions"]
+        ALLOW["✅ Allow<br/>(Log + Pass)"]
+        WARN["⚠️ Warn<br/>(Log + Pass + Alert)"]
+        BLOCK["🚫 Block<br/>(Reject + Log + Alert)"]
+        ESCALATE["🚨 Escalate<br/>(Human Review Queue)"]
+        REDACT["🔒 PII Redaction<br/>(Auto-mask)"]
+        QUARANTINE["🔒 Quarantine<br/>(Isolate Session)"]
+    end
+    
+    subgraph MONITORING_INTEL["📊 Monitoring & Intelligence"]
+        AUDIT["📋 Audit Trail<br/>(Immutable Logs)"]
+        FEEDBACK["📝 Feedback Loop<br/>(Human Review)"]
+        COMPLIANCE["✅ Compliance Monitor<br/>(SOC2/ISO/GDPR)"]
+        THREAT_INTEL["🕵️ Threat Intelligence<br/>(IOC Matching)"]
+        ANOMALY_DETECT["📈 Anomaly Detection<br/>(Baseline Deviation)"]
+        REDTEAM["🎯 Continuous RedTeam<br/>(Automated Testing)"]
+    end
+    
+    subgraph DATA_PROTECTION["🔐 Data Protection"]
+        ENCRYPTION_AT_REST["🔐 Encryption at Rest<br/>(AES-256)"]
+        ENCRYPTION_IN_TRANSIT["🔐 Encryption in Transit<br/>(TLS 1.3)"]
+        KEY_MGMT["🔑 Key Management<br/>(HSM \ KMS)"]
+        DATA_MINIMIZATION["📉 Data Minimization<br/>(Retention Policies)"]
+        PII_HANDLING["🔒 PII Handling<br/>(Detection + Redaction)"]
+    end
+    
+    %% Connections
+    PERIMETER --> APPLICATION
+    PERIMETER --> INPUT_VALIDATION
+    
+    APPLICATION --> INPUT_VALIDATION
+    APPLICATION --> DETECTION_ENGINE
+    
+    INPUT_VALIDATION --> DETECTION_ENGINE
+    
+    DETECTION_ENGINE --> SIGNAL_REG
+    SIGNAL_REG --> DETECTORS
+    
+    DETECTORS --> RISK_ASSESSMENT
+    PROMPT_ANOMALY --> RISK_REASONER
+    JAILBREAK --> RISK_REASONER
+    OUTPUT_RISK --> RISK_REASONER
+    PII_DETECT --> RISK_REASONER
+    PROMPT_INJ --> RISK_REASONER
+    TOKEN_ANOMALY --> RISK_REASONER
+    
+    RISK_REASONER --> POLICY_ENGINE
+    POLICY_ENGINE --> ACTION_EXEC
+    ACTION_EXEC --> LLM_JUDGE
+    LLM_JUDGE --> POLICY_ENGINE
+    
+    ACTION_EXEC --> RESPONSE_ACTIONS
+    POLICY_ENGINE --> RESPONSE_ACTIONS
+    
+    RESPONSE_ACTIONS --> MONITORING_INTEL
+    ALLOW --> AUDIT
+    WARN --> AUDIT
+    WARN --> FEEDBACK
+    BLOCK --> AUDIT
+    BLOCK --> FEEDBACK
+    BLOCK --> ANOMALY_DETECT
+    ESCALATE --> FEEDBACK
+    ESCALATE --> AUDIT
+    REDACT --> DATA_PROTECTION
+    QUARANTINE --> AUDIT
+    
+    MONITORING_INTEL --> DATA_PROTECTION
+    AUDIT --> ENCRYPTION_AT_REST
+    FEEDBACK --> REDTEAM
+    COMPLIANCE --> ENCRYPTION_AT_REST
+    THREAT_INTEL --> REDTEAM
+    ANOMALY_DETECT --> REDTEAM
+    REDTEAM --> DETECTORS
+    
+    %% Data Protection
+    ENCRYPTION_AT_REST --> KEY_MGMT
+    ENCRYPTION_IN_TRANSIT --> KEY_MGMT
+    PII_HANDLING --> REDACT
+    DATA_MINIMIZATION --> ENCRYPTION_AT_REST
+    
+    %% Feedback Loops
+    FEEDBACK -.-> DETECTORS
+    REDTEAM -.-> DETECTORS
+    THREAT_INTEL -.-> DETECTORS
+    ANOMALY_DETECT -.-> DETECTORS
+    
+    %% Styling
+    classDef perimeter fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef app fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef input fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef detection fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef risk fill:#fff8e1,stroke:#fbc02d,stroke-width:2px
+    classDef response fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef monitor fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef data fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    
+    class WAF,RATE_LIMIT,IP_REP,GEO_BLOCK,TLS perimeter
+    class AUTH,AUTHZ,API_KEYS,PLAN_ENFORCE,SEC_HEADERS,CSRF app
+    class SCHEMA,SANITIZE,SIZE_LIMITS,CONTENT_TYPE,ENCODING_CHECK input
+    class SIGNAL_REG,PROMPT_ANOMALY,JAILBREAK,OUTPUT_RISK,PII_DETECT,PROMPT_INJ,TOKEN_ANOMALY detection
+    class RISK_REASONER,POLICY_ENGINE,ACTION_EXEC,LLM_JUDGE risk
+    class ALLOW,WARN,BLOCK,ESCALATE,REDACT,QUARANTINE response
+    class AUDIT,FEEDBACK,COMPLIANCE,THREAT_INTEL,ANOMALY_DETECT,REDTEAM monitor
+    class ENCRYPTION_AT_REST,ENCRYPTION_IN_TRANSIT,KEY_MGMT,DATA_MINIMIZATION,PII_HANDLING data

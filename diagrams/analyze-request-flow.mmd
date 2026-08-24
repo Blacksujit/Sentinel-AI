@@ -1,0 +1,105 @@
+sequenceDiagram
+    autonumber
+    actor Client as 🎮 Client<br/>(Playground + API)
+    participant Edge as 🛡️ Edge<br/>(CDN + WAF)
+    participant MW as ⚙️ Middleware<br/>(Pipeline)
+    participant Route as 🎯 Route<br/>(/analyze)
+    participant Signals as 📡 Signal<br/>Registry
+    participant Detectors as 🔍 Detectors
+    participant Reasoner as 🧠 Risk<br/>Reasoner
+    participant Policy as ⚖️ Policy<br/>Engine
+    participant Actions as ⚡ Action<br/>Executor
+    participant LLM as 🤖 LLM<br/>Service
+    participant DB as 💾 Database
+    participant Audit as 📋 Audit<br/>Log
+    participant Wallet as 💰 Wallet
+    participant Usage as 📊 Usage<br/>Service
+
+    Note over Client,Usage: 🎮 Playground Request Flow (/analyze)
+
+    Client->>Edge: POST /api/analyze<br/>{prompt, response}
+    Edge->>MW: Forward Request
+    
+    MW->>MW: RequestIDMiddleware
+    MW->>MW: RateLimitMiddleware
+    MW->>MW: PlanEnforcerMiddleware
+    MW->>MW: SecurityHeadersMiddleware
+    MW->>MW: StructuredLoggingMiddleware
+    MW->>MW: MetricsMiddleware
+    MW->>MW: SystemMetricsCollector
+    MW->>Route: Forward to Handler
+
+    Route->>Route: Auth (Clerk JWT)
+    Route->>Route: Resolve Org (x-org-id)
+    Route->>Route: Load Settings (Baseline)
+    
+    alt LLM Path (if available)
+        Route->>LLM: analyze_with_llm(prompt, response, plan_tier)
+        LLM-->>Route: {risk_score, flags, confidence, decision_reason}
+        Route->>Reasoner: analyze_aggregated_result(score, flags, confidence)
+        Reasoner-->>Route: RiskSummary
+        Route->>Policy: evaluate(RiskSummary)
+        Policy-->>Route: PolicyDecision
+        Route->>Actions: execute(PolicyDecision)
+        Actions-->>Route: ActionResult
+    else Fallback Path (Deterministic)
+        Route->>Signals: run_detectors("prompt", prompt)
+        Signals->>Detectors: PromptAnomalyDetector
+        Detectors-->>Signals: is_anomalous
+        Signals->>Detectors: JailbreakRAGDetector
+        Detectors-->>Signals: jailbreak_detected
+        Signals->>Detectors: OutputRiskScorer
+        Detectors-->>Signals: output_risk_flags
+        Signals-->>Route: Aggregated Result
+        Route->>Reasoner: analyze_aggregated_result(score, flags, confidence)
+        Reasoner-->>Route: RiskSummary
+        Route->>Policy: evaluate(RiskSummary)
+        Policy-->>Route: PolicyDecision
+        Route->>Actions: execute(PolicyDecision)
+        Actions-->>Route: ActionResult
+    end
+    
+    Route->>LLM: estimate_tokens(prompt, response)
+    LLM-->>Route: token counts
+    
+    Route->>Wallet: has_sufficient_credits(org_id, cost)
+    Wallet-->>Route: boolean
+    
+    alt Sufficient Credits
+        Route->>Wallet: deduct_credits(org_id, cost)
+        Wallet-->>Route: OK
+    end
+    
+    Route->>Usage: record_token_usage(org_id, model, tokens, cost)
+    Usage-->>Route: OK
+    
+    Route->>DB: log_risk_event(prompt, response, score, flags, decision, ...)
+    DB-->>Route: RiskLog ID
+    
+    Route->>Audit: log(action="analyze", metadata)
+    Audit-->>Route: OK
+    
+    Route->>Usage: record_event(org_id, endpoint, risk_score, success)
+    Usage-->>Route: OK
+    
+    Route->>DB: log_detection(user, prompt, response, score, flags, action)
+    DB-->>Route: Detection Log ID
+    
+    alt Low Risk Score (< 0.7)
+        Route->>Compliance: check_compliance(prompt, response, score)
+        Compliance-->>Route: ComplianceResult
+        alt Compliance Issue
+            Route->>Feedback: report_compliance_issue
+        end
+    end
+    
+    Route->>PII: detect_pii(prompt, response, enabled)
+    PII-->>Route: {redacted_prompt, redacted_response, pii, flags}
+    
+    Route-->>Client: AnalyzeResponse<br/>{score, flags, confidence, decision, action_taken, reason, log_id, pii}
+    
+    MW->>MW: Log request (structured JSON)
+    MW->>MW: Record Prometheus metrics
+    MW->>MW: Update system metrics (CPU/Memory)
+    
+    Note right of DB: RiskLog, AuditLog,<br/>UsageEvent, Wallet,<br/>BaselineConfig, Org/Workspace

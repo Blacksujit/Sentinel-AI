@@ -1,0 +1,498 @@
+erDiagram
+    %% ============================================
+    %% SentinelAI Data Model
+    %% ============================================
+    
+    %% ----- CORE ENTITIES -----
+    ORGANIZATION {
+        int id PK
+        string clerk_org_id
+        string name
+        string slug
+        string company_email
+        int owner_user_id FK
+        string plan_tier
+        json baseline_config
+        datetime created_at
+        datetime updated_at
+    }
+    
+    WORKSPACE {
+        int id PK
+        int org_id FK
+        string name
+        string slug
+        string description
+        boolean is_default
+        int created_by_user_id FK
+        json settings
+        datetime created_at
+        datetime updated_at
+    }
+    
+    USER {
+        int id PK
+        string clerk_user_id
+        string email
+        string name
+        datetime last_login_at
+        datetime created_at
+    }
+    
+    ORG_MEMBERSHIP {
+        int user_id PK,FK
+        int org_id PK,FK
+        int role_id FK
+        datetime joined_at
+    }
+    
+    WORKSPACE_MEMBER {
+        int workspace_id PK,FK
+        int user_id PK,FK
+        int role_id FK
+        boolean is_active
+        datetime joined_at
+    }
+    
+    %% ----- RBAC -----
+    RBAC_ROLE {
+        int id PK
+        int org_id FK
+        string name
+        string description
+    }
+    
+    RBAC_PERMISSION {
+        int id PK
+        string key
+        string description
+    }
+    
+    RBAC_ROLE_PERMISSIONS {
+        int role_id PK,FK
+        int permission_id PK,FK
+    }
+    
+    %% ----- RISK ANALYSIS -----
+    RISK_LOG {
+        int id PK
+        datetime created_at
+        double final_risk_score
+        string prompt
+        string response
+        json flags
+        json signals
+        double confidence
+        string decision
+        string decision_reason
+        int settings_version
+        json thresholds_applied
+        string source
+        json client_metadata
+        string user_id
+        string session_id
+        int org_id FK
+        int workspace_id FK
+    }
+    
+    BASELINE_CONFIG {
+        int id PK
+        int org_id FK
+        int created_by_user_id FK
+        double allow_max
+        double warn_min
+        double block_min
+        double escalate_min
+        boolean pii_redaction_enabled
+        datetime created_at
+        datetime updated_at
+    }
+    
+    AUDIT_LOG {
+        int id PK
+        int org_id FK
+        int actor_user_id FK
+        string actor_type
+        string action
+        string target_type
+        int target_id
+        json event_metadata
+        datetime created_at
+    }
+    
+    USAGE_EVENT {
+        int id PK
+        int org_id FK
+        string endpoint
+        int api_key_id FK
+        int initiator_user_id FK
+        int latency_ms
+        int risk_score
+        boolean success
+        datetime created_at
+    }
+    
+    %% ----- INTEL + OPERATIONS -----
+    INCIDENT {
+        int id PK
+        int workspace_id FK
+        string title
+        string description
+        string severity
+        string status
+        string source
+        datetime detected_at
+        datetime acknowledged_at
+        datetime resolved_at
+        int assignee_id FK
+        int reporter_id FK
+        string root_cause
+        string impact
+        string resolution
+        string timeline_summary
+        string slack_channel_id
+        string slack_channel_name
+        string slack_message_ts
+        json related_incident_ids
+        json affected_services
+        json metadata
+        datetime updated_at
+    }
+    
+    DEPLOYMENT {
+        int id PK
+        int workspace_id FK
+        string service_name
+        string environment
+        string version
+        string commit_sha
+        string branch
+        string repository
+        string pull_request_url
+        string pull_request_id
+        string status
+        string triggered_by
+        int triggered_by_user_id FK
+        int duration_seconds
+        double risk_score
+        json risk_factors
+        string rollback_sha
+        string rollback_reason
+        string changelog
+        boolean changelog_truncated
+        datetime started_at
+        datetime completed_at
+        datetime created_at
+        datetime updated_at
+    }
+    
+    TIMELINE_EVENT {
+        int id PK
+        int workspace_id FK
+        string event_type
+        string title
+        string description
+        string severity
+        string source
+        string source_id
+        json metadata
+        string related_entity_type
+        int related_entity_id
+        string ai_summary
+        json ai_insights
+        datetime event_time
+        datetime created_at
+    }
+    
+    AI_MEMORY {
+        int id PK
+        int workspace_id FK
+        string memory_type
+        string title
+        string content
+        json embedding
+        int source_incident_id FK
+        int source_deployment_id FK
+        json metadata
+        json tags
+        double confidence
+        boolean is_active
+        int access_count
+        datetime last_accessed_at
+        datetime created_at
+        datetime updated_at
+    }
+    
+    ESCALATION_POLICY {
+        int id PK
+        int workspace_id FK
+        string name
+        string description
+        string trigger_type
+        json trigger_config
+        json actions
+        string target_role
+        json target_user_ids
+        json notify_channels
+        int timeout_minutes
+        int max_escalation_levels
+        boolean is_active
+        int created_by FK
+        datetime created_at
+        datetime updated_at
+    }
+    
+    ESCALATION_INSTANCE {
+        int id PK
+        int policy_id FK
+        int incident_id FK
+        int workspace_id FK
+        int current_level
+        string status
+        datetime triggered_at
+        datetime acknowledged_at
+        datetime resolved_at
+        json notified_users
+        json escalation_log
+        datetime created_at
+        datetime updated_at
+    }
+    
+    %% ----- BILLING -----
+    SUBSCRIPTION {
+        int id PK
+        int org_id FK
+        string stripe_subscription_id
+        string stripe_customer_id
+        string status
+        string plan_tier
+        string billing_cycle
+        datetime current_period_start
+        datetime current_period_end
+        datetime cancel_at
+        datetime canceled_at
+        datetime created_at
+        datetime updated_at
+    }
+    
+    INVOICE {
+        int id PK
+        int org_id FK
+        string stripe_invoice_id
+        double amount_due
+        double amount_paid
+        string status
+        string currency
+        datetime due_date
+        datetime paid_at
+        string hosted_invoice_url
+        string invoice_pdf_url
+        datetime created_at
+    }
+    
+    WALLET {
+        int id PK
+        int org_id FK
+        int credits_balance
+        int credits_used_total
+        datetime created_at
+        datetime updated_at
+    }
+    
+    CREDIT_TOPUP {
+        int id PK
+        int wallet_id FK
+        int stripe_payment_intent_id
+        int amount_credits
+        int amount_usd_cents
+        string status
+        datetime created_at
+        datetime completed_at
+    }
+    
+    TOKEN_USAGE {
+        int id PK
+        int wallet_id FK
+        int org_id FK
+        string model
+        int input_tokens
+        int output_tokens
+        int cost_credits
+        string source
+        int usage_event_id FK
+        int api_key_id FK
+        datetime created_at
+    }
+    
+    %% ----- API KEYS -----
+    API_KEY {
+        int id PK
+        int org_id FK
+        string key_hash
+        string prefix
+        string name
+        string status
+        datetime expires_at
+        datetime last_used_at
+        datetime created_at
+        datetime revoked_at
+        int revoked_by_user_id FK
+    }
+    
+    %% ----- INVITES -----
+    ORG_INVITE {
+        int id PK
+        int org_id FK
+        string email
+        string token
+        int role_id FK
+        datetime expires_at
+        datetime accepted_at
+        int invited_by_user_id FK
+        datetime created_at
+    }
+    
+    WORKSPACE_INVITE {
+        int id PK
+        int workspace_id FK
+        string email
+        string token
+        int role_id FK
+        datetime expires_at
+        datetime accepted_at
+        int invited_by_user_id FK
+        datetime created_at
+    }
+    
+    %% ----- REDTEAM -----
+    REDTEAM_RUN {
+        int id PK
+        int org_id FK
+        string name
+        string status
+        json attack_classes
+        int max_cases
+        json summary
+        datetime started_at
+        datetime completed_at
+        datetime created_at
+    }
+    
+    REDTEAM_CASE {
+        int id PK
+        int run_id FK
+        string attack_class
+        string technique
+        string prompt
+        string expected_behavior
+        string actual_response
+        boolean passed
+        string verdict
+        datetime created_at
+    }
+    
+    REDTEAM_FINDING {
+        int id PK
+        int run_id FK
+        int case_id FK
+        string severity
+        string title
+        string description
+        string attack_class
+        string technique
+        string evidence
+        string recommendation
+        datetime created_at
+    }
+    
+    %% ----- RELATIONSHIPS -----
+    ORGANIZATION ||--o{ WORKSPACE : owns
+    ORGANIZATION ||--o{ ORG_MEMBERSHIP : has
+    ORGANIZATION ||--o{ BASELINE_CONFIG : has
+    ORGANIZATION ||--o{ AUDIT_LOG : generates
+    ORGANIZATION ||--o{ USAGE_EVENT : generates
+    ORGANIZATION ||--o{ SUBSCRIPTION : has
+    ORGANIZATION ||--o{ INVOICE : receives
+    ORGANIZATION ||--o{ WALLET : owns
+    ORGANIZATION ||--o{ API_KEY : issues
+    ORGANIZATION ||--o{ ORG_INVITE : sends
+    ORGANIZATION ||--o{ REDTEAM_RUN : runs
+    ORGANIZATION ||--o{ RBAC_ROLE : defines
+    
+    WORKSPACE ||--o{ WORKSPACE_MEMBER : has
+    WORKSPACE ||--o{ WORKSPACE_INVITE : sends
+    WORKSPACE ||--o{ INCIDENT : contains
+    WORKSPACE ||--o{ DEPLOYMENT : contains
+    WORKSPACE ||--o{ TIMELINE_EVENT : contains
+    WORKSPACE ||--o{ AI_MEMORY : stores
+    WORKSPACE ||--o{ ESCALATION_POLICY : defines
+    WORKSPACE ||--o{ ESCALATION_INSTANCE : executes
+    
+    USER ||--o{ ORG_MEMBERSHIP : belongs_to
+    USER ||--o{ WORKSPACE_MEMBER : belongs_to
+    USER ||--o{ RISK_LOG : creates
+    USER ||--o{ AUDIT_LOG : performs
+    USER ||--o{ USAGE_EVENT : initiates
+    USER ||--o{ WORKSPACE : creates
+    USER ||--o{ API_KEY : manages
+    USER ||--o{ ORG_INVITE : sends
+    USER ||--o{ WORKSPACE_INVITE : sends
+    USER ||--o{ SUBSCRIPTION : owns
+    USER ||--o{ CREDIT_TOPUP : purchases
+    USER ||--o{ ESCALATION_POLICY : creates
+    USER ||--o{ ESCALATION_INSTANCE : manages
+    
+    ORG_MEMBERSHIP }|--|| RBAC_ROLE : has
+    RBAC_ROLE }|--o{ RBAC_PERMISSION : grants
+    
+    WORKSPACE_MEMBER }|--|| RBAC_ROLE : has
+    
+    ORGANIZATION ||--o{ RISK_LOG : logs
+    WORKSPACE ||--o{ RISK_LOG : scopes
+    USER ||--o{ RISK_LOG : owns
+    
+    ORGANIZATION ||--o{ BASELINE_CONFIG : configures
+    ORGANIZATION ||--o{ WALLET : owns
+    WALLET ||--o{ CREDIT_TOPUP : funds
+    WALLET ||--o{ TOKEN_USAGE : tracks
+    ORGANIZATION ||--o{ TOKEN_USAGE : bills
+    
+    ORGANIZATION ||--o{ SUBSCRIPTION : subscribes
+    ORGANIZATION ||--o{ INVOICE : billed
+    
+    ORGANIZATION ||--o{ API_KEY : manages
+    API_KEY ||--o{ TOKEN_USAGE : authenticates
+    
+    ORGANIZATION ||--o{ ORG_INVITE : invites
+    WORKSPACE ||--o{ WORKSPACE_INVITE : invites
+    
+    WORKSPACE ||--o{ INCIDENT : tracks
+    INCIDENT ||--o{ TIMELINE_EVENT : generates
+    
+    WORKSPACE ||--o{ DEPLOYMENT : tracks
+    DEPLOYMENT ||--o{ TIMELINE_EVENT : generates
+    
+    WORKSPACE ||--o{ TIMELINE_EVENT : records
+    WORKSPACE ||--o{ AI_MEMORY : stores
+    INCIDENT ||--o{ AI_MEMORY : sources
+    DEPLOYMENT ||--o{ AI_MEMORY : sources
+    
+    ESCALATION_POLICY ||--o{ ESCALATION_INSTANCE : triggers
+    INCIDENT ||--o{ ESCALATION_INSTANCE : triggers
+    
+    ORGANIZATION ||--o{ REDTEAM_RUN : executes
+    REDTEAM_RUN ||--o{ REDTEAM_CASE : contains
+    REDTEAM_CASE ||--o{ REDTEAM_FINDING : produces
+    
+    %% Enum definitions
+    string }|--|| ORGANIZATION : "free | pro | team | enterprise"
+    string }|--|| INCIDENT : "low | medium | high | critical"
+    string }|--|| INCIDENT : "detected | investigating | mitigating | resolved | postmortem"
+    string }|--|| INCIDENT : "slack | github | anomaly | manual | escalation | deployment | alert"
+    string }|--|| DEPLOYMENT : "production | staging | development"
+    string }|--|| DEPLOYMENT : "pending | in_progress | success | failed | rolled_back"
+    string }|--|| TIMELINE_EVENT : "incident_created | incident_acknowledged | incident_resolved | deployment_started | deployment_completed | deployment_failed | escalation_triggered | alert_fired | anomaly_detected"
+    string }|--|| TIMELINE_EVENT : "info | warning | critical"
+    string }|--|| AI_MEMORY : "incident_root_cause | incident_resolution | deployment_issue | deployment_fix | best_practice | runbook | postmortem_insight | customer_impact"
+    string }|--|| ESCALATION_POLICY : "incident_severity | incident_duration | deployment_failure | metric_threshold | manual"
+    string }|--|| AI_MEMORY : "incident_root_cause | incident_resolution | deployment_issue | deployment_fix | best_practice | runbook | postmortem_insight | customer_impact"
