@@ -498,3 +498,5 @@ supabase-test/.env
 .playwright-mcp
 
 .agents
+
+.agenthub
