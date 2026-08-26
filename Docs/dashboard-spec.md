@@ -195,6 +195,40 @@ DashboardPage (server)
     └── QuickActionButton × 3  // "Investigate Critical", "Review Policies", "Generate Report"
 ```
 
+### 2.3.1 Risk Trend Chart — Data Source
+
+The `RiskTrendChart` widget renders the daily risk trend line. It is fed by:
+
+```
+GET /api/orgs/{org_id}/usage/trend?days=30
+```
+
+The endpoint returns one bucket per day, ordered chronologically, with this shape:
+
+```json
+[
+  {
+    "date": "2026-08-01",
+    "avg_risk_score": 0.23,
+    "event_count": 45,
+    "critical_count": 2
+  }
+]
+```
+
+| Field | What the chart uses it for |
+|-------|----------------------------|
+| `date` | X-axis category |
+| `avg_risk_score` | Y-axis line value (0–1) |
+| `event_count` | Tooltip — volume context per day |
+| `critical_count` | Tooltip — count of events that hit critical threshold |
+
+The `days` query parameter (default `30`, range `1`–`365`) controls the window.
+The default dashboard window is **30 days**; the Executive persona view also
+renders a 30-day trend (see section 2.8). Hover/crosshair interaction shows the
+date, average risk score, event count, and critical count for each bucket. See
+the [API Reference](../docs-site/content/docs/api.mdx) for the full contract.
+
 ### 2.4 Role-Adaptive Defaults
 
 | Persona | Default Tab | Widget Order | Hidden Widgets |

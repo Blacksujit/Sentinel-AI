@@ -1,12 +1,13 @@
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional, List
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 import uuid
 
 from app.storage.usage_models import UsageEvent
 from app.storage.billing_models import Subscription, SubscriptionStatus
 from app.storage.api_key_models import ApiKey
+from app.storage.models import RiskLog
 
 
 class UsageService:
@@ -221,3 +222,54 @@ class UsageService:
         ).count()
 
         return count
+
+    @staticmethod
+    def get_trend(db: Session, org_id: int, days: int = 30) -> List[Dict[str, Any]]:
+        """Aggregate RiskLog events grouped by day for risk trend charts.
+
+        Returns an array of day buckets for the last `days` days, each with:
+        - date: ISO date string (YYYY-MM-DD)
+        - avg_risk_score: average final_risk_score that day (0-1)
+        - event_count: total risk events that day
+        - critical_count: events with final_risk_score >= 0.8 that day
+        """
+        if days < 1:
+            days = 1
+        if days > 365:
+            days = 365
+
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(days=days)
+
+        day_bucket = func.date(RiskLog.created_at)
+
+        critical_case = case(
+            (RiskLog.final_risk_score >= 0.8, 1),
+            else_=0,
+        )
+
+        rows = (
+            db.query(
+                day_bucket.label("date"),
+                func.avg(RiskLog.final_risk_score).label("avg_risk_score"),
+                func.count(RiskLog.id).label("event_count"),
+                func.sum(critical_case).label("critical_count"),
+            )
+            .filter(
+                RiskLog.org_id == org_id,
+                RiskLog.created_at >= cutoff,
+            )
+            .group_by(day_bucket)
+            .order_by(day_bucket)
+            .all()
+        )
+
+        return [
+            {
+                "date": str(r.date),
+                "avg_risk_score": round(float(r.avg_risk_score), 4) if r.avg_risk_score is not None else 0.0,
+                "event_count": int(r.event_count),
+                "critical_count": int(r.critical_count) if r.critical_count is not None else 0,
+            }
+            for r in rows
+        ]

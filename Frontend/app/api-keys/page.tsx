@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { AppLayout } from '../components/layout/AppLayout'
 import { Button, Input, Label, Separator } from '@/components/ui'
 import { MotionCard, slideUp, staggerContainer, buttonPress } from '@/components/ui/motion'
@@ -23,6 +24,7 @@ type ApiKeyCreated = ApiKeyListItem & {
 }
 
 export default function ApiKeysPage() {
+  const { getToken } = useAuth();
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [revokingId, setRevokingId] = useState<number | null>(null)
@@ -48,7 +50,13 @@ export default function ApiKeysPage() {
   const loadKeys = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/api-keys', { cache: 'no-store' })
+      const token = await getToken()
+      const response = await fetch('/api/api-keys', {
+        cache: 'no-store',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
       const data = await response.json().catch(() => null)
       if (!response.ok) {
         throw new Error(data?.detail || data?.message || `HTTP ${response.status}`)
@@ -75,9 +83,13 @@ export default function ApiKeysPage() {
 
     setCreating(true)
     try {
+      const token = await getToken()
       const response = await fetch('/api/api-keys', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ name: name.trim() }),
       })
 
@@ -155,7 +167,13 @@ export default function ApiKeysPage() {
 
     setRevokingId(id)
     try {
-      const response = await fetch(`/api/api-keys/${id}/revoke`, { method: 'POST' })
+      const token = await getToken()
+      const response = await fetch(`/api/api-keys/${id}/revoke`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
       const data = await response.json().catch(() => null)
       if (!response.ok) {
         throw new Error(data?.detail || data?.message || `HTTP ${response.status}`)

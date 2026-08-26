@@ -1,0 +1,11 @@
+{
+  "session_id": "20260826-risk-trend",
+  "state": "dispatched",
+  "created": "2026-08-26T00:00:00Z",
+  "updated": "2026-08-26T00:00:00Z",
+  "agents": {
+    "agent-1": {"role": "backend-engineer", "status": "dispatched"},
+    "agent-2": {"role": "frontend-engineer", "status": "dispatched"},
+    "agent-3": {"role": "docs-engineer", "status": "dispatched"}
+  }
+}

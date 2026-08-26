@@ -95,6 +95,7 @@ def client(test_db):
     from app.api.routes import get_db
     from app.api.baseline_routes import get_db as get_baseline_db
     from app.auth.dependencies import get_db as get_auth_db
+    from app.storage.db import get_db as get_storage_db
     import main as main_module
     from app.services.database_service import DatabaseService
     from app.services.settings_service_db import settings_service
@@ -127,6 +128,7 @@ def client(test_db):
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_baseline_db] = override_get_db
     app.dependency_overrides[get_auth_db] = override_get_db
+    app.dependency_overrides[get_storage_db] = override_get_db
     
     with AuthedTestClient(app) as test_client:
         yield test_client

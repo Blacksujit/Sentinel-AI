@@ -53,6 +53,22 @@ logger = get_logger(__name__)
 SERVICE_NAME = os.getenv("SERVICE_NAME", "sentinelai-api")
 LOG_FORMAT = os.getenv("LOG_FORMAT", "json")
 
+
+def _cors_origins() -> list[str]:
+    """Resolve allowed CORS origins from env, falling back to safe defaults."""
+    raw = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    # Fallback: local dev + known production Vercel URL.
+    return [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "https://sentinel-ai-hazel.vercel.app",
+    ]
+
+
 setup_logging()
 
 
@@ -151,13 +167,7 @@ app.add_middleware(StructuredLoggingMiddleware)
 app.add_middleware(MetricsMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-        "https://sentinel-ai-hazel.vercel.app",
-    ],
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=[
@@ -166,6 +176,7 @@ app.add_middleware(
         "X-API-Key",
         "X-Request-ID",
         "X-Clerk-Auth-Token",
+        "X-Org-Id",
         "User-Agent",
     ],
 )

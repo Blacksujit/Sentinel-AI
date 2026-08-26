@@ -4,12 +4,30 @@
  * Examples:
  *   https://your-app.onrender.com
  *   http://127.0.0.1:8000
+ *
+ * In production (NODE_ENV=production) the env var is REQUIRED — a missing
+ * value causes every server-side proxy route to call localhost inside the
+ * Vercel serverless container, which is NOT the Render backend. Fail loud
+ * instead of silently returning localhost so misconfiguration is caught at
+ * request time with a clear error rather than a mysterious 500.
  */
 export function getBackendOrigin(): string {
   const raw =
     process.env.NEXT_PUBLIC_API_URL ||
     process.env.API_URL ||
-    'http://127.0.0.1:8000'
+    ''
+
+  if (!raw) {
+    const isProd = process.env.NODE_ENV === 'production'
+    if (isProd) {
+      throw new Error(
+        'NEXT_PUBLIC_API_URL is not set. Configure it in Vercel → Settings → Environment Variables ' +
+        '(the Render backend origin, e.g. https://sentinelai-backend.onrender.com).'
+      )
+    }
+    // Development fallback only.
+    return 'http://127.0.0.1:8000'
+  }
 
   let url = raw.trim().replace(/\/+$/, '')
   if (url.endsWith('/api')) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { useRiskLogs } from '@/hooks/useRiskLogs'
 import { useRouter } from 'next/navigation'
 import { Badge, Button, Input, Slider } from '@/components/ui'
@@ -23,6 +24,7 @@ interface LogsPageClientModernProps {
 
 export function LogsPageClientModern({ initialLogs, initialError }: LogsPageClientModernProps) {
   const router = useRouter()
+  const { getToken } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -98,7 +100,13 @@ export function LogsPageClientModern({ initialLogs, initialError }: LogsPageClie
     setIsRetrying(true)
     setError(null)
     try {
-      const response = await fetch('/api/logs?limit=50', { cache: 'no-store' })
+      const token = await getToken()
+      const response = await fetch('/api/logs?limit=50', {
+        cache: 'no-store',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
       await response.json()
       setError(null)

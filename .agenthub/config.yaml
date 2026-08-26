@@ -1,0 +1,158 @@
+# SentinelAI — AgentHub Configuration
+#
+# This file is the single source of truth for how AgentHub agents are
+# configured to ship features and fixes in THIS repository. Every agent
+# knows: what it owns, what it must NOT touch, and how to prove its work
+# is correct (the verification command that gates a merge).
+#
+# Repo architecture (verified):
+#   Backend/      — Python FastAPI app, uvicorn main:app, pytest tests
+#   Frontend/     — Next.js 14 (App Router), TypeScript, Tailwind, Clerk auth
+#   sentinelai-sdk/ — Python SDK shipped to PyPI as sentinelai-risk
+#   docs-site/    — MkDocs/Vitepress documentation
+#   .github/workflows — CI (ruff+mypy+pytest), CD (docker build/push), tests
+#
+# Base branch: main  (features branch off main, merge back to main)
+# Deploy:      render.yaml (backend), vercel (frontend)
+
+project: SentinelAI
+repo: Blacksujit/SentinelAI
+base_branch: main
+default_agent_count: 3
+default_template: optimizer
+
+# ---------------------------------------------------------------------------
+# Verification commands (agents MUST run these before committing)
+# ---------------------------------------------------------------------------
+verify:
+  backend:
+    lint: "ruff check app/"
+    typecheck: "mypy app/ --ignore-missing-imports --no-strict-optional"
+    test: "pytest tests/ -v --tb=short"
+    smoke: "python -c \"import main; print('import ok')\""
+  frontend:
+    lint: "npm run lint"
+    typecheck: "npm run type-check"
+    build: "npm run build"
+  sdk:
+    test: "python -m pytest"
+    build: "python -m build"
+  docs:
+    build: "cd docs-site && npm run build"
+
+# ---------------------------------------------------------------------------
+# Agents — each owns a surface and knows its boundaries
+# ---------------------------------------------------------------------------
+agents:
+  - id: backend-engineer
+    name: Backend Engineer
+    surface: Backend/
+    owns:
+      - "Backend/app/**"
+      - "Backend/main.py"
+      - "Backend/tests/**"
+      - "Backend/requirements.txt"
+    forbidden:
+      - "Frontend/**"
+      - "sentinelai-sdk/**"
+      - "docs-site/**"
+    stack: "Python 3.12, FastAPI, uvicorn, SQLAlchemy, pydantic"
+    verify_before_commit:
+      - "cd Backend && ruff check app/"
+      - "cd Backend && pytest tests/ -v --tb=short"
+    templates: [optimizer, refactorer, test-writer, bug-fixer]
+    instructions: |
+      You own the FastAPI backend. Every change must keep `pytest tests/`
+      green and `ruff check app/` clean. The three core detectors are the
+      product: prompt_anomaly, jailbreak_rag, output_risk
+      (see app/signals/registry.py). Do not change detector names or the
+      /analyze response schema without coordinator approval — the SDK and
+      frontend depend on them.
+
+  - id: frontend-engineer
+    name: Frontend Engineer
+    surface: Frontend/
+    owns:
+      - "Frontend/app/**"
+      - "Frontend/components/**"
+      - "Frontend/lib/**"
+      - "Frontend/app/api/**"
+    forbidden:
+      - "Backend/**"
+      - "Backend/app/**"
+      - "sentinelai-sdk/**"
+    stack: "Next.js 14 (App Router), TypeScript, Tailwind, Clerk, Radix UI"
+    verify_before_commit:
+      - "cd Frontend && npm run lint"
+      - "cd Frontend && npm run type-check"
+      - "cd Frontend && npm run build"
+    templates: [optimizer, refactorer, test-writer, bug-fixer]
+    instructions: |
+      You own the Next.js frontend. Type-check and build MUST pass before
+      any commit. Auth is Clerk (@clerk/nextjs). API calls go through
+      Frontend/app/api/** route handlers or Frontend/lib/services — never
+      call the backend directly from client components without a route
+      handler. Keep the design system consistent (Tailwind + Radix).
+
+  - id: sdk-engineer
+    name: SDK Engineer
+    surface: sentinelai-sdk/
+    owns:
+      - "sentinelai-sdk/sentinelai/**"
+      - "sentinelai-sdk/examples/**"
+      - "sentinelai-sdk/tests/**"
+      - "sentinelai-sdk/pyproject.toml"
+    forbidden:
+      - "Backend/**"
+      - "Frontend/**"
+    stack: "Python, setuptools, PyPI (sentinelai-risk)"
+    verify_before_commit:
+      - "cd sentinelai-sdk && python -m pytest"
+    templates: [optimizer, refactorer, test-writer, bug-fixer]
+    instructions: |
+      You own the public SDK shipped as sentinelai-risk. The public API is
+      SentinelAIClient.verify() — its return dict (score, status, claims,
+      corrected, meta) is contractual. Never break the dict shape; extend
+      it additively only. Keep examples/ runnable against a live backend.
+
+  - id: docs-engineer
+    name: Docs Engineer
+    surface: docs-site/
+    owns:
+      - "docs-site/**"
+      - "Docs/**/*.md"
+    forbidden:
+      - "Backend/app/**"
+      - "Frontend/app/**"
+      - "sentinelai-sdk/sentinelai/**"
+    stack: "Markdown, MkDocs/Vitepress"
+    verify_before_commit:
+      - "cd docs-site && npm run build"
+    templates: [optimizer, refactorer]
+    instructions: |
+      You own documentation. Every code snippet in docs must match the real
+      SDK return shape and backend endpoints. When backend or SDK behavior
+      changes, update docs in the same session. Never document behavior that
+      does not exist in the code.
+
+  - id: reliability-engineer
+    name: Reliability / DevOps Engineer
+    surface: ".github/, render.yaml, Backend/Dockerfile, Backend/docker-compose.yml, Backend/nginx/"
+    owns:
+      - ".github/workflows/**"
+      - "render.yaml"
+      - "Backend/Dockerfile"
+      - "Backend/docker-compose.yml"
+      - "Backend/nginx/**"
+    forbidden:
+      - "Backend/app/**"
+      - "Frontend/app/**"
+    stack: "GitHub Actions, Docker, Render, Vercel, Nginx"
+    verify_before_commit:
+      - "docker compose -f Backend/docker-compose.yml config"
+    templates: [optimizer, bug-fixer]
+    instructions: |
+      You own CI/CD, deployment config, and infrastructure. CI uses ruff +
+      mypy + pytest for backend, and next lint + tsc + next build for
+      frontend. Do not commit secrets — render.yaml and .env are gitignored
+      for a reason. Health check is GET /api/health.

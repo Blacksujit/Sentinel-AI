@@ -106,6 +106,109 @@ Version history of your detection policy — see exactly what policy was active 
 
 Stored baseline profiles for distribution-shift detection — flag when production traffic drifts from the norm.
 
+### Organization usage endpoints
+
+The following endpoints return per-organization usage and risk data. All require
+the `usage.view` permission and a valid `Authorization: Bearer sk_...` header.
+
+Paths use `{org_id}` — the organization identifier resolved from the request.
+
+#### `GET /api/orgs/{org_id}/usage`
+
+Aggregated usage for an organization. Accepts an optional `days` query parameter
+(default `30`, range `1`–`365`) controlling the aggregation window.
+
+**Query parameters**
+
+| Parameter | Type | Default | Range | Description |
+|-----------|------|---------|-------|-------------|
+| `days` | `int` | `30` | `1`–`365` | Aggregation window in days |
+
+**Response**
+
+```json
+{
+  "total_requests": 1280,
+  "requests_24h": 45,
+  "success_count": 1263,
+  "success_rate": 98.67,
+  "error_count": 17,
+  "error_rate": 1.33,
+  "avg_latency_ms": 142.5
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_requests` | `int` | Total analyzed events for the org |
+| `requests_24h` | `int` | Events in the last 24 hours |
+| `success_count` | `int` | Events that completed successfully |
+| `success_rate` | `float` | Success percentage, 0–100 |
+| `error_count` | `int` | Failed events |
+| `error_rate` | `float` | Error percentage, 0–100 |
+| `avg_latency_ms` | `float \| null` | Mean latency in milliseconds |
+
+#### `GET /api/orgs/{org_id}/usage/stats`
+
+Dashboard usage statistics for an organization. Returns the same aggregated
+usage shape as `/usage`, optimized for dashboard widgets.
+
+#### `GET /api/orgs/{org_id}/usage/trend`
+
+Daily risk trend buckets for an organization — the data source for the
+dashboard Risk Trend chart. Returns one bucket per day across the requested
+window, ordered chronologically.
+
+**Query parameters**
+
+| Parameter | Type | Default | Range | Description |
+|-----------|------|---------|-------|-------------|
+| `days` | `int` | `30` | `1`–`365` | Number of daily buckets to return |
+
+**Response**
+
+A JSON array of daily buckets:
+
+```json
+[
+  {
+    "date": "2026-08-01",
+    "avg_risk_score": 0.23,
+    "event_count": 45,
+    "critical_count": 2
+  },
+  {
+    "date": "2026-08-02",
+    "avg_risk_score": 0.31,
+    "event_count": 52,
+    "critical_count": 4
+  }
+]
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `date` | `string` | ISO date (`YYYY-MM-DD`) of the bucket |
+| `avg_risk_score` | `float` | Mean risk score for the day, 0–1 |
+| `event_count` | `int` | Total events recorded that day |
+| `critical_count` | `int` | Events that reached critical risk threshold |
+
+**Status codes**
+
+| Code | Meaning |
+|------|---------|
+| `200` | Trend buckets returned |
+| `401` | Missing or invalid API key |
+| `403` | Caller lacks `usage.view` permission for this org |
+| `422` | `days` outside the allowed 1–365 range |
+
+**Example (curl)**
+
+```bash
+curl -H "Authorization: Bearer sk_..." \
+  "https://sentinel-ai-dml3.onrender.com/api/orgs/42/usage/trend?days=30"
+```
+
 ## SDK
 
 The Python SDK wraps these endpoints with retries, timeouts, and error handling.

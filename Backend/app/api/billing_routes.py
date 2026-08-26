@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session as DBSession
 from app.auth.dependencies import require_authenticated_user
 from app.storage.db import get_db
 from app.storage.org_models import Organization, PlanTier, OrgMembership
-from app.tenancy.org_context import resolve_org as resolve_org_shared
+from app.tenancy.org_context import resolve_org as resolve_org_shared, require_org_membership
 from app.storage.billing_models import Subscription, SubscriptionStatus, Invoice, InvoiceStatus
 from app.billing.stripe_service import (
     create_checkout_session as stripe_create_checkout,
@@ -148,6 +148,7 @@ async def create_checkout(
     user=Depends(require_authenticated_user),
 ):
     org = _resolve_org(req.org_id, db)
+    require_org_membership(db, user_id=user.id, org_id=org.id)
 
     customer_id = get_or_create_customer(org, db)
 
@@ -172,6 +173,7 @@ async def create_portal(
     user=Depends(require_authenticated_user),
 ):
     org = _resolve_org(req.org_id, db)
+    require_org_membership(db, user_id=user.id, org_id=org.id)
     sub = db.query(Subscription).filter(
         Subscription.org_id == org.id,
         Subscription.status == SubscriptionStatus.ACTIVE,

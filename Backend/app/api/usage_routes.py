@@ -29,3 +29,15 @@ async def get_org_stats(
     """Get organization usage statistics for dashboard."""
     org = resolve_org(db, org_id)
     return UsageService.aggregate_for_org(db, org.id)
+
+
+@router.get("/orgs/{org_id}/usage/trend")
+async def get_usage_trend(
+    org_id: str,
+    _: None = require_permission_from_path("usage.view"),
+    db: Session = Depends(get_db),
+    days: int = Query(30, ge=1, le=365),
+):
+    """Return daily risk event aggregation for risk trend charts."""
+    org = resolve_org(db, org_id)
+    return UsageService.get_trend(db, org.id, days)

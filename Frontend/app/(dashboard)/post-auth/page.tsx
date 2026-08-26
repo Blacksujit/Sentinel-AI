@@ -53,7 +53,7 @@ export default function PostAuthPage() {
         return
       }
 
-      router.replace('/org-onboarding')
+      router.replace('/user/dashboard')
     }
 
     run()

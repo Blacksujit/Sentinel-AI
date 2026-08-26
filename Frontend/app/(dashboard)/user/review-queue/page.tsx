@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { UserGuard } from "@/components/guards/user-org-guards";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Badge, Button } from "@/components/ui";
@@ -37,6 +38,7 @@ export default function ReviewQueuePage() {
 }
 
 function ReviewQueueContent() {
+  const { getToken } = useAuth();
   const [items, setItems] = useState<ReviewQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState<Record<number, string>>({});
@@ -45,7 +47,13 @@ function ReviewQueueContent() {
 
   const loadQueue = useCallback(async () => {
     try {
-      const response = await fetch("/api/logs/review-queue?limit=50", { cache: "no-store" });
+      const token = await getToken();
+      const response = await fetch("/api/logs/review-queue?limit=50", {
+        cache: "no-store",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!response.ok) throw new Error("Failed to load review queue");
       const data = await response.json();
       setItems(Array.isArray(data) ? data : []);
@@ -64,9 +72,13 @@ function ReviewQueueContent() {
     setSubmitting((s) => ({ ...s, [item.id]: disposition }));
     setMessage((m) => ({ ...m, [item.id]: "" }));
     try {
+      const token = await getToken();
       const response = await fetch(`/api/logs/${item.id}/review`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ disposition, notes: notes[item.id] || undefined }),
       });
       const data = await response.json();

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { Box, Container, Heading, VStack, HStack, Input, Select, Button, Text } from '@chakra-ui/react'
 import { RiskTable } from '../components/table/RiskTable'
 import { TableSkeleton } from '../components/table/TableSkeleton'
@@ -13,6 +14,7 @@ interface LogsPageClientProps {
 
 export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProps) {
   const isDev = process.env.NODE_ENV === 'development'
+  const { getToken } = useAuth()
   if (isDev) console.log('LogsPageClient rendering with initialLogs:', initialLogs?.length || 0, 'logs')
   if (isDev) console.log('Initial error:', initialError)
   
@@ -35,8 +37,12 @@ export function LogsPageClient({ initialLogs, initialError }: LogsPageClientProp
     setError(null)
     
     try {
+      const token = await getToken()
       const response = await fetch('/api/logs?limit=50', {
         cache: 'no-store',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       })
       
       if (!response.ok) {

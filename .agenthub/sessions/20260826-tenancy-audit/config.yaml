@@ -1,0 +1,8 @@
+session_id: 20260826-tenancy-audit
+task: "Fix cross-org data leak risks in usage and billing routes; add tenancy isolation tests; document tenancy model"
+agent_count: 3
+base_branch: main
+created: 2026-08-26T00:00:00Z
+eval_cmd: "cd Backend && pytest tests/ -v --tb=short"
+metric: passed
+direction: higher

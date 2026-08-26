@@ -19,6 +19,9 @@ import { HealthGauge } from '@/components/ui/health-gauge'
 import { apiGet } from '@/lib/api-client'
 import { useAuth } from '@clerk/nextjs'
 import { useRiskLogs } from '@/hooks/useRiskLogs'
+import { useRiskTrend } from '@/hooks/useRiskTrend'
+import { RiskTrendChart } from '@/charts/RiskTrendChart'
+import { Skeleton } from '@/components/ui'
 
 interface OrgStats {
   total_requests: number
@@ -35,6 +38,7 @@ export default function OrgDashboardPage() {
   const [stats, setStats] = useState<OrgStats | null>(null)
   const [isLoadingStats, setIsLoadingStats] = useState(true)
   const { data: logs = [], isLoading: isLoadingLogs } = useRiskLogs({ limit: 200 })
+  const { data: trendData = [], isLoading: isLoadingTrend } = useRiskTrend(orgId)
 
   useEffect(() => {
     async function fetchStats() {
@@ -176,6 +180,30 @@ export default function OrgDashboardPage() {
           </motion.div>
         ))}
       </div>
+
+      {/* Risk Trend */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-foreground">Risk Trend (Last 30 Days)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingTrend ? (
+              <Skeleton className="h-[280px] w-full bg-muted" />
+            ) : trendData.length > 0 ? (
+              <RiskTrendChart data={trendData} />
+            ) : (
+              <div className="flex items-center justify-center h-[280px] text-sm text-muted-foreground">
+                No data yet
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Quick Actions */}
       <motion.div

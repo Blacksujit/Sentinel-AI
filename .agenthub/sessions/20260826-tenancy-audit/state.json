@@ -1,0 +1,52 @@
+{
+  "session_id": "20260826-tenancy-audit",
+  "state": "completed-manually",
+  "created": "2026-08-26T00:00:00Z",
+  "updated": "2026-08-26T00:00:00Z",
+  "summary": "Found and fixed cross-org data leak in billing_routes.py. Wrote tenancy isolation tests. Documented tenancy model.",
+  "terminal_available": false,
+  "verification": {
+    "ruff": "not run (terminal unavailable)",
+    "pytest": "not run (terminal unavailable)",
+    "static_review": "passed - imports, types, and logic verified by reading code"
+  },
+  "changes": [
+    {
+      "file": "Backend/app/api/billing_routes.py",
+      "change": "Added require_org_membership import + calls to /create-checkout and /create-portal",
+      "type": "bugfix"
+    },
+    {
+      "file": "Backend/tests/test_tenancy_isolation.py",
+      "change": "New test file: cross-org isolation tests for billing + usage routes",
+      "type": "new"
+    },
+    {
+      "file": "Backend/tests/conftest.py",
+      "change": "Added app.storage.db.get_db override so billing routes use test DB",
+      "type": "test-infra"
+    },
+    {
+      "file": "Docs/TENANCY_MODEL.md",
+      "change": "New doc: tenancy enforcement rule + audit results table",
+      "type": "new"
+    }
+  ],
+  "agents": {
+    "agent-1": {
+      "role": "backend-engineer",
+      "status": "completed-manually",
+      "surface": "Backend/app/api/billing_routes.py"
+    },
+    "agent-2": {
+      "role": "backend-engineer",
+      "status": "completed-manually",
+      "surface": "Backend/tests/test_tenancy_isolation.py"
+    },
+    "agent-3": {
+      "role": "docs-engineer",
+      "status": "completed-manually",
+      "surface": "Docs/TENANCY_MODEL.md"
+    }
+  }
+}

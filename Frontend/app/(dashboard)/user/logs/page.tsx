@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useAuth } from "@clerk/nextjs";
 import { UserGuard } from "@/components/guards/user-org-guards";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Badge } from "@/components/ui";
@@ -26,6 +26,7 @@ export default function UserLogsPage() {
 
 function LogsContent() {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -33,7 +34,13 @@ function LogsContent() {
   useEffect(() => {
     const loadLogs = async () => {
       try {
-        const response = await fetch("/api/logs?limit=50", { cache: "no-store" })
+        const token = await getToken();
+        const response = await fetch("/api/logs?limit=50", {
+          cache: "no-store",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        })
         if (!response.ok) throw new Error("Failed to load logs")
         const data = await response.json()
         const riskLogs: any[] = Array.isArray(data) ? data : []

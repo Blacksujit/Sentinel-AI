@@ -20,6 +20,45 @@ from app.storage.models import RiskLog
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
 
+def _ensure_personal_org(db: Session, user: User) -> int:
+    """Return the user's org id, auto-creating a personal org if needed."""
+    org_ids = [
+        row.org_id
+        for row in db.query(OrgMembership.org_id)
+        .filter(OrgMembership.user_id == user.id)
+        .all()
+    ]
+    if org_ids:
+        return org_ids[0]
+
+    from app.storage.org_models import Organization, PlanTier
+    from app.storage.baseline_config_models import DEFAULT_BASELINE_CONFIG
+
+    personal_slug = f"personal-{user.id}"
+    org = db.query(Organization).filter(Organization.slug == personal_slug).first()
+    if not org:
+        org = Organization(
+            clerk_org_id=f"local-{user.id}",
+            name=f"{user.name or user.email}'s Organization",
+            slug=personal_slug,
+            owner_user_id=user.id,
+            plan_tier=PlanTier.FREE,
+            baseline_config=DEFAULT_BASELINE_CONFIG.copy(),
+        )
+        db.add(org)
+        db.flush()
+
+        owner_role = (
+            db.query(RbacRole)
+            .filter(RbacRole.name == "OWNER", RbacRole.org_id.is_(None))
+            .first()
+        )
+        if owner_role:
+            db.add(OrgMembership(org_id=org.id, user_id=user.id, role_id=owner_role.id))
+        db.commit()
+    return org.id
+
+
 # Pydantic models
 class WorkspaceCreateRequest(BaseModel):
     name: str
@@ -164,11 +203,8 @@ async def list_workspaces(
     user: User = Depends(require_authenticated_user),
 ):
     """List workspaces accessible to the authenticated user."""
-    org_ids = [row.org_id for row in db.query(OrgMembership.org_id).filter(OrgMembership.user_id == user.id).all()]
-    if not org_ids:
-        return []
-
-    workspaces = db.query(Workspace).filter(Workspace.org_id.in_(org_ids)).all()
+    org_id = _ensure_personal_org(db, user)
+    workspaces = db.query(Workspace).filter(Workspace.org_id == org_id).all()
     member_counts = {
         wid: cnt
         for wid, cnt in (
@@ -196,35 +232,7 @@ async def create_workspace(
     user: User = Depends(require_authenticated_user),
 ):
     """Create a new workspace for the user's organization."""
-    org_ids = [row.org_id for row in db.query(OrgMembership.org_id).filter(OrgMembership.user_id == user.id).all()]
-
-    if org_ids:
-        org_id = org_ids[0]
-    else:
-        # Auto-create a personal org so workspace creation works without Clerk webhooks
-        from app.storage.org_models import Organization, PlanTier
-        from app.storage.baseline_config_models import DEFAULT_BASELINE_CONFIG
-        from app.storage.rbac_models import RbacRole
-
-        personal_slug = f"personal-{user.id}"
-        org = db.query(Organization).filter(Organization.slug == personal_slug).first()
-        if not org:
-            org = Organization(
-                clerk_org_id=f"local-{user.id}",
-                name=f"{user.name or user.email}'s Organization",
-                slug=personal_slug,
-                owner_user_id=user.id,
-                plan_tier=PlanTier.FREE,
-                baseline_config=DEFAULT_BASELINE_CONFIG.copy(),
-            )
-            db.add(org)
-            db.flush()
-
-            owner_role = db.query(RbacRole).filter(RbacRole.name == "OWNER", RbacRole.org_id.is_(None)).first()
-            if owner_role:
-                db.add(OrgMembership(org_id=org.id, user_id=user.id, role_id=owner_role.id))
-            db.commit()
-        org_id = org.id
+    org_id = _ensure_personal_org(db, user)
 
     workspace = WorkspaceService.create_workspace(
         db=db, org_id=org_id, name=workspace_data.name, created_by_user_id=user.id
