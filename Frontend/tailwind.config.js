@@ -51,15 +51,19 @@ module.exports = {
         risk: {
           low: 'rgb(var(--green-rgb) / <alpha-value>)',
           medium: 'rgb(var(--amber-rgb) / <alpha-value>)',
-          high: 'rgb(var(--red-rgb) / <alpha-value>)',
+          high: 'rgb(var(--brick-rgb) / <alpha-value>)',
           critical: 'rgb(var(--red-rgb) / <alpha-value>)',
+          info: 'rgb(var(--ink-soft-rgb) / <alpha-value>)',
         },
 
         // Semantic helpers
         success: 'rgb(var(--green-rgb) / <alpha-value>)',
+        safe: 'rgb(var(--green-rgb) / <alpha-value>)',
         warning: 'rgb(var(--amber-rgb) / <alpha-value>)',
         danger: 'rgb(var(--red-rgb) / <alpha-value>)',
-        info: 'rgb(var(--red-rgb) / <alpha-value>)',
+        brick: 'rgb(var(--brick-rgb) / <alpha-value>)',
+        signal: 'rgb(var(--signal-rgb) / <alpha-value>)',
+        info: 'rgb(var(--ink-soft-rgb) / <alpha-value>)',
 
         // Remap Tailwind defaults to warm-paper tokens (kill blue/purple/indigo)
         blue: { '500': 'rgb(var(--red-rgb) / <alpha-value>)', '600': 'rgb(var(--red-rgb) / <alpha-value>)' },

@@ -46,6 +46,30 @@
   --radius-md: 8px;
   --radius-lg: 14px;
   --container: 1140px;
+
+  /* Sentinel security console tokens */
+  --signal: #2E6F6B;
+  --signal-rgb: 46, 111, 107;
+  --signal-soft: #D5E4E1;
+  --signal-bg: #EAF2F1;
+  --brick: #9A3B2A;
+  --brick-rgb: 154, 59, 42;
+  --brick-soft: #E4C9C2;
+  --brick-bg: #F4E8E3;
+
+  /* Risk semantics (reuse the brand palette) */
+  --risk-critical: var(--red);
+  --risk-high: var(--brick);
+  --risk-medium: var(--amber);
+  --risk-low: var(--green);
+  --risk-info: var(--ink-soft);
+
+  /* Back-compat aliases (these were referenced but never defined) */
+  --red-text: var(--red);
+  --teal: var(--signal);
+  --orange: var(--brick);
+  --yellow: var(--amber);
+
   color-scheme: light;
 }
 
@@ -161,6 +185,23 @@ html[data-theme='dark'] {
   --amber: #C89A38;
   --amber-rgb: 200, 154, 56;
   --amber-bg: #241C08;
+  --signal: #7FB9B2;
+  --signal-rgb: 127, 185, 178;
+  --signal-soft: #1E3533;
+  --signal-bg: #14211F;
+  --brick: #C96A4E;
+  --brick-rgb: 201, 106, 78;
+  --brick-soft: #3A211A;
+  --brick-bg: #261711;
+  --risk-critical: var(--red);
+  --risk-high: var(--brick);
+  --risk-medium: var(--amber);
+  --risk-low: var(--green);
+  --risk-info: var(--ink-soft);
+  --red-text: var(--red);
+  --teal: var(--signal);
+  --orange: var(--brick);
+  --yellow: var(--amber);
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);

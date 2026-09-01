@@ -39,10 +39,14 @@ from app.api.user_routes import router as user_router
 from app.api.learning_routes import router as learning_router
 from app.api.workspace_routes import router as workspace_router
 from app.api.workspace_intel_routes import router as workspace_intel_router
+from app.api.mcp_security_routes import router as mcp_security_router
 from app.api.webhooks import router as webhooks_router
 from app.api.billing_routes import router as billing_router
 from app.api.game_routes import router as game_router
 from app.api.redteam_routes import router as redteam_router
+from app.api.mcp_routes import router as mcp_router
+from app.api.agent_graph_routes import router as agent_graph_router
+from app.api.agent_routes import router as agent_guardrails_router
 from app.storage.db import init_db
 from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.rate_limiter import RateLimitMiddleware
@@ -141,12 +145,18 @@ async def lifespan(app: FastAPI):
         logging.critical("Database initialization failed: %s", e)
         raise
 
+    # Initialize MCP Security production features
+    from app.monitors.production_init import init_mcp_security, start_background_tasks, stop_background_tasks
+    init_mcp_security()
+    await start_background_tasks()
+
     for route in app.routes:
         if hasattr(route, "methods") and hasattr(route, "path"):
-            logger.debug("Route registered: %s %s", ", ".join(route.methods), route.path)
+            logger.info("Route: %s", route.path, extra={"event_type": "route"})
 
     logger.info("SentinelAI API started", extra={"event_type": "startup", "service": SERVICE_NAME})
     yield
+    await stop_background_tasks()
     logger.info("SentinelAI API shutting down", extra={"event_type": "shutdown"})
 
 
@@ -206,10 +216,14 @@ app.include_router(user_router, prefix="/api")
 app.include_router(learning_router, prefix="/api")
 app.include_router(workspace_router, prefix="/api")
 app.include_router(workspace_intel_router, prefix="/api")
+app.include_router(mcp_security_router, prefix="/api")
 app.include_router(webhooks_router, prefix="/api")
 app.include_router(billing_router, prefix="/api")
 app.include_router(game_router, prefix="/api")
 app.include_router(redteam_router, prefix="/api")
+app.include_router(mcp_router, prefix="/api")
+app.include_router(agent_graph_router, prefix="/api")
+app.include_router(agent_guardrails_router, prefix="/api")
 
 
 # ── Health & Observability Endpoints ──────────────────────────────
