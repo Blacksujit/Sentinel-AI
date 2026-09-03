@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <a href="https://sentinelaihq.com"><b>Live Demo</b></a>
+  <a href="https://sentinelaihq.com"><b>Live</b></a>
   &nbsp;•&nbsp;
   <a href="https://blacksujit.github.io/Sentinel-AI/"><b>Documentation</b></a>
   &nbsp;•&nbsp;
