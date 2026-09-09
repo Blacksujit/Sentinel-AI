@@ -63,7 +63,10 @@ def _check_disk_space() -> Dict[str, Any]:
 
 async def health_check() -> Dict[str, Any]:
     db_status = _check_database_with_timeout()
+    infra = _check_infra()
     overall = "healthy" if db_status["status"] == "healthy" else "degraded"
+    if overall == "healthy" and infra.get("status") == "unhealthy":
+        overall = "degraded"
 
     return {
         "status": overall,
@@ -73,12 +76,36 @@ async def health_check() -> Dict[str, Any]:
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "checks": {
             "database": db_status,
+            "queue": infra,
         },
     }
 
 
+def _check_infra() -> Dict[str, Any]:
+    """Cheap, non-blocking view of the async queue + Redis availability."""
+    try:
+        from app.infra.queue import get_queue
+        from app.infra.redis import redis_available
+
+        queue = get_queue()
+        queue_health = queue.health()
+        status = "working" if queue_health.get("active") else "unavailable"
+        if status == "working" and not redis_available():
+            status = "degraded"
+        return {
+            "status": status,
+            "mode": queue.kind.value,
+            "worker_running": queue.worker_running,
+            "pending": queue_health.get("queue_depth", 0),
+            "redis_available": redis_available(),
+        }
+    except Exception as exc:  # pragma: no cover
+        return {"status": "unhealthy", "error": _safe_error(exc)}
+
+
 async def readiness_check() -> Dict[str, Any]:
     db_status = _check_database_with_timeout()
+    infra = _check_infra()
     ready = db_status["status"] == "healthy"
 
     return {
@@ -87,6 +114,7 @@ async def readiness_check() -> Dict[str, Any]:
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "checks": {
             "database": db_status,
+            "queue": infra,
         },
     }
 

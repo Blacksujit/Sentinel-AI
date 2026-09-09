@@ -44,17 +44,29 @@ class WebSocketManager:
         logger.info(f"WS disconnected: workspace={workspace_id}, user={user_id}")
 
     async def broadcast(self, workspace_id: int, message: Dict[str, Any]) -> None:
-        """Broadcast a typed event to all connected users in a workspace."""
+        """Broadcast a typed event to a workspace's clients.
+
+        Messages are published through the shared message bus (Redis pub/sub
+        with an in-process fallback) so every replica's connected clients
+        receive them; local delivery happens in the bus handler.
+        """
+        from app.infra.pubsub import publish
+        from app.infra.config import ws_broadcast_channel
+
         payload = {
             "type": message.get("type", "unknown"),
             "payload": message.get("payload", {}),
             "timestamp": datetime.utcnow().isoformat(),
         }
+        await publish(ws_broadcast_channel(), {"workspace_id": workspace_id, "message": payload})
+
+    async def broadcast_local(self, workspace_id: int, message: Dict[str, Any]) -> None:
+        """Deliver an already-bus-normalized message to local connections only."""
         connections = self._connections.get(workspace_id, {})
         disconnected = []
         for user_id, ws in connections.items():
             try:
-                await ws.send_json(payload)
+                await ws.send_json(message)
                 self._stats["messages_sent"] += 1
             except Exception:
                 disconnected.append(user_id)
@@ -147,3 +159,33 @@ class WebSocketManager:
 
 
 ws_manager = WebSocketManager()
+
+
+_broadcast_bind_done = False
+
+
+async def broadcast_subscribe_init() -> None:
+    """Subscribe the shared manager to the cross-instance broadcast channel.
+
+    Safe to call repeatedly; registers the handler exactly once."""
+    global _broadcast_bind_done
+    if _broadcast_bind_done:
+        return
+    from app.infra.pubsub import subscribe
+    from app.infra.config import ws_broadcast_channel
+
+    async def _handle_bus_message(channel: str, envelope: "Dict[str, Any]") -> None:
+        try:
+            workspace_id = int(envelope.get("workspace_id", 0))
+            message = envelope.get("message", {})
+            if workspace_id:
+                await ws_manager.broadcast_local(workspace_id, message)
+        except Exception:
+            logger.exception("Broadcast bus handler failed")
+
+    try:
+        await subscribe(ws_broadcast_channel(), _handle_bus_message)
+        _broadcast_bind_done = True
+        logger.info("WebSocket broadcast bound to infra message bus")
+    except Exception:
+        logger.exception("Failed to bind broadcast bus (local broadcast only)")

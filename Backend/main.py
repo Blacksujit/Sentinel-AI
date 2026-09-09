@@ -1,6 +1,7 @@
 """SentinelAI API — Production entrypoint with observability, health checks, and structured logging."""
 
 import os
+import asyncio
 import time
 import json
 import logging
@@ -16,6 +17,7 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, REGISTRY
 load_dotenv()
 
 from app.core.logging_config import setup_logging, get_logger, JSONLogFormatter
+from app.infra.log_store import attach_tail_log_handler
 from app.core.metrics import (
     track_request_metrics,
     metrics_endpoint as prometheus_metrics_endpoint,
@@ -47,6 +49,7 @@ from app.api.redteam_routes import router as redteam_router
 from app.api.mcp_routes import router as mcp_router
 from app.api.agent_graph_routes import router as agent_graph_router
 from app.api.agent_routes import router as agent_guardrails_router
+from app.api.infra_routes import router as infra_router
 from app.storage.db import init_db
 from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.rate_limiter import RateLimitMiddleware
@@ -74,6 +77,7 @@ def _cors_origins() -> list[str]:
 
 
 setup_logging()
+attach_tail_log_handler()
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -150,13 +154,45 @@ async def lifespan(app: FastAPI):
     init_mcp_security()
     await start_background_tasks()
 
+    # ── Infrastructure: job queue worker, gauges, log tail, WS broadcast bus ──
+    infra_tasks: list[asyncio.Task] = []
+    try:
+        from app.infra.jobs import start_worker
+        from app.infra.queue import get_queue
+        from app.api.infra_routes import update_infra_gauges
+        from app.api.ws_manager import broadcast_subscribe_init
+
+        queue = get_queue()
+        await queue.start()
+        worker = await start_worker()
+        infra_tasks.extend([worker, asyncio.create_task(update_infra_gauges())])
+        await broadcast_subscribe_init()
+        logger.info(
+            "Infra ready: queue_mode=%s", queue.kind.value,
+            extra={"event_type": "startup", "queue_mode": queue.kind.value},
+        )
+    except Exception as e:
+        logger.warning("Infrastructure init partially failed (app continues): %s", e)
+
     for route in app.routes:
         if hasattr(route, "methods") and hasattr(route, "path"):
             logger.info("Route: %s", route.path, extra={"event_type": "route"})
 
     logger.info("SentinelAI API started", extra={"event_type": "startup", "service": SERVICE_NAME})
     yield
+    for task in infra_tasks:
+        task.cancel()
+    await asyncio.gather(*infra_tasks, return_exceptions=True)
+
     await stop_background_tasks()
+    try:
+        from app.infra.pubsub import close_pubsub
+        from app.infra.redis import close_redis
+
+        await close_pubsub()
+        await close_redis()
+    except Exception as e:  # pragma: no cover
+        logger.debug("Infra teardown error: %s", e)
     logger.info("SentinelAI API shutting down", extra={"event_type": "shutdown"})
 
 
@@ -224,6 +260,7 @@ app.include_router(redteam_router, prefix="/api")
 app.include_router(mcp_router, prefix="/api")
 app.include_router(agent_graph_router, prefix="/api")
 app.include_router(agent_guardrails_router, prefix="/api")
+app.include_router(infra_router)
 
 
 # ── Health & Observability Endpoints ──────────────────────────────

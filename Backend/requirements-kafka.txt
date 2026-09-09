@@ -1,0 +1,4 @@
+# Optional Kafka broker support for the async job queue.
+# Install instead of (or alongside) requirements.txt when QUEUE_MODE=kafka:
+#   pip install -r requirements-kafka.txt
+aiokafka==0.11.0

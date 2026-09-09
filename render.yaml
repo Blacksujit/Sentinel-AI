@@ -1,5 +1,11 @@
 # Render Blueprint — Sentinel-AI Backend
 # Docs: https://render.com/docs/blueprint-spec
+#
+# Async job queue modes:
+#   - memory  (default): in-process broker; safe for a single instance, resets on restart
+#   - redis   : Redis Streams, requires a Redis instance (uncomment the redis KV service
+#               and set QUEUE_REDIS_URL from its connectionString)
+#   - kafka   : install Backend/requirements-kafka.txt and set KAFKA_BOOTSTRAP_SERVERS
 
 services:
   - type: web
@@ -20,6 +26,17 @@ services:
           property: connectionString
       - key: PYTHON_VERSION
         value: "3.12.8"
+      - key: QUEUE_MODE
+        value: memory
+      - key: QUEUE_MAX_RETRIES
+        value: "3"
+      # Uncomment to use the Redis Streams broker (and add the redis KV service below):
+      # - key: QUEUE_MODE
+      #   value: redis
+      # - key: REDIS_URL
+      #   fromDatabase:
+      #     name: sentinel-ai-queue-redis
+      #     property: connectionString
       - key: CLERK_JWT_PUBLIC_KEY
         value: |
           -----BEGIN PUBLIC KEY-----
@@ -37,3 +54,8 @@ databases:
     plan: free
     databaseName: sentinel_ai
     user: sentinel_ai
+  # Optional Redis-backed queue / cross-instance pub-sub. Uncomment to enable
+  # the QUEUE_MODE=redis path above:
+  # - name: sentinel-ai-queue-redis
+  #   type: redis
+  #   plan: free

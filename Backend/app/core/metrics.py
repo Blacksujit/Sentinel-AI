@@ -37,6 +37,27 @@ ACTIVE_CONNECTIONS = Gauge("sentinelai_active_connections", "Current active conn
 DB_CONNECTION_POOL_SIZE = Gauge("sentinelai_db_connection_pool_size", "Database connection pool size")
 DB_CONNECTION_ACTIVE = Gauge("sentinelai_db_connection_active", "Active database connections")
 
+# Async job queue (Redis Streams / Kafka / in-memory)
+QUEUE_DEPTH = Gauge("sentinelai_queue_pending_jobs", "Pending jobs in the main queue")
+QUEUE_DLQ_DEPTH = Gauge("sentinelai_queue_dlq_jobs", "Jobs in the dead-letter queue")
+QUEUE_MODE = Gauge("sentinelai_queue_mode", "Active queue broker (0=memory,1=redis,2=kafka)")
+REDIS_UP = Gauge("sentinelai_redis_up", "Whether the Redis connection is healthy (0/1)")
+QUEUE_WORKER_RUNNING = Gauge(
+    "sentinelai_queue_worker_running", "Whether the async worker task is running (0/1)"
+)
+JOBS_PROCESSED = Counter(
+    "sentinelai_queue_jobs_processed_total", "Jobs processed successfully", ["job_type"]
+)
+JOBS_FAILED = Counter(
+    "sentinelai_queue_jobs_failed_total", "Jobs that exhausted retries", ["job_type"]
+)
+JOB_PROCESS_TIME = Histogram(
+    "sentinelai_queue_job_processing_seconds",
+    "Job handler wall time in seconds",
+    ["job_type"],
+    buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
+)
+
 
 def track_request_metrics(method: str, endpoint: str, status_code: int, duration: float):
     REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=status_code).inc()
