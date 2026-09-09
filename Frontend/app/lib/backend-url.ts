@@ -11,6 +11,13 @@
  * instead of silently returning localhost so misconfiguration is caught at
  * request time with a clear error rather than a mysterious 500.
  */
+/**
+ * Backend fetch timeout for the Vercel proxy routes.
+ * Set above Render free-tier cold-start latency (~10-45s) but at or below
+ * the Vercel function maxDuration (60s on Hobby/fluid).
+ */
+export const BACKEND_PROXY_TIMEOUT_MS = 60_000
+
 export function getBackendOrigin(): string {
   const raw =
     process.env.NEXT_PUBLIC_API_URL ||

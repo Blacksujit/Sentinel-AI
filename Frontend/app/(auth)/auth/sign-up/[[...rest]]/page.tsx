@@ -10,7 +10,7 @@ export default function SignUpPage() {
   const redirectUrl = searchParams?.get('redirect_url')
 
   // If a redirect_url is provided (e.g. from invite flow), use it as the post-signup destination
-  const afterSignUpUrl = redirectUrl || (intent === 'org'
+  const fallbackRedirectUrl = redirectUrl || (intent === 'org'
     ? `/org-onboarding${onboardingState ? `?onboarding_state=${onboardingState}` : ''}`
     : '/user/onboarding')
 
@@ -34,7 +34,7 @@ export default function SignUpPage() {
             footerActionLink: 'text-primary hover:text-primary/80',
           }
         }}
-        afterSignUpUrl={afterSignUpUrl}
+        fallbackRedirectUrl={fallbackRedirectUrl}
       />
     </div>
   )

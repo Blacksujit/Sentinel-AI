@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { backendApiUrl } from '@/lib/backend-url'
+import { backendApiUrl, BACKEND_PROXY_TIMEOUT_MS } from '@/lib/backend-url'
+
+export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,7 +10,7 @@ export async function POST(request: NextRequest) {
 
     const response = await fetch(backendApiUrl('/user/onboarding'), {
       method: 'POST',
-      signal: AbortSignal.timeout(25_000),
+      signal: AbortSignal.timeout(BACKEND_PROXY_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
         ...(authHeader ? { Authorization: authHeader } : {}),

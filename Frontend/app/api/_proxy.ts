@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { backendApiUrl } from '@/lib/backend-url'
+import { backendApiUrl, BACKEND_PROXY_TIMEOUT_MS } from '@/lib/backend-url'
 
 export async function proxyBackend(
   path: string,
@@ -18,7 +18,7 @@ export async function proxyBackend(
     const response = await fetch(url, {
       method: options.method || request.method,
       cache: 'no-store',
-      signal: AbortSignal.timeout(25_000),
+      signal: AbortSignal.timeout(BACKEND_PROXY_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
         ...(authHeader ? { Authorization: authHeader } : {}),

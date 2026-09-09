@@ -10,12 +10,30 @@ from typing import Dict, List, Optional
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
-try:
-    from sentence_transformers import SentenceTransformer  # type: ignore
-except Exception:
-    SentenceTransformer = None
-
 from app.knowledge.jailbreak_patterns import JAILBREAK_PATTERNS
+
+_SENTENCE_TRANSFORMERS_CHECKED: Optional[bool] = None
+
+
+def _get_sentence_transformer_cls():
+    """Lazily import SentenceTransformer to keep app startup fast.
+
+    sentence-transformers pulls in torch + transformers (~40s import),
+    which must not run at module import time.
+    """
+    global _SENTENCE_TRANSFORMERS_CHECKED
+    if _SENTENCE_TRANSFORMERS_CHECKED is None:
+        try:
+            from sentence_transformers import SentenceTransformer  # type: ignore
+            _SENTENCE_TRANSFORMERS_CHECKED = True
+            return SentenceTransformer
+        except Exception:
+            _SENTENCE_TRANSFORMERS_CHECKED = False
+            return None
+    if _SENTENCE_TRANSFORMERS_CHECKED:
+        from sentence_transformers import SentenceTransformer  # type: ignore
+        return SentenceTransformer
+    return None
 
 
 class JailbreakRAGDetector:
@@ -32,6 +50,8 @@ class JailbreakRAGDetector:
             similarity_threshold: Minimum similarity score to consider a match
         """
         self.similarity_threshold = similarity_threshold
+
+        SentenceTransformer = _get_sentence_transformer_cls()
 
         if SentenceTransformer is None:
             self.model = None
