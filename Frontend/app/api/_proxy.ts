@@ -18,6 +18,7 @@ export async function proxyBackend(
     const response = await fetch(url, {
       method: options.method || request.method,
       cache: 'no-store',
+      signal: AbortSignal.timeout(25_000),
       headers: {
         'Content-Type': 'application/json',
         ...(authHeader ? { Authorization: authHeader } : {}),

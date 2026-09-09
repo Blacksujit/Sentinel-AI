@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
 
     const response = await fetch(backendApiUrl('/user/onboarding'), {
       method: 'POST',
+      signal: AbortSignal.timeout(25_000),
       headers: {
         'Content-Type': 'application/json',
         ...(authHeader ? { Authorization: authHeader } : {}),

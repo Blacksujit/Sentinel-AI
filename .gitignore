@@ -500,3 +500,4 @@ supabase-test/.env
 .agents
 
 .agenthub
+.vercel

@@ -1,6 +1,7 @@
 import os
 import time
 import platform
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Dict, Any
 from sqlalchemy import text
@@ -9,6 +10,8 @@ from sqlalchemy.orm import Session
 from app.storage.db import get_engine, SQLALCHEMY_DATABASE_URL, _redacted_url
 
 _start_time = time.time()
+
+_db_executor = ThreadPoolExecutor(max_workers=2)
 
 
 def get_uptime() -> float:
@@ -22,7 +25,26 @@ def _check_database() -> Dict[str, Any]:
             conn.execute(text("SELECT 1"))
         return {"status": "healthy", "dialect": engine.dialect.name}
     except Exception as e:
-        return {"status": "unhealthy", "error": str(e)}
+        return {"status": "unhealthy", "error": _safe_error(e)}
+
+
+def _safe_error(exc: Exception) -> str:
+    """Short redacted error message (never leaks DATABASE_URL credentials)."""
+    msg = str(exc).strip()
+    if not msg:
+        return exc.__class__.__name__
+    return msg[:200]
+
+
+def _check_database_with_timeout(timeout_seconds: int = 5) -> Dict[str, Any]:
+    """Run the DB probe on a worker thread with a hard wall-clock timeout so a
+    misconfigured or unreachable database can never hang the health endpoints."""
+    future = _db_executor.submit(_check_database)
+    try:
+        return future.result(timeout=timeout_seconds)
+    except Exception:
+        future.cancel()
+        return {"status": "unhealthy", "error": f"database check timed out after {timeout_seconds}s"}
 
 
 def _check_disk_space() -> Dict[str, Any]:
@@ -40,7 +62,7 @@ def _check_disk_space() -> Dict[str, Any]:
 
 
 async def health_check() -> Dict[str, Any]:
-    db_status = _check_database()
+    db_status = _check_database_with_timeout()
     overall = "healthy" if db_status["status"] == "healthy" else "degraded"
 
     return {
@@ -56,7 +78,7 @@ async def health_check() -> Dict[str, Any]:
 
 
 async def readiness_check() -> Dict[str, Any]:
-    db_status = _check_database()
+    db_status = _check_database_with_timeout()
     ready = db_status["status"] == "healthy"
 
     return {

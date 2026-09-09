@@ -116,7 +116,13 @@ def build_engine():
             raise RuntimeError(msg)
 
         try:
-            engine = create_engine(normalized_url, pool_pre_ping=True)
+            engine = create_engine(
+                normalized_url,
+                pool_pre_ping=True,
+                pool_recycle=280,
+                pool_timeout=10,
+                connect_args={"connect_timeout": 8},
+            )
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
             logger.info("PostgreSQL connection successful (%s)", _redacted_url(normalized_url))
