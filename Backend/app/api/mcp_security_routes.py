@@ -16,6 +16,7 @@ Exposes endpoints for:
 import asyncio
 import json
 import logging
+import os
 import time
 from datetime import datetime, timezone
 from typing import Optional
@@ -57,6 +58,10 @@ class WebhookConfigRequest(BaseModel):
     auth_header: Optional[str] = None
     min_severity: str = "high"
     alert_types: list = []
+
+
+class WatchPathRequest(BaseModel):
+    path: str
 
 
 # ── Scan History ───────────────────────────────────────────────────────────
@@ -310,13 +315,55 @@ def get_dashboard(
 @router.get("/watcher/status")
 def watcher_status(current_user = Depends(require_authenticated_user)):
     from app.monitors.config_watcher import config_watcher
-    return config_watcher.get_status()
+    status = config_watcher.get_status()
+    status["is_watching"] = status["running"]
+    status["watched_paths"] = list(status["configs"].keys())
+    status["last_check"] = None
+    for cf in status["configs"].values():
+        if cf.get("last_checked"):
+            ts = cf["last_checked"]
+            status["last_check"] = max(status["last_check"] or 0, ts)
+    if status["last_check"]:
+        status["last_check"] = datetime.fromtimestamp(
+            status["last_check"], tz=timezone.utc
+        ).isoformat()
+    return status
+
+
+@router.post("/watcher/watch")
+def watcher_add_path(
+    req: WatchPathRequest,
+    current_user = Depends(require_authenticated_user),
+):
+    from app.monitors.config_watcher import config_watcher
+    path = (req.path or "").strip()
+    if not path:
+        raise HTTPException(400, "path is required")
+    if os.path.isdir(path):
+        config_watcher.add_directory(path)
+    else:
+        config_watcher.add_config_path(path)
+    return {"status": "watching", "path": os.path.abspath(path)}
+
+
+@router.delete("/watcher/watch/{path:path}")
+def watcher_remove_path(
+    path: str,
+    current_user = Depends(require_authenticated_user),
+):
+    from app.monitors.config_watcher import config_watcher
+    removed = config_watcher.remove_config_path(path)
+    if not removed:
+        raise HTTPException(404, "Watch path not found")
+    return {"status": "removed", "path": path}
 
 
 @router.post("/watcher/scan")
 async def watcher_scan_now(current_user = Depends(require_authenticated_user)):
     from app.monitors.production_init import scan_and_persist_all
-    return await scan_and_persist_all()
+    summary = await scan_and_persist_all()
+    summary["status"] = "ok"
+    return summary
 
 
 # ── Proxy Stats ────────────────────────────────────────────────────────────
@@ -367,15 +414,33 @@ def get_baseline(
 async def websocket_endpoint(
     websocket: WebSocket,
     channels: str = Query("activity", description="Comma-separated channels"),
+    token: Optional[str] = Query(None, description="Clerk JWT for auth"),
 ):
     """
     Real-time WebSocket for MCP security events.
 
-    Connect with: ws://host/api/mcp-security/ws?channels=guardrails,alerts
+    Connect with: ws://host/api/mcp-security/ws?token=<jwt>&channels=activity
 
     Channels: guardrails, scans, alerts, graph, activity
     """
     from app.monitors.ws_manager import ws_manager
+
+    # Authenticate via query param (browser WS API can't set headers).
+    user_id = "anonymous"
+    if token:
+        try:
+            from app.auth.clerk import decode_clerk_token
+            claims = decode_clerk_token(token)
+            user_id = str(claims.get("sub", "anonymous"))
+        except Exception:
+            logger.warning("WS auth failed for token, rejecting connection")
+            await websocket.close(code=4001, reason="Authentication failed")
+            return
+    else:
+        # Allow unauthenticated connections in dev only
+        if os.getenv("CLERK_DEV_UNSAFE_JWT") != "1" and os.getenv("NODE_ENV", "development") == "production":
+            await websocket.close(code=4001, reason="Authentication required")
+            return
 
     await websocket.accept()
 
@@ -386,7 +451,7 @@ async def websocket_endpoint(
 
     queue = await ws_manager.connect(
         client_id=client_id,
-        user_id="anonymous",
+        user_id=user_id,
         channels=channel_set,
     )
 

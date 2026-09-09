@@ -93,6 +93,18 @@ class MCPConfigWatcher:
         self._configs[name] = MCPConfigFile(path=os.path.abspath(path))
         logger.info("Watching MCP config: %s at %s", name, path)
 
+    def remove_config_path(self, path: str) -> bool:
+        """Remove a config path from the watcher. Returns True if removed."""
+        abs_path = os.path.abspath(path)
+        removed = False
+        for name in list(self._configs.keys()):
+            cf = self._configs[name]
+            if cf.path == abs_path or name == abs_path or name == path:
+                del self._configs[name]
+                logger.info("Stopped watching MCP config: %s", path)
+                removed = True
+        return removed
+
     def add_known_configs(self, config_types: Optional[List[str]] = None):
         """Add well-known MCP config file locations."""
         import platform

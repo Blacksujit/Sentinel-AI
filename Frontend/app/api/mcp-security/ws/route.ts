@@ -1,27 +1,20 @@
 /**
- * WebSocket proxy for MCP Security real-time events.
- * This is a simplified Next.js WebSocket handler that proxies to the backend.
- * For production, consider using a dedicated WebSocket server or a service like Pusher.
+ * WebSocket info endpoint for MCP Security.
+ *
+ * Next.js App Router does NOT support WebSocket upgrades in route handlers.
+ * The client connects directly to the backend WebSocket with a JWT query param.
+ * This endpoint returns the backend WS URL so the client knows where to connect.
  */
-
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getBackendOrigin } from '@/lib/backend-url'
 
 export async function GET(request: NextRequest) {
-  // In a real implementation, this would upgrade the connection to WebSocket
-  // and proxy to the backend WebSocket endpoint.
-  // For now, return a message indicating WebSocket should be used directly.
-  return new Response(
-    JSON.stringify({
-      message: 'WebSocket endpoint. Connect directly to ws://backend:8000/api/mcp-security/ws',
-      websocketUrl: `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'}/api/mcp-security/ws`
-    }),
-    {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    }
-  )
-}
+  const token = request.nextUrl.searchParams.get('token') || ''
+  const backendWsUrl = getBackendOrigin().replace(/^http/, 'ws')
 
-// Note: Next.js App Router doesn't natively support WebSocket upgrade in route.ts
-// The frontend hook connects directly to the backend WebSocket endpoint.
-// See: useMCPWebSocket in hooks/mcp-security/use-mcp-security.ts
+  return NextResponse.json({
+    message: 'Connect to the backend WebSocket directly',
+    websocketUrl: `${backendWsUrl}/api/mcp-security/ws${token ? `?token=${encodeURIComponent(token)}` : ''}`,
+    note: 'Client should use this URL to establish a WebSocket connection with the Clerk JWT.',
+  })
+}

@@ -1,6 +1,10 @@
 /**
  * React Query hooks for MCP Security data.
  * Auto-caches, background-refetches, and provides optimistic updates.
+ *
+ * FIX: Every query/mutation now passes the Clerk JWT through to the API
+ * client, which forwards it to the Next.js proxy → FastAPI backend.
+ * Previously, tokens were fetched but never sent, causing 401s in prod.
  */
 
 'use client'
@@ -58,20 +62,29 @@ export function useMCPSecurityScans(params?: {
   offset?: number
 }) {
   const token = useToken()
-  return useQuery({
-    queryKey: mcpKeys.scansList(params as Record<string, unknown>),
-    queryFn: () => mcpSecurityApi.getScans(params),
+  const result = useQuery({
+    queryKey: mcpKeys.scansList(params),
+    queryFn: () => mcpSecurityApi.getScans(params, token),
     enabled: !!token,
-    staleTime: 30_000,
+    refetchInterval: 30000,
   })
+  return { data: result.data, isLoading: result.isLoading, refetch: result.refetch }
 }
 
 export function useTriggerScan() {
   const queryClient = useQueryClient()
+  const token = useToken()
   return useMutation({
-    mutationFn: mcpSecurityApi.triggerScan,
+    mutationFn: (payload: {
+      target: string
+      scan_type: 'server' | 'tool'
+      config_path?: string
+      server_name?: string
+      tool_name?: string
+    }) => mcpSecurityApi.triggerScan(payload, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mcpKeys.scans() })
+      queryClient.invalidateQueries({ queryKey: mcpKeys.dashboard() })
     },
   })
 }
@@ -80,39 +93,62 @@ export function useTriggerScan() {
 
 export function useMCPSecurityAgents(params?: { status?: string }) {
   const token = useToken()
-  return useQuery({
+  const result = useQuery({
     queryKey: mcpKeys.agents(),
-    queryFn: () => mcpSecurityApi.getAgents(params),
+    queryFn: () => mcpSecurityApi.getAgents(params, token),
     enabled: !!token,
-    staleTime: 30_000,
+    refetchInterval: 30000,
   })
+  return { data: result.data, isLoading: result.isLoading, refetch: result.refetch }
 }
 
-export function useMCPAgent(agentId: string) {
+export function useMCPAgent(agentId: string | null) {
   const token = useToken()
-  return useQuery({
-    queryKey: mcpKeys.agent(agentId),
-    queryFn: () => mcpSecurityApi.getAgent(agentId),
+  const { data, isLoading } = useQuery({
+    queryKey: mcpKeys.agent(agentId ?? ''),
+    queryFn: () => mcpSecurityApi.getAgent(agentId!, token),
     enabled: !!token && !!agentId,
-    staleTime: 30_000,
   })
+  return { agent: data ?? null, isLoading }
 }
 
 export function useCreateAgent() {
   const queryClient = useQueryClient()
+  const token = useToken()
   return useMutation({
-    mutationFn: mcpSecurityApi.createAgent,
+    mutationFn: (profile: {
+      agent_id: string
+      agent_name?: string
+      allowed_tools?: string[]
+      denied_tools?: string[]
+      allowed_data_sources?: string[]
+      denied_data_sources?: string[]
+      max_calls_per_minute?: number
+      max_calls_per_hour?: number
+      trusted_agents?: string[]
+      can_delegate?: boolean
+    }) => mcpSecurityApi.createAgent(profile, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mcpKeys.agents() })
+      queryClient.invalidateQueries({ queryKey: mcpKeys.dashboard() })
     },
   })
 }
 
 export function useUpdateAgent() {
   const queryClient = useQueryClient()
+  const token = useToken()
   return useMutation({
-    mutationFn: ({ agentId, updates }: { agentId: string; updates: Parameters<typeof mcpSecurityApi.updateAgent>[1] }) =>
-      mcpSecurityApi.updateAgent(agentId, updates),
+    mutationFn: ({ agentId, updates }: {
+      agentId: string
+      updates: {
+        status?: string
+        allowed_tools?: string[]
+        denied_tools?: string[]
+        max_calls_per_minute?: number
+        max_calls_per_hour?: number
+      }
+    }) => mcpSecurityApi.updateAgent(agentId, updates, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mcpKeys.agents() })
     },
@@ -121,69 +157,84 @@ export function useUpdateAgent() {
 
 export function useDeleteAgent() {
   const queryClient = useQueryClient()
+  const token = useToken()
   return useMutation({
-    mutationFn: mcpSecurityApi.deleteAgent,
+    mutationFn: (agentId: string) => mcpSecurityApi.deleteAgent(agentId, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mcpKeys.agents() })
+      queryClient.invalidateQueries({ queryKey: mcpKeys.dashboard() })
     },
   })
 }
 
 // ── Guardrail Decisions ────────────────────────────────────────────────
 
-export function useGuardrailDecisions(params?: { agent_id?: string; action?: string; limit?: number }) {
+export function useGuardrailDecisions(params?: {
+  agent_id?: string
+  action?: string
+  limit?: number
+}) {
   const token = useToken()
-  return useQuery({
-    queryKey: mcpKeys.decisions(params as Record<string, unknown>),
-    queryFn: () => mcpSecurityApi.getDecisions(params),
+  const result = useQuery({
+    queryKey: mcpKeys.decisions(params),
+    queryFn: () => mcpSecurityApi.getDecisions(params, token),
     enabled: !!token,
-    staleTime: 15_000,
+    refetchInterval: 30000,
   })
+  return { data: result.data, isLoading: result.isLoading, refetch: result.refetch }
 }
 
 // ── Threat Graph ───────────────────────────────────────────────────────
 
 export function useThreatGraph() {
   const token = useToken()
-  return useQuery({
+  const result = useQuery({
     queryKey: mcpKeys.threatGraph(),
-    queryFn: mcpSecurityApi.getThreatGraph,
+    queryFn: () => mcpSecurityApi.getThreatGraph(token),
     enabled: !!token,
-    staleTime: 60_000,
-    refetchInterval: 120_000,
+    refetchInterval: 60000,
   })
+  return { data: result.data, isLoading: result.isLoading, refetch: result.refetch }
 }
 
 // ── Alerts ─────────────────────────────────────────────────────────────
 
-export function useMCPSecurityAlerts(params?: { status?: string; severity?: string; limit?: number }) {
+export function useMCPSecurityAlerts(params?: {
+  severity?: string
+  status?: string
+  limit?: number
+  offset?: number
+}) {
   const token = useToken()
-  return useQuery({
-    queryKey: mcpKeys.alerts(params as Record<string, unknown>),
-    queryFn: () => mcpSecurityApi.getAlerts(params),
+  const result = useQuery({
+    queryKey: mcpKeys.alerts(params),
+    queryFn: () => mcpSecurityApi.getAlerts(params, token),
     enabled: !!token,
-    staleTime: 15_000,
+    refetchInterval: 15000,
   })
+  return { data: result.data, isLoading: result.isLoading, refetch: result.refetch }
 }
 
 export function useAcknowledgeAlert() {
   const queryClient = useQueryClient()
+  const token = useToken()
   return useMutation({
-    mutationFn: ({ alertId, notes }: { alertId: number; notes?: string }) =>
-      mcpSecurityApi.acknowledgeAlert(alertId, notes),
+    mutationFn: ({ alertId, notes }: { alertId: number | string; notes?: string }) =>
+      mcpSecurityApi.acknowledgeAlert(alertId, notes, token),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mcpKeys.alerts() })
+      queryClient.invalidateQueries({ queryKey: mcpKeys.all })
     },
   })
 }
 
 export function useResolveAlert() {
   const queryClient = useQueryClient()
+  const token = useToken()
   return useMutation({
-    mutationFn: ({ alertId, notes }: { alertId: number; notes?: string }) =>
-      mcpSecurityApi.resolveAlert(alertId, notes),
+    mutationFn: ({ alertId, notes }: { alertId: number | string; notes?: string }) =>
+      mcpSecurityApi.resolveAlert(alertId, notes, token),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mcpKeys.alerts() })
+      queryClient.invalidateQueries({ queryKey: mcpKeys.all })
     },
   })
 }
@@ -192,31 +243,33 @@ export function useResolveAlert() {
 
 export function useSecurityDashboard() {
   const token = useToken()
-  return useQuery({
+  const result = useQuery({
     queryKey: mcpKeys.dashboard(),
-    queryFn: mcpSecurityApi.getDashboard,
+    queryFn: () => mcpSecurityApi.getDashboard(token),
     enabled: !!token,
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    refetchInterval: 30000,
   })
+  return { data: result.data, isLoading: result.isLoading, refetch: result.refetch }
 }
 
 // ── Config Watcher ─────────────────────────────────────────────────────
 
 export function useConfigWatcherStatus() {
   const token = useToken()
-  return useQuery({
+  const result = useQuery({
     queryKey: mcpKeys.configWatcher(),
-    queryFn: mcpSecurityApi.getConfigWatcherStatus,
+    queryFn: () => mcpSecurityApi.getConfigWatcherStatus(token),
     enabled: !!token,
-    staleTime: 30_000,
+    refetchInterval: 15000,
   })
+  return { data: result.data, isLoading: result.isLoading, refetch: result.refetch }
 }
 
 export function useAddWatchPath() {
   const queryClient = useQueryClient()
+  const token = useToken()
   return useMutation({
-    mutationFn: mcpSecurityApi.addWatchPath,
+    mutationFn: (path: string) => mcpSecurityApi.addWatchPath(path, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mcpKeys.configWatcher() })
     },
@@ -225,55 +278,81 @@ export function useAddWatchPath() {
 
 export function useRemoveWatchPath() {
   const queryClient = useQueryClient()
+  const token = useToken()
   return useMutation({
-    mutationFn: mcpSecurityApi.removeWatchPath,
+    mutationFn: (path: string) => mcpSecurityApi.removeWatchPath(path, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mcpKeys.configWatcher() })
     },
   })
 }
 
-// ── WebSocket Hook ─────────────────────────────────────────────────────
+// ── WebSocket ──────────────────────────────────────────────────────────
 
+/**
+ * Real-time WebSocket for MCP Security events.
+ * FIX: Now passes the Clerk JWT as a query parameter so the backend
+ * can authenticate the WS connection (browser WS API cannot set headers).
+ * Falls back gracefully if token is unavailable (shows "disconnected").
+ */
 export function useMCPWebSocket(onMessage?: (msg: WebSocketMessage) => void) {
+  const { getToken } = useAuth()
   const wsRef = useRef<WebSocket | null>(null)
-  const [connected, setConnected] = useState(false)
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null)
+  const [connected, setConnected] = useState(false)
 
-  useEffect(() => {
-    const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/mcp-security/ws`
-    const ws = new WebSocket(wsUrl)
-    wsRef.current = ws
+  const connect = useCallback(async () => {
+    const token = await getToken()
+    // Connect directly to the backend WS — Next.js App Router cannot proxy WebSockets.
+    // NEXT_PUBLIC_API_URL is the FastAPI backend origin (e.g. https://sentinelai-backend.onrender.com).
+    const backendBase = process.env.NEXT_PUBLIC_API_URL || window.location.origin
+    const wsProtocol = backendBase.startsWith('https') ? 'wss:' : 'ws:'
+    const wsHost = backendBase.replace(/^https?:\/\//, '')
+    const base = `${wsProtocol}//${wsHost}/api/mcp-security/ws`
+    const url = token ? `${base}?token=${encodeURIComponent(token)}` : base
+    const ws = new WebSocket(url)
 
-    ws.onopen = () => setConnected(true)
-    ws.onclose = () => {
-      setConnected(false)
-      // Auto-reconnect after 3s
-      setTimeout(() => {
-        if (wsRef.current?.readyState === WebSocket.CLOSED) {
-          wsRef.current = null
-        }
-      }, 3000)
+    ws.onopen = () => {
+      setConnected(true)
+      wsRef.current = ws
     }
+
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data) as WebSocketMessage
         setLastMessage(msg)
         onMessage?.(msg)
-      } catch { /* ignore malformed messages */ }
+      } catch {
+        // ignore malformed messages
+      }
     }
 
-    return () => {
-      ws.close()
+    ws.onclose = () => {
+      setConnected(false)
       wsRef.current = null
+      // Reconnect after 5 seconds
+      reconnectRef.current = setTimeout(connect, 5000)
     }
-  }, [onMessage])
 
-  const send = useCallback((data: unknown) => {
+    ws.onerror = () => {
+      ws.close()
+    }
+  }, [getToken, onMessage])
+
+  useEffect(() => {
+    connect()
+    return () => {
+      if (reconnectRef.current) clearTimeout(reconnectRef.current)
+      wsRef.current?.close()
+    }
+  }, [connect])
+
+  const send = useCallback((data: Record<string, unknown>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(data))
     }
   }, [])
 
-  return { connected, lastMessage, send }
+  return { lastMessage, connected, send }
 }

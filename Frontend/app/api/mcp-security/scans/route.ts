@@ -7,5 +7,5 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  return proxyMCP('/api/mcp-security/scan', request, 'POST', body)
+  return proxyMCP('/api/mcp-security/watcher/scan', request, 'POST', body)
 }

@@ -5,5 +5,5 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { path: string } }
 ) {
-  return proxyMCP(`/api/mcp-security/config-watcher/watch/${decodeURIComponent(params.path)}`, request, 'DELETE')
+  return proxyMCP(`/api/mcp-security/watcher/watch/${decodeURIComponent(params.path)}`, request, 'DELETE')
 }
