@@ -1,0 +1,1 @@
+export const DOCS_URL = 'https://blacksujit.github.io/Sentinel-AI/';

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import BrandMark from './BrandMark';
+import { DOCS_URL } from '@/lib/site';
 
 const GITHUB_REPO = 'https://github.com/Blacksujit/Sentinel-AI';
 const GITHUB_ISSUES = 'https://github.com/Blacksujit/Sentinel-AI/issues';
@@ -106,7 +107,9 @@ export default function Footer() {
               <h4>Product</h4>
               <Link href="/">Home</Link>
               <Link href="/analyze">Analyze</Link>
-              <Link href="/docs">Docs</Link>
+              <a href={DOCS_URL} target="_blank" rel="noreferrer">
+                Docs
+              </a>
             </div>
             <div className="footer-col">
               <h4>Open Source</h4>

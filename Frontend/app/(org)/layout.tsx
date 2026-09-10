@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils'
 import { OrganizationProvider, useOrgContext } from '@/contexts/organization-context'
 import { WorkspaceProvider } from '@/contexts/workspace-context'
 import { OrgSwitcher } from '@/components/org/OrgSwitcher'
+import { DOCS_URL } from '@/lib/site'
 
 interface NavItem {
   label: string
@@ -52,7 +53,7 @@ function SidebarContent() {
     { label: 'Billing', href: `/org/${orgId}/dashboard/billing`, icon: CreditCard },
     { label: 'Members', href: `/org/${orgId}/dashboard/members`, icon: Users },
     { label: 'Settings', href: `/org/${orgId}/dashboard/settings`, icon: Settings },
-    { label: 'Docs', href: `/docs`, icon: BookOpen, external: true },
+    { label: 'Docs', href: DOCS_URL, icon: BookOpen, external: true },
   ]
 
   const isActive = (href: string) => {

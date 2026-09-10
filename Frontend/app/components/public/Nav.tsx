@@ -6,10 +6,17 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { Sun, Moon, Menu, X, ArrowRight, Star, Coffee } from 'lucide-react';
 import BrandMark from './BrandMark';
+import { DOCS_URL } from '@/lib/site';
 
-const NAV_LINKS = [
+interface NavLink {
+  to: string
+  label: string
+  external?: boolean
+}
+
+const NAV_LINKS: NavLink[] = [
   { to: '/', label: 'Home' },
-  { to: '/docs', label: 'Docs' },
+  { to: DOCS_URL, label: 'Docs', external: true },
 ];
 
 const GITHUB_REPO = 'https://github.com/Blacksujit/Sentinel-AI';
@@ -50,12 +57,23 @@ export default function Nav() {
         <ul className="nav-links">
           {NAV_LINKS.map((link) => (
             <li key={link.to}>
-              <Link
-                href={link.to}
-                className={'nav-link' + (isActive(link.to) ? ' active' : '')}
-              >
-                {link.label}
-              </Link>
+              {link.external ? (
+                <a
+                  href={link.to}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="nav-link"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  href={link.to}
+                  className={'nav-link' + (isActive(link.to) ? ' active' : '')}
+                >
+                  {link.label}
+                </Link>
+              )}
             </li>
           ))}
         </ul>
@@ -104,16 +122,29 @@ export default function Nav() {
 
       {open && (
         <div className="mobile-menu">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.to}
-              href={link.to}
-              className="mobile-link"
-              onClick={() => setOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {NAV_LINKS.map((link) =>
+            link.external ? (
+              <a
+                key={link.to}
+                href={link.to}
+                target="_blank"
+                rel="noreferrer"
+                className="mobile-link"
+                onClick={() => setOpen(false)}
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.to}
+                href={link.to}
+                className="mobile-link"
+                onClick={() => setOpen(false)}
+              >
+                {link.label}
+              </Link>
+            )
+          )}
           <a
             href={GITHUB_REPO}
             target="_blank"

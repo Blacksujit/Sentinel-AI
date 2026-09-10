@@ -8,6 +8,7 @@ import {
 import HeroDemo from '@/components/public/HeroDemo';
 import Reveal from '@/components/public/Reveal';
 import WaitlistForm from '@/components/public/WaitlistForm';
+import { DOCS_URL } from '@/lib/site';
 
 const DETECTORS = [
   { id: 'unsupported-claim', label: 'Unsupported Claim', severity: 'critical', description: 'A factual statement presented with confidence but with no basis in the provided context or verifiable source.' },
@@ -75,9 +76,9 @@ export default function Home() {
               <Link href="/hack" className="btn btn-secondary">
                 Hack the Sentinel <ShieldCheck size={16} />
               </Link>
-              <Link href="/docs" className="btn btn-secondary">
+              <a href={DOCS_URL} target="_blank" rel="noreferrer" className="btn btn-secondary">
                 See how it works
-              </Link>
+              </a>
             </div>
             <div className="hero-trust">
               <span className="hero-trust-item"><Check size={15} /> Drop-in API, no fine-tuning</span>
@@ -259,9 +260,9 @@ if (result.status === "hallucinated") {
             <Link href="/start" className="btn btn-accent">
               Open the analyzer <ArrowRight size={16} />
             </Link>
-            <Link href="/docs" className="btn btn-secondary-dark">
+            <a href={DOCS_URL} target="_blank" rel="noreferrer" className="btn btn-secondary-dark">
               Read the docs
-            </Link>
+            </a>
           </Reveal>
           <Reveal delay={0.18} className="cta-waitlist">
             <span className="cta-waitlist-label">Or get early access —</span>
