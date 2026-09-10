@@ -18,6 +18,23 @@ const nextConfig = {
   },
   // standalone is for Docker/self-host only; breaks Vercel's default Next.js output
   ...(process.env.VERCEL ? {} : { output: 'standalone' }),
+  // Fast permanent redirects to the deployed docs site (308, cached by browsers).
+  // Handled at the router level, before any page renders.
+  async redirects() {
+    const docsUrl = 'https://blacksujit.github.io/Sentinel-AI/'
+    return [
+      {
+        source: '/docs',
+        destination: docsUrl,
+        permanent: true,
+      },
+      {
+        source: '/docs/:path*',
+        destination: docsUrl,
+        permanent: true,
+      },
+    ]
+  },
   // NOTE: API proxying is handled by server-side route handlers in app/api/*/*
   // which use backendApiUrl() to forward to the Render backend with auth.
   // Do NOT add rewrites() here — they conflict with the route handlers and
